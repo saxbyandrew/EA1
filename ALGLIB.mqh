@@ -9,6 +9,7 @@
 
 #property script_show_confirm
 #property script_show_inputs
+//1 
 
 #define HIDDEN_LAYER   1  
 #define FUNC_OUTPUT        -5
@@ -45,10 +46,10 @@ string EAName= "ScriptBinDec";
 void OnStart()              //Conversor binario a decimal
 {
    string stringData= "BINARY-DECIMAL Conversion Script",
-          mens= "", cadNumBin= "", cadNumRed= "";
+   mens= "", cadNumBin= "", cadNumRed= "";
    int contentHits= 0, arNumBin[],
-       start= trainingHistory+1,
-       end= trainingHistory+historialEvalua;
+   start= trainingHistory+1,
+   end= trainingHistory+historialEvalua;
    double arSalRed[], arNumEntra[], output= 0, threshold= 0, weight= 0;
    double errorMediumEnter= 0;
    bool normInput= inputNormalization!="", normOutput= ouputNormalization!="", correct= false,
