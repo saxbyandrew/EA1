@@ -19,6 +19,8 @@ class EADataFrame  {
 private:
 //=========
 
+   int      _txtHandle, _mainDB;
+
 //=========
 protected:
 //=========
@@ -29,7 +31,7 @@ protected:
 //=========
 public:
 //=========
-EADataFrame();
+EADataFrame(int mainDB, int txtHandle);
 ~EADataFrame();
 
    CMatrixDouble  dataFrame;
@@ -44,7 +46,11 @@ EADataFrame();
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-EADataFrame::EADataFrame() {
+EADataFrame::EADataFrame(int mainDB, int txtHandle) {
+
+   _mainDB=mainDB;
+   _txtHandle=txtHandle;
+
 
    #ifdef _WRITELOG
       string ss;

@@ -18,6 +18,7 @@ class EATechnicalParameters {
 private:
 //=========
 
+   int _mainDB, _optimizeDB, _txtHandle;
 
 //=========
 protected:
@@ -30,7 +31,7 @@ protected:
 //=========
 public:
 //=========
-EATechnicalParameters();
+EATechnicalParameters(int mainDB, int txtHandle);
 ~EATechnicalParameters();
 
 
@@ -199,7 +200,11 @@ EATechnicalParameters();
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-EATechnicalParameters::EATechnicalParameters() {
+EATechnicalParameters::EATechnicalParameters(int mainDB, int txtHandle) {
+
+   _mainDB=mainDB;
+   _txtHandle=txtHandle;
+
 
    #ifdef _WRITELOG
       string ss;
@@ -210,16 +215,16 @@ EATechnicalParameters::EATechnicalParameters() {
    
    // Determine where we get the technicl values from based on if we are in normal running mode
    // on in strategy optimization mode
-   if (bool (param.runMode&_RUN_STRATEGY_OPTIMIZATION)) {
+   if (bool (_runMode&_RUN_STRATEGY_OPTIMIZATION)) {
       copyValuesFromInputs();
    } 
 
-   if (bool (param.runMode&_RUN_NORMAL)) {
+   if (bool (_runMode&_RUN_NORMAL)) {
       copyValuesFromDatabase();
    }
 
    #ifdef _WRITELOG
-      ss=StringFormat(" -> Run Mode is:%d",param.runMode);
+      ss=StringFormat(" -> Run Mode is:%d",_runMode);
       writeLog;
    #endif
 
@@ -240,7 +245,7 @@ void EATechnicalParameters::copyValuesFromDatabase() {
       string ss;
    #endif
 
-   int request=DatabasePrepare(_dbHandle,"SELECT * FROM STRATEGIES WHERE isActive=1");
+   int request=DatabasePrepare(_mainDB,"SELECT * FROM STRATEGIES WHERE isActive=1");
    if (!DatabaseRead(request)) {
       Print(" -> 2 DB request failed with code:", GetLastError()); 
       ExpertRemove();

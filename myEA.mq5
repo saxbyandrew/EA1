@@ -49,7 +49,7 @@ unsigned                TRADING_CIRCUIT_BREAKER;
 //EAMain                  *ea; 
 //EAPanel                 *mp; 
 EAEnum                  _runMode;
-int                     _dbHandle, _optimizeDB, _txtHandle, _strategyNumber;
+//int                     _dbHandle, _optimizeDB, _txtHandle, _strategyNumber;
 string                  _dbName="strategies.sqlite";
 string                  _optimizeDBName="optimization.sqlite";
 
@@ -68,35 +68,6 @@ int OnInit() {
 
     EventSetTimer(60);
 
-    // Open the database in the common terminal folder
-    _dbHandle=DatabaseOpen(_dbName, DATABASE_OPEN_READWRITE | DATABASE_OPEN_COMMON);
-    if (_dbHandle==INVALID_HANDLE) {
-        printf(" -> DB open failed to open:%d",GetLastError());
-         ExpertRemove();
-    } 
-
-    // Get the strategy number save it globally
-    int request=DatabasePrepare(_dbHandle,"SELECT strategyNumber FROM STRATEGIES WHERE isActive=1"); 
-    if (DatabaseRead(request)) {
-        DatabaseColumnInteger(request,0,_strategyNumber);
-    } else {
-        printf(" -> Failed with errorcode:%d",GetLastError());
-        ExpertRemove();
-    }
-
-    _runMode=_RUN_NORMAL; // Set the initial mode to normal for now
-    
-    #ifdef _WRITELOG
-        string ss;
-        ss=StringFormat(" -> System initially set to mode:%s",EnumToString(_runMode));
-        writeLog;
-        _txtHandle=FileOpen("eaLog.txt",FILE_COMMON|FILE_READ|FILE_WRITE|FILE_ANSI|FILE_TXT);  
-        commentLine;
-        writeLog;
-   #endif
-
-   
-   
 
 /*
     param=new EAStrategyParameters;

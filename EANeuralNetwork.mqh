@@ -36,9 +36,9 @@ private:
    void     createNewNetwork();
    bool     saveNetwork();
    bool     loadNetwork();
-   
-   
    void     networkForcast(double &inputs[], double &outputs[]);
+
+   int      _txtHandle, _mainDB;
    
 
 //=========
@@ -51,7 +51,7 @@ protected:
 //=========
 public:
 //=========
-EANeuralNetwork();
+EANeuralNetwork(int mainDB, int txtHandle);
 ~EANeuralNetwork();
 
 
@@ -66,7 +66,10 @@ EANeuralNetwork();
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-EANeuralNetwork::EANeuralNetwork() {
+EANeuralNetwork::EANeuralNetwork(int mainDB, int txtHandle) {
+
+   _mainDB=mainDB;
+   _txtHandle=txtHandle;
 
    #ifdef _WRITELOG
       string ss;
@@ -76,13 +79,13 @@ EANeuralNetwork::EANeuralNetwork() {
    #endif
 
 
-   if (bool (param.runMode&_RUN_STRATEGY_OPTIMIZATION)) {
+   if (bool (_runMode&_RUN_STRATEGY_OPTIMIZATION)) {
       copyValuesFromDatabase();
       // we use the L1 L2 and NNTYPE from the DB but the NN is created later in the training  function
       // and the IN / OUT is based on the IO objects number of inputs and outputs
    } 
 
-   if (bool (param.runMode&_RUN_NORMAL)) {
+   if (bool (_runMode&_RUN_NORMAL)) {
       copyValuesFromDatabase();
       createNewNetwork();
       loadNetwork();
@@ -95,7 +98,7 @@ EANeuralNetwork::EANeuralNetwork() {
    nnArray=new CArrayDouble;
 
    #ifdef _WRITELOG
-      ss=StringFormat(" -> Run Mode is:%d",param.runMode);
+      ss=StringFormat(" -> EANeuralNetwork Run Mode is:%d",_runMode);
       writeLog;
    #endif
 
@@ -112,24 +115,37 @@ EANeuralNetwork::~EANeuralNetwork() {
 //|                                                                  |
 //+------------------------------------------------------------------+
 void EANeuralNetwork::copyValuesFromDatabase() {
+
    #ifdef _WRITELOG
       string ss;
    #endif
 
-   int request=DatabasePrepare(_dbHandle,"SELECT dnnType,dnnIn,dnnLayer1,dnnLayer2,dnnOut FROM STRATEGIES WHERE isActive=1");
+
+   string sql="SELECT isActive,strategyNumber,dnnType,dnnIn,dnnLayer1,dnnLayer2,dnnOut FROM STRATEGIES WHERE isActive=1";
+   #ifdef _WRITELOG
+      ss=StringFormat(" -> %s",sql);
+      writeLog;
+   #endif
+   int request=DatabasePrepare(_mainDB,sql);
+   if (request==INVALID_HANDLE) {
+      #ifdef _WRITELOG
+         ss=StringFormat(" -> Error in database SELECT, %d",GetLastError());
+         writeLog;
+      #endif
+   }
    if (!DatabaseRead(request)) {
       Print(" -> 2 DB request failed with code:", GetLastError()); 
       ExpertRemove();
    } else {
-      DatabaseColumnInteger   (request,0,n.nnType);
-      DatabaseColumnInteger   (request,1,n.nnIn);
-      DatabaseColumnInteger   (request,2,n.nnLayer1);
-      DatabaseColumnInteger   (request,3,n.nnLayer2);
-      DatabaseColumnInteger   (request,4,n.nnOut);
+      DatabaseColumnInteger   (request,2,n.nnType);
+      DatabaseColumnInteger   (request,3,n.nnIn);
+      DatabaseColumnInteger   (request,4,n.nnLayer1);
+      DatabaseColumnInteger   (request,5,n.nnLayer2);
+      DatabaseColumnInteger   (request,6,n.nnOut);
    }
 
    #ifdef _WRITELOG
-      ss=StringFormat(" -> Read NN:%s from DB with I:%d L1:%d L2:%d O:%d",EnumToString(n.nnType),n.nnIn,n.nnLayer1,n.nnLayer2,n.nnOut);
+      ss=StringFormat(" -> EANeuralNetwork::copyValuesFromDatabase Read NN:%s from DB with I:%d L1:%d L2:%d O:%d",EnumToString(n.nnType),n.nnIn,n.nnLayer1,n.nnLayer2,n.nnOut);
       writeLog;
    #endif
 }

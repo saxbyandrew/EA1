@@ -30,7 +30,6 @@ private:
    EANeuralNetwork         *nn;      // The network 
    
 
-   int               _strategyNumber;
    int               _dnnNumber;
    int               _dnnType;
    double            values[170];
@@ -40,7 +39,7 @@ private:
 protected:
 //=========
    
-   int         _optimizeDB, _mainDB;
+   int         _optimizeDB, _mainDB, _txtHandle, _strategyNumber;
 
    void        dropSQLOptimizationTables();
    void        createSQLOptimizationTables();
@@ -80,8 +79,26 @@ EARunOptimization::EARunOptimization() {
       writeLog; 
    #endif
 
-   
+       // Open the database in the common terminal folder
+   _mainDB=DatabaseOpen(_dbName, DATABASE_OPEN_READWRITE | DATABASE_OPEN_COMMON);
+   if (_mainDB==INVALID_HANDLE) {
+      #ifdef _WRITELOG
+         ss=StringFormat(" -> Failed with errorcode:%d",GetLastError());
+         writeLog;
+      #endif
+   } 
 
+       // Get the strategy number save it globally
+   int request=DatabasePrepare(_mainDB,"SELECT strategyNumber FROM STRATEGIES WHERE isActive=1"); 
+   if (DatabaseRead(request)) {
+      DatabaseColumnInteger(request,0,_strategyNumber);
+   } else {
+      #ifdef _WRITELOG
+         ss=StringFormat(" -> Failed with errorcode:%d",GetLastError());
+         writeLog;
+      #endif
+      ExpertRemove();
+   }
 
 
 }
@@ -120,20 +137,20 @@ int EARunOptimization::OnTesterInit(void) {
 
    // 1/ Create the tecnhincals object and in this case because we are in optimization mode the
    // tech object will read its values from the optimization inputs
-   tech=new EATechnicalParameters;
+   tech=new EATechnicalParameters(_mainDB,_txtHandle);
    if (CheckPointer(tech)==POINTER_INVALID) {
       Print("-> Error created technical object");
          ExpertRemove();
    } 
 
    // 2/ Create a input/output object passing it the new technical values
-   io=new EAInputsOutputs(tech);
+   io=new EAInputsOutputs(tech, _txtHandle);
    if (CheckPointer(io)==POINTER_INVALID) {
       Print("-> Error created input/output object");
       ExpertRemove();
    }
    // 3/ Create a data frame object, build a new data frame based on the starting date
-   df=new EADataFrame;
+   df=new EADataFrame(_mainDB,_txtHandle);
    if (CheckPointer(df)==POINTER_INVALID) {
       Print("-> Error created dataframe object");
       ExpertRemove();
@@ -141,7 +158,7 @@ int EARunOptimization::OnTesterInit(void) {
    df.buildDataFrame(PERIOD_CURRENT,sampleStartDateTime,io);
 
    // 4/ create a new network to train based on the dataframe
-   nn=new EANeuralNetwork();
+   nn=new EANeuralNetwork(_mainDB,_txtHandle);
    if (CheckPointer(nn)==POINTER_INVALID) {
       Print("-> Error created neural network object");
       ExpertRemove();
