@@ -32,7 +32,14 @@ private:
 
    int               _dnnNumber;
    int               _dnnType;
-   double            values[170];
+   
+   struct results {
+      double v0[20];
+      double v1[50];
+      double v2[150];
+   };
+   
+   results  v[1];
 
 
 //=========
@@ -113,6 +120,17 @@ EARunOptimization::~EARunOptimization() {
 //| TesterInit function                                              |
 //+------------------------------------------------------------------+
 int EARunOptimization::OnTesterInit(void) {
+
+   /*
+         TesterInit - this event is generated during the start of optimization 
+         in the strategy tester before the very first pass. 
+         The TesterInit event is handled using the OnTesterInit() function. 
+         During the start of optimization, an Expert Advisor with this handler is 
+         automatically loaded on a separate terminal chart with the symbol and
+         period specified in the tester, and receives the TesterInit event. 
+         The function is used to initiate an Expert Advisor before start of
+         optimization for further processing of optimization results.
+   */
 
    printf ("===============OnTesterInit==================");
 
@@ -425,6 +443,18 @@ string sqlTable1 =   "CREATE TABLE PASSES ("
 //+------------------------------------------------------------------+
 void EARunOptimization::OnTesterPass() {
 
+      /*
+         TesterPass - this event is generated when a new data frame is received. 
+         The TesterPass event is handled using the OnTesterPass() function. 
+         An Expert Advisor with this handler is automatically loaded on a separate 
+         terminal chart with the symbol/period specified for testing, and receives the
+         TesterPass event when a frame is received during optimization.
+         The function is used for dynamic handling of optimization results "on the spot" 
+         without waiting for its completion. 
+         Frames are added using the FrameAdd() function, which can be called after the
+         end of a single pass in the OnTester() handler.
+   */
+
    #ifdef _WRITELOG
       string ss;
       commentLine;
@@ -448,6 +478,15 @@ void EARunOptimization::OnTesterPass() {
 //+------------------------------------------------------------------+
 void EARunOptimization::OnTester(const double onTesterValue) {
 
+   /*
+      Tester - this event is generated after completion of Expert Advisor testing 
+      on history data. 
+      The Tester event is handled using the OnTester() function. 
+      This function can be used only when testing Expert Advisor and is intended 
+      primarily for the calculation of a value that is used as a Custom max 
+      criterion for genetic optimization of input parameters.
+   */
+
    #ifdef _WRITELOG
       string ss;
       commentLine;
@@ -462,174 +501,172 @@ void EARunOptimization::OnTester(const double onTesterValue) {
       double win_trades_percent=0;
       win_trades_percent=TesterStatistics(STAT_PROFIT_TRADES)*100./trades;
       //--- fill in the array with test results
-      values[0]=trades;                                       // number of trades
-      values[1]=win_trades_percent;                           // percentage of profitable trades
-      values[2]=TesterStatistics(STAT_PROFIT);                // net profit
-      values[3]=TesterStatistics(STAT_GROSS_PROFIT);          // gross profit
-      values[4]=TesterStatistics(STAT_GROSS_LOSS);            // gross loss
-      values[5]=TesterStatistics(STAT_SHARPE_RATIO);          // Sharpe Ratio
-      values[6]=TesterStatistics(STAT_PROFIT_FACTOR);         // profit factor
-      values[7]=TesterStatistics(STAT_RECOVERY_FACTOR);       // recovery factor
-      values[8]=TesterStatistics(STAT_EXPECTED_PAYOFF);       // trade mathematical expectation
-      values[9]=onTesterValue;                                // custom optimization criterion
+      v[0].v0[0]=trades; 
+      v[0].v0[1]=win_trades_percent;
+      v[0].v0[2]=TesterStatistics(STAT_PROFIT);
+      v[0].v0[3]=TesterStatistics(STAT_GROSS_PROFIT);
+      v[0].v0[4]=TesterStatistics(STAT_GROSS_LOSS);
+      v[0].v0[5]=TesterStatistics(STAT_SHARPE_RATIO);
+      v[0].v0[6]=TesterStatistics(STAT_PROFIT_FACTOR);
+      v[0].v0[7]=TesterStatistics(STAT_RECOVERY_FACTOR);
+      v[0].v0[8]=TesterStatistics(STAT_EXPECTED_PAYOFF);
+      v[0].v0[9]=onTesterValue;
+      v[0].v0[10]=balance;
+      v[0].v0[11]=balance_plus_profitfactor;
+      v[0].v0[12]=balance_plus_expectedpayoff;
+      v[0].v0[13]=balance_plus_dd;
+      v[0].v0[14]=balance_plus_recoveryfactor;
+      v[0].v0[15]=balance_plus_sharpe;
 
-      /*
-      //--- calculate built-in standard optimization criteria
-      double balance=AccountInfoDouble(ACCOUNT_BALANCE);
-      double balance_plus_profitfactor=0;
-      if (TesterStatistics(STAT_GROSS_LOSS)!=0) {
-         balance_plus_profitfactor=balance*TesterStatistics(STAT_PROFIT_FACTOR);
-      }
+      v[0].v1[0]=ilsize;
+      v[0].v1[1]=ifptl;
+      v[0].v1[2]=ifltl;
+      v[0].v1[3]=ifpts;
+      v[0].v1[4]=iflts;
+      v[0].v1[5]=imaxlong;
+      v[0].v1[6]=imaxshort;
+      v[0].v1[7]=imaxdaily;
+      v[0].v1[8]=imaxdailyhold;   
+      v[0].v1[9]=ilongHLossamt;
+      v[0].v1[10]=imaxmg;
+      v[0].v1[11]=imgmulti;
 
-      double balance_plus_expectedpayoff=balance*TesterStatistics(STAT_EXPECTED_PAYOFF);
-      double equity_dd=TesterStatistics(STAT_EQUITYDD_PERCENT);
-      double balance_plus_dd=0;
-      if (equity_dd!=0) {
-         balance_plus_dd=balance/equity_dd;
-      }
-      double balance_plus_recoveryfactor=balance*TesterStatistics(STAT_RECOVERY_FACTOR);
-      double balance_plus_sharpe=balance*TesterStatistics(STAT_SHARPE_RATIO);
-      values[10]=balance;                                     // Balance
-      values[11]=balance_plus_profitfactor;                   // Balance+ProfitFactor
-      values[12]=balance_plus_expectedpayoff;                 // Balance+ExpectedPayoff
-      values[13]=balance_plus_dd;                             // Balance+EquityDrawdown
-      values[14]=balance_plus_recoveryfactor;                 // Balance+RecoveryFactor
-      values[15]=balance_plus_sharpe;                         // Balance+Sharpe
+      v[0].v2[0]=iuseADX;
+      v[0].v2[1]=is_ADXperiod;
+      v[0].v2[2]=is_ADXma;
+      v[0].v2[3]=im_ADXperiod;
+      v[0].v2[4]=im_ADXma;
+      v[0].v2[5]=il_ADXperiod;
+      v[0].v2[6]=il_ADXma;
+      v[0].v2[7]=iuseRSI;
+      v[0].v2[8]=is_RSIperiod;
+      v[0].v2[9]=is_RSIma;
+      v[0].v2[10]=is_RSIap;
+      v[0].v2[11]=im_RSIperiod;
+      v[0].v2[12]=im_RSIma;
+      v[0].v2[13]=is_RSIap;
+      v[0].v2[14]=il_RSIperiod;
+      v[0].v2[15]=il_RSIma;
+      v[0].v2[16]=il_RSIap;
+      v[0].v2[17]=iuseMFI;
+      v[0].v2[18]=is_MFIperiod;
+      v[0].v2[19]=is_MFIma;
+      v[0].v2[20]=im_MFIperiod;
+      v[0].v2[21]=im_MFIma;
+      v[0].v2[22]=il_MFIperiod;
+      v[0].v2[23]=il_MFIma;
+      v[0].v2[24]=iuseSAR;
+      v[0].v2[25]=is_SARperiod;
+      v[0].v2[26]=is_SARstep;
+      v[0].v2[27]=is_SARmax;
+      v[0].v2[28]=im_SARperiod;
+      v[0].v2[29]=im_SARstep;
+      v[0].v2[30]=im_SARmax;
+      v[0].v2[31]=il_SARperiod;
+      v[0].v2[32]=il_SARstep;
+      v[0].v2[33]=il_SARmax;
+      v[0].v2[34]=iuseICH;
+      v[0].v2[35]=is_ICHperiod;
+      v[0].v2[36]=is_tenkan_sen;
+      v[0].v2[37]=is_kijun_sen;
+      v[0].v2[38]=is_senkou_span_b;
+      v[0].v2[39]=im_ICHperiod;
+      v[0].v2[40]=im_tenkan_sen;
+      v[0].v2[41]=im_kijun_sen;
+      v[0].v2[42]=im_senkou_span_b;
+      v[0].v2[43]=il_ICHperiod;
+      v[0].v2[44]=il_tenkan_sen;
+      v[0].v2[45]=il_kijun_sen;
+      v[0].v2[46]=il_senkou_span_b;
+      v[0].v2[47]=iuseRVI;
+      v[0].v2[48]=is_RVIperiod;
+      v[0].v2[49]=is_RVIma;
+      v[0].v2[50]=im_RVIperiod;
+      v[0].v2[51]=im_RVIma;
+      v[0].v2[52]=il_RVIperiod;
+      v[0].v2[53]=il_RVIma;
+      v[0].v2[54]=iuseSTOC;
+      v[0].v2[55]=is_STOCperiod;
+      v[0].v2[56]=is_kPeriod;
+      v[0].v2[57]=is_dPeriod;
+      v[0].v2[58]=is_slowing;
+      v[0].v2[59]=is_STOCmamethod;
+      v[0].v2[60]=is_STOCpa;
+      v[0].v2[61]=im_STOCperiod;
+      v[0].v2[62]=im_kPeriod;
+      v[0].v2[63]=im_dPeriod;
+      v[0].v2[64]=im_slowing;
+      v[0].v2[65]=im_STOCmamethod;
+      v[0].v2[66]=im_STOCpa;
+      v[0].v2[67]=il_STOCperiod;
+      v[0].v2[68]=il_kPeriod;
+      v[0].v2[69]=il_dPeriod;
+      v[0].v2[70]=il_slowing;
+      v[0].v2[71]=il_STOCmamethod;
+      v[0].v2[72]=il_STOCpa;
+      v[0].v2[73]=iuseOSMA;
+      v[0].v2[74]=is_OSMAperiod;
+      v[0].v2[75]=is_OSMAfastEMA;
+      v[0].v2[76]=is_OSMAslowEMA;
+      v[0].v2[77]=is_OSMAsignalPeriod;
+      v[0].v2[78]=is_OSMApa;
+      v[0].v2[79]=im_OSMAperiod;
+      v[0].v2[80]=im_OSMAfastEMA;
+      v[0].v2[81]=im_OSMAslowEMA;
+      v[0].v2[82]=im_OSMAsignalPeriod;
+      v[0].v2[83]=im_OSMApa;
+      v[0].v2[84]=il_OSMAperiod;
+      v[0].v2[85]=il_OSMAfastEMA;
+      v[0].v2[86]=il_OSMAslowEMA;
+      v[0].v2[87]=il_OSMAsignalPeriod;
+      v[0].v2[88]=il_OSMApa;
+      v[0].v2[89]=iuseMACD;
+      v[0].v2[90]=is_MACDDperiod;
+      v[0].v2[91]=is_MACDDfastEMA;
+      v[0].v2[92]=is_MACDDslowEMA;
+      v[0].v2[93]=is_MACDDsignalPeriod;
+      v[0].v2[94]=im_MACDDperiod;
+      v[0].v2[95]=im_MACDDfastEMA;
+      v[0].v2[96]=im_MACDDslowEMA;
+      v[0].v2[97]=im_MACDDsignalPeriod;
+      v[0].v2[98]=il_MACDDperiod;
+      v[0].v2[99]=il_MACDDfastEMA;
+      v[0].v2[100]=il_MACDDslowEMA;
+      v[0].v2[101]=il_MACDDsignalPeriod;
+      v[0].v2[102]=is_MACDBULLperiod;
+      v[0].v2[103]=is_MACDBULLfastEMA;
+      v[0].v2[104]=is_MACDBULLslowEMA;
+      v[0].v2[105]=is_MACDBULLsignalPeriod;
+      v[0].v2[106]=im_MACDBULLperiod;
+      v[0].v2[107]=im_MACDBULLfastEMA;
+      v[0].v2[108]=im_MACDBULLslowEMA;
+      v[0].v2[109]=im_MACDBULLsignalPeriod;
+      v[0].v2[110]=il_MACDBULLperiod;
+      v[0].v2[111]=il_MACDBULLfastEMA;
+      v[0].v2[112]=il_MACDBULLslowEMA;
+      v[0].v2[113]=il_MACDBULLsignalPeriod;
+      v[0].v2[114]=is_MACDBEARperiod;
+      v[0].v2[115]=is_MACDBEARfastEMA;
+      v[0].v2[116]=is_MACDBEARslowEMA;
+      v[0].v2[117]=is_MACDBEARsignalPeriod;
+      v[0].v2[118]=im_MACDBEARperiod;
+      v[0].v2[119]=im_MACDBEARfastEMA;
+      v[0].v2[120]=im_MACDBEARslowEMA;
+      v[0].v2[121]=im_MACDBEARsignalPeriod;
+      v[0].v2[122]=il_MACDBEARperiod;
+      v[0].v2[123]=il_MACDBEARfastEMA;
+      v[0].v2[124]=il_MACDBEARslowEMA;
+      v[0].v2[125]=il_MACDBEARsignalPeriod;
+      v[0].v2[126]=iuseZZ;
+      v[0].v2[127]=is_ZZperiod;
+      v[0].v2[128]=im_ZZperiod;
+      v[0].v2[129]=il_ZZperiod;
+      v[0].v2[130]=iuseMACDBULLDIV;
+      v[0].v2[131]=iuseMACDBEARDIV;
 
-      values[34]=ilsize;   
-      values[35]=ifptl;   
-      values[36]=ifltl;
-      values[37]=ifpts;  
-      values[38]=iflts;  
-      values[39]=imaxlong; 
-      values[40]=imaxshort;     
-      values[41]=imaxdaily;       
-      values[42]=imaxdailyhold;  
-      values[43]=imaxmg;  
-      values[44]=imgmulti;  
-      values[45]=ilongHLossamt; 
-      values[46]=is_ADXperiod;
-      values[47]=is_ADXma;
-      values[48]=im_ADXperiod;
-      values[49]=im_ADXma;
-      values[50]=il_ADXperiod;
-      values[51]=il_ADXma;
-      values[52]=is_RSIperiod;
-      values[53]=is_RSIma;
-      values[54]=is_RSIap;
-      values[55]=im_RSIperiod;
-      values[56]=im_RSIma;
-      values[57]=im_RSIap;
-      values[58]=il_RSIperiod;
-      values[59]=il_RSIma;
-      values[60]=il_RSIap;
-      values[61]=is_MFIperiod;
-      values[62]=is_MFIma;
-      values[63]=im_MFIperiod;
-      values[64]=im_MFIma;
-      values[65]=il_MFIperiod;
-      values[66]=il_MFIma;
-      values[67]=is_SARperiod;
-      values[68]=is_SARstep;
-      values[69]=is_SARmax;
-      values[70]=im_SARperiod;
-      values[71]=im_SARstep;
-      values[72]=im_SARmax;
-      values[73]=il_SARperiod;
-      values[74]=il_SARstep;
-      values[75]=il_SARmax;
-      values[76]=is_ICHperiod;
-      values[77]=is_tenkan_sen;
-      values[78]=is_kijun_sen;
-      values[79]=is_senkou_span_b;
-      values[80]=im_ICHperiod;
-      values[81]=im_tenkan_sen;
-      values[82]=im_kijun_sen;
-      values[83]=im_senkou_span_b;
-      values[84]=il_ICHperiod;
-      values[85]=il_tenkan_sen;
-      values[86]=il_kijun_sen;
-      values[87]=il_senkou_span_b;
-      values[88]=is_RVIperiod;
-      values[89]=is_RVIma;
-      values[90]=im_RVIperiod;
-      values[91]=im_RVIma;
-      values[92]=il_RVIperiod;
-      values[93]=il_RVIma;
-      values[94]=is_STOCperiod;
-      values[95]=is_kPeriod;
-      values[96]=is_dPeriod;
-      values[97]=is_slowing;
-      values[98]=is_STOCmamethod;
-      values[99]=is_STOCpa;
-      values[100]=im_STOCperiod;
-      values[101]=im_kPeriod;
-      values[102]=im_dPeriod;
-      values[103]=im_slowing;
-      values[104]=im_STOCmamethod;
-      values[105]=im_STOCpa;
-      values[106]=il_STOCperiod;
-      values[107]=il_kPeriod;
-      values[108]=il_dPeriod;
-      values[109]=il_slowing;
-      values[110]=il_STOCmamethod;
-      values[111]=il_STOCpa;
-      values[112]=is_OSMAperiod;
-      values[113]=is_OSMAfastEMA;
-      values[114]=is_OSMAslowEMA;
-      values[115]=is_OSMAsignalPeriod;
-      values[116]=is_OSMApa;
-      values[117]=im_OSMAperiod;
-      values[118]=im_OSMAfastEMA;
-      values[119]=im_OSMAslowEMA;
-      values[120]=im_OSMAsignalPeriod;
-      values[121]=im_OSMApa;
-      values[122]=il_OSMAperiod;
-      values[123]=il_OSMAfastEMA;
-      values[124]=il_OSMAslowEMA;
-      values[125]=il_OSMAsignalPeriod;
-      values[126]=il_OSMApa;
-      values[127]=is_MACDDperiod;
-      values[128]=is_MACDDfastEMA;
-      values[129]=is_MACDDslowEMA;
-      values[130]=is_MACDDsignalPeriod;
-      values[131]=im_MACDDperiod;
-      values[132]=im_MACDDfastEMA;
-      values[133]=im_MACDDslowEMA;
-      values[134]=im_MACDDsignalPeriod;
-      values[135]=il_MACDDperiod;
-      values[136]=il_MACDDfastEMA;
-      values[137]=il_MACDDslowEMA;
-      values[138]=il_MACDDsignalPeriod;
-      values[139]=is_MACDBULLperiod;
-      values[140]=is_MACDBULLfastEMA;
-      values[141]=is_MACDBULLslowEMA;
-      values[142]=is_MACDBULLsignalPeriod;
-      values[143]=im_MACDBULLperiod;
-      values[144]=im_MACDBULLfastEMA;
-      values[145]=im_MACDBULLslowEMA;
-      values[146]=im_MACDBULLsignalPeriod;
-      values[147]=il_MACDBULLperiod;
-      values[148]=il_MACDBULLslowEMA;
-      values[150]=il_MACDBULLsignalPeriod;
-      values[151]=is_MACDBEARperiod;
-      values[152]=is_MACDBEARfastEMA;
-      values[153]=is_MACDBEARslowEMA;
-      values[154]=is_MACDBEARsignalPeriod;
-      values[155]=im_MACDBEARperiod;
-      values[156]=im_MACDBEARfastEMA;
-      values[157]=im_MACDBEARsignalPeriod;
-      values[159]=il_MACDBEARperiod;
-      values[160]=il_MACDBEARfastEMA;
-      values[161]=il_MACDBEARslowEMA;
-      values[162]=il_MACDBEARsignalPeriod;  
-      values[163]=idataFrameSize; 
-      values[164]=ilookBackBars; 
-      */
-      
 
       //--- create a data frame and send it to the terminal
-      if (!FrameAdd(MQLInfoString(MQL_PROGRAM_NAME)+"_stats", STATS_FRAME, values[0], values)) {
+      if (!FrameAdd(MQLInfoString(MQL_PROGRAM_NAME)+"_stats", STATS_FRAME, v[0].v0[0], v)) {
          Print(" -> Stats Frame add error: ", GetLastError());
       } else {
          
@@ -646,6 +683,15 @@ void EARunOptimization::OnTester(const double onTesterValue) {
 //|                                                                  |
 //+------------------------------------------------------------------+
 void EARunOptimization::OnTesterDeinit() {
+
+   /*
+      TesterDeinit - this event is generated after the end of Expert Advisor 
+      optimization in the strategy tester. 
+      The TesterDeinit event is handles using the OnTesterDeinit() function.
+      An Expert Advisor with this handler is automatically loaded on a chart at 
+      the start of optimization, and receives TesterDeinit after its completion. 
+      The function is used for final processing of all optimization results.
+   */
 
    #ifdef _WRITELOG
       string ss;
