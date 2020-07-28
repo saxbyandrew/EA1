@@ -74,10 +74,10 @@ EAHedging::EAHedging() {
    //---- 
 
    
-   if (!usingStrategyValue.optimizationHedge) {
-      //dnn=new EANeuralNetwork(usingStrategyValue.strategyNumber, usingStrategyValue.dnnHedgeName, usingStrategyValue.dnnHedgeNumber);
+   if (!pb.optimizationHedge) {
+      //dnn=new EANeuralNetwork(pb.strategyNumber, pb.dnnHedgeName, pb.dnnHedgeNumber);
       #ifdef _DEBUG_HEDGE
-         ss=StringFormat(" -> Hedge using strategy %d with weights %d",usingStrategyValue.strategyNumber, usingStrategyValue.dnnHedgeNumber);
+         ss=StringFormat(" -> Hedge using strategy %d with weights %d",pb.strategyNumber, pb.dnnHedgeNumber);
          Print(ss);
       #endif 
    #endif    
@@ -118,7 +118,7 @@ void EAHedging::updatePositionLabels() {
 
    for (int i=0;i<hedgePositions.Total();i++) {
       ghp;
-      usingPositionValue.setTextLabel(clrRed);
+      p.setTextLabel(clrRed);
    }
 }
 /*
@@ -196,7 +196,7 @@ void EAHedging::closeHedge() {
 
    for (int i=0;i<hedgePositions.Total();i++) {
       ghp;
-      if (usingPositionValue.orderTypeToOpen==ORDER_TYPE_SELL) {
+      if (p.orderTypeToOpen==ORDER_TYPE_SELL) {
          if (Trade.PositionClose(p.ticket,p.deviationInPoints)) {
             //----
             #ifdef _DEBUG_LONG 
@@ -234,7 +234,7 @@ void EAHedging::closeOnProfit() {
          #ifdef _DEBUG_HEDGE 
             ss=StringFormat(" -> T:%d in profit by:%g",ticket,profit);
             Print(ss);
-         Trade.PositionClose(ticket,usingStrategyValue.deviationInPoints);
+         Trade.PositionClose(ticket,pb.deviationInPoints);
          #endif  
          //----   
       }
@@ -364,11 +364,11 @@ void EAHedging::checkAccountPnL() {
    // Martingales
    for (i=0;i<martingalePositions.Total();i++) {   
       gmp;
-      PnL=PnL+usingPositionValue.currentPnL;
+      PnL=PnL+p.currentPnL;
 
       //----
       #ifdef _DEBUG_HEDGE 
-         ss=StringFormat(" -> MG Ticket:%d PnL:%g",usingPositionValue.ticket,usingPositionValue.currentPnL);
+         ss=StringFormat(" -> MG Ticket:%d PnL:%g",p.ticket,p.currentPnL);
          Print (ss);
       #endif
       //----
@@ -377,16 +377,16 @@ void EAHedging::checkAccountPnL() {
    // Longs
    for (i=0;i<longPositions.Total();i++) {  
       glp;
-      PnL=PnL+usingPositionValue.currentPnL;
+      PnL=PnL+p.currentPnL;
       //----
       #ifdef _DEBUG_HEDGE 
-         ss=StringFormat(" -> L Ticket:%d PnL:%g",usingPositionValue.ticket,usingPositionValue.currentPnL);
+         ss=StringFormat(" -> L Ticket:%d PnL:%g",p.ticket,p.currentPnL);
          Print (ss);
       #endif
       //----
    }
 
-   if (PnL<usingStrategyValue.maxHedgeLossAmountAllowed) {
+   if (PnL<pb.maxHedgeLossAmountAllowed) {
       #ifdef _DEBUG_HEDGE 
          ss=StringFormat(" -> xxxxxxxxxxxxxxxxx Total hedge PnL:%g",PnL);
          Print (ss);

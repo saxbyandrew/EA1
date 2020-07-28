@@ -20,7 +20,7 @@ class EAStrategyBase : public CObject{
 //=========
 private:
 //=========
-  void triggerVerticalLine(color clr, datetime t);
+  void                 triggerVerticalLine(color clr, datetime t);
   int                  fileHandle;
   void                 openCSVFile(string fn);
   void                 readCSVFile();
@@ -33,8 +33,8 @@ private:
 protected:
 //=========
 
+  EAEnum    triggers[10];
 
-  EAEnum            triggers[10];
 
 //=========
 
@@ -59,8 +59,8 @@ public:
 //+------------------------------------------------------------------+
 EAStrategyBase::EAStrategyBase() {
 
-    //ArrayResize(ast,5,0);
-    //ArrayResize(marketSessions,5,0);
+
+  
 
 }
 //+------------------------------------------------------------------+
@@ -156,7 +156,7 @@ void EAStrategyBase::resetTriggers(EAEnum action) {
   static int barCnt=0;
 
    // Determine which type of reset we are looking to check
-   if (action==_DO_CHECKS) action=param.triggerReset; // 
+   if (action==_DO_CHECKS) action=usp.triggerReset; // 
 
   switch (action) {
       case _NEW_POSITION: 
@@ -172,7 +172,7 @@ void EAStrategyBase::resetTriggers(EAEnum action) {
         // TODO SOME ACTION IS NEEDED
       break;
       case _RUN_ONBAR:
-        if (barCnt>=param.triggerResetCounter) {
+        if (barCnt>=usp.triggerResetCounter) {
           barCnt=0;
           #ifdef _DEBUG_STRATEGY_BASE
             Print(" -> Reset Triggers _BARS");
@@ -196,7 +196,7 @@ EAEnum EAStrategyBase::resetTriggers() {
   // Clear the trigger array for the next loop
   ArrayFill(triggers,0,ArraySize(triggers),_NOTSET);   
   // Reset the count down for a reentry 
-  triggers[_BARS_BEFORE_REENTRY]=param.entryBars; 
+  triggers[_BARS_BEFORE_REENTRY]=usp.entryBars; 
 
   #ifdef _DEBUG_STRATEGY_LOOP 
     ArrayPrint(triggers); 

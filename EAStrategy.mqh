@@ -16,6 +16,10 @@
 #include "EAStrategyBase.mqh"
 #include "EANeuralNetwork.mqh"
 #include "EAInputsOutputs.mqh"
+#include "EADataFrame.mqh"
+#include "EANeuralNetwork.mqh"
+#include "EAInputsOutputs.mqh"
+#include "EATechnicalParameters.mqh"
 
 
 //=========
@@ -32,6 +36,10 @@ private:
    //EANeuralNetwork   nn;      // The network 
    //EAInputsOutputs   io;      // NN Input Output Module
 
+   EATechnicalParameters   *tech;
+   EAInputsOutputs         *io;      // NN Input Output Module
+   EADataFrame             *df;      // The dataframe object
+   EANeuralNetwork         *nn;      // The network 
 
 
 //=========
@@ -64,7 +72,38 @@ EAStrategy::EAStrategy() {
 
    #ifdef _DEBUG_STRATGEY_LIVE
       Print(__FUNCTION__);
-   #endif 
+   #endif
+   
+
+   // 1/ Create the new Technincals object
+   tech=new EATechnicalParameters();
+   if (CheckPointer(tech)==POINTER_INVALID) {
+      Print("-> Error created technical object");
+      ExpertRemove();
+   } 
+
+   // 2/ Create a input/output object passing it the new technical values
+   io=new EAInputsOutputs(tech);
+   if (CheckPointer(io)==POINTER_INVALID) {
+      Print("-> Error created input/output object");
+      ExpertRemove();
+   }
+
+   // 3/ Create a data frame object
+   df=new EADataFrame(io);
+   if (CheckPointer(df)==POINTER_INVALID) {
+      Print("-> Error created dataframe object");
+      ExpertRemove();
+   }
+
+   // 4/ create a new network to train based on the dataframe if needed
+   nn=new EANeuralNetwork();
+   if (CheckPointer(nn)==POINTER_INVALID) {
+      Print("-> Error created neural network object");
+      ExpertRemove();
+   }
+   nn.trainNetwork(df);
+   
 
    
 
@@ -140,22 +179,22 @@ EAEnum EAStrategy::waitOnTriggers() {
 
 /*
    // LONG         
-   if (bool (usingStrategyValue.dnnType&_LONG)&&outputs[0]>0.6) {    
+   if (bool (pb.dnnType&_LONG)&&outputs[0]>0.6) {    
       #ifdef _DEBUG_STRATGEY_LIVE                                                               
          Print(__FUNCTION__," -> Network returned Long trigger");
       #endif 
       
-      usingStrategyValue.orderTypeToOpen=ORDER_TYPE_BUY;  // Cast the specific values before opening a position !!!
+      pb.orderTypeToOpen=ORDER_TYPE_BUY;  // Cast the specific values before opening a position !!!
       triggers[_TLAST]=_NEW_POSITION;                     // !!! Always copy this line to the last trigger  
    }   
    
    // SHORT  
-   if (bool (usingStrategyValue.dnnType&_SHORT)&&outputs[1]>0.6) {    
+   if (bool (pb.dnnType&_SHORT)&&outputs[1]>0.6) {    
       #ifdef _DEBUG_STRATGEY_LIVE                                                               
          Print(__FUNCTION__," -> Network returned Short trigger");
       #endif 
       
-      usingStrategyValue.orderTypeToOpen=ORDER_TYPE_SELL;   // Cast the specific values before opening a position !!!
+      pb.orderTypeToOpen=ORDER_TYPE_SELL;   // Cast the specific values before opening a position !!!
       triggers[_TLAST]=_NEW_POSITION;                       // !!! Always copy this line to the last trigger  
 
    } 
@@ -164,7 +203,7 @@ EAEnum EAStrategy::waitOnTriggers() {
    if (triggers[_TLAST]==_NEW_POSITION) {
       resetTriggers(_NEW_POSITION);
 
-      switch (usingStrategyValue.orderTypeToOpen) {
+      switch (pb.orderTypeToOpen) {
          case ORDER_TYPE_BUY: return (_OPEN_LONG);   
          break;
          case ORDER_TYPE_SELL: return(_OPEN_SHORT);
@@ -189,9 +228,19 @@ EAEnum EAStrategy::runOnBar() {
    
    EAEnum retValue;
 
-   if (bool (usingStrategyValue.runMode&_RUN_NORMAL)) {
-      retValue=waitOnTriggers();
+   // Check if we are building a DataFrame either in strategy testing mode or specified via the DB
+   if (MQLInfoInteger(MQL_TESTER)) {
+      if (df.barCnt>0) { 
+         df.buildDataFrame(); // Get the next bars info and store it
+         return _NO_ACTION;
+      }
+      // Once DF is completed we train the network
+      if (df.barCnt==0&&nn.isTrained==false) { 
+         nn.trainNetwork(df);
+      }
    }
+
+   retValue=waitOnTriggers();
 
    // Check trading times first
    if (t.sessionTimes()) return retValue;

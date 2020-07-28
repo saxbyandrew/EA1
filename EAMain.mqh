@@ -13,6 +13,7 @@
 #include <Trade\AccountInfo.mqh>
 
 #include "EAEnum.mqh"
+
 #include "EAMartingale.mqh"
 #include "EALongHedge.mqh"
 //#include "EALongHedge.mqh"
@@ -34,6 +35,7 @@ private:
 //=========
    CAccountInfo   AccountInfo;
 
+   // Position types
    EALong         *lp;
    EAShort        *sp;
    EALongHedge    *lh;
@@ -46,10 +48,23 @@ private:
    EAStrategy *s2;
    //EAStrategyCandleTest *s3;
 
-   double maxHedgeLossAmountAllowed;
+   
+
+
+
 //=========
 protected:
 //=========
+
+   struct MainBase {
+      int      strategyNumber;
+      int      maxLong;
+      int      maxShort;
+      int      maxMg;
+      int      maxDaily;
+      double   maxHedgeLossAmountAllowed;
+   } sb;
+   
    bool                 checkMaxDailyOpenQty();
    void                 infoPanel();
 
@@ -75,18 +90,24 @@ EAMain::EAMain() {
       Print(__FUNCTION__," -> Object instantiated"); 
    #endif 
 
+   // Create the position object types allowed
+   //if (sb.maxLong>0) {
+      lp=new EALong();
+      if (CheckPointer(lp)==POINTER_INVALID) ExpertRemove();
+   //}
 
-   lp=new EALong();
-   if (CheckPointer(lp)==POINTER_INVALID) ExpertRemove();
-
-   sp=new EAShort;
-   if (CheckPointer(sp)==POINTER_INVALID) ExpertRemove();
+   //if (sb.maxShort>0) {
+      sp=new EAShort;
+      if (CheckPointer(sp)==POINTER_INVALID) ExpertRemove();
+  // }
 
    lh=new EALongHedge;
    if (CheckPointer(lh)==POINTER_INVALID) ExpertRemove();
-      
-   mo=new EAMartingale;
-   if (CheckPointer(mo)==POINTER_INVALID) ExpertRemove();
+
+   //if (sb.maxMg>0) {
+      mo=new EAMartingale;
+      if (CheckPointer(mo)==POINTER_INVALID) ExpertRemove();
+   //}
 
 
 /*
@@ -148,12 +169,12 @@ bool EAMain::checkMaxDailyOpenQty() {
    int sNumber, cnt=0;
    string s;
 
-   showPanel mp.updateInfo1Label(9, "Max Positions/Day");  
-   if (usingStrategyValue.maxTotalDailyPositions==-1) {
+   //showPanel infoPanel.updateInfo1Label(9, "Max Positions/Day");  
+   if (usp.maxDaily==-1) {
       #ifdef _DEBUG_MAIN_LOOP 
          Print(" -> No max number of daily positions specfied");
          #endif    
-      showPanel mp.updateInfo1Value(9,"No Maximum");
+      //showPanel infoPanel.updateInfo1Value(9,"No Maximum");
       return true;           // No max daily qty
    }
 
@@ -163,24 +184,24 @@ bool EAMain::checkMaxDailyOpenQty() {
    start.hour=0; start.min=0; end.hour=23; end.min=59;
 
    #ifdef _DEBUG_MAIN_LOOP 
-      Print(" -> Max number of daily positions specfied:",usingStrategyValue.maxTotalDailyPositions);
+      Print(" -> Max number of daily positions specfied:",usp.maxDaily);
    #endif  
-   showPanel mp.updateInfo1Value(9,IntegerToString(param.maxTotalDailyPositions));
+   //showPanel infoPanel.updateInfo1Value(9,IntegerToString(usp.maxDaily));
    // Get todays order history    
    if (HistorySelect(StructToTime(start), StructToTime(end))) {   
       for (int i=0;i<HistoryDealsTotal();i++) {         
          sNumber=(int)HistoryDealGetString(HistoryDealGetTicket(i),DEAL_COMMENT);
-         if (usingStrategyValue.strategyNumber==sNumber) ++cnt;
+         if (usp.strategyNumber==sNumber) ++cnt;
          #ifdef _DEBUG_MAIN_LOOP
             PrintFormat(" -> Number today %d %d %d",HistoryDealsTotal(),sNumber, HistoryDealGetTicket(i));
          #endif
-         if (cnt>=usingStrategyValue.maxTotalDailyPositions) {
+         if (cnt>=usp.maxDaily) {
             s=StringFormat("%d Max Reached",cnt);
-            showPanel mp.updateInfo1Value(9,s);
+            //showPanel infoPanel.updateInfo1Value(9,s);
             return false;  
          }  else {
-            s=StringFormat("%d/%d",cnt,param.maxTotalDailyPositions);
-            showPanel mp.updateInfo1Value(9,s);
+            s=StringFormat("%d/%d",cnt,usp.maxDaily);
+            //showPanel usp.updateInfo1Value(9,s);
          }                 
       }
    }
@@ -202,8 +223,9 @@ void EAMain::runOnBar() {
       if (TRADING_CIRCUIT_BREAKER&IS_UNLOCKED) Print ("Trading allowed lock is OFF");
    #endif
 
+
    // Check if the strategy database has been updated and if so reloaded
-   usingStrategyValue.checkSQLDatabase();
+   //pb.checkSQLDatabase();
 
    // Main price action strategy 
    if (activeStrategy.runOnBar()==_OPEN_LONG) {
@@ -238,14 +260,6 @@ void EAMain::runOnBar() {
       }
    }
 
-
-
-   showPanel {
-      mp.mainInfoPanel();
-      mp.accountInfoUpdate();
-      mp.positionInfoUpdate();
-   }
-
    lp.execute(_RUN_ONBAR);
    sp.execute(_RUN_ONBAR);
    mo.execute(_RUN_ONBAR);
@@ -261,11 +275,6 @@ void EAMain::runOnTick() {
    #ifdef _DEBUG_MAIN_LOOP_ONTICK 
       Print(__FUNCTION__);  
    #endif 
-
-
-   showPanel {
-      mp.positionInfoUpdate();
-   }
 
    // Manage positions OnTick
    lp.execute(_RUN_ONTICK);

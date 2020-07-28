@@ -18,23 +18,24 @@
 
 
 //Shortcuts / macros
-//#define usingStrategyValue param
-//#define usingPositionValue p
+//#define pb param
 
-//#define gmp  EAPosition *p=martingalePositions.GetNodeAtIndex(i)
-//#define glp  EAPosition *p=longPositions.GetNodeAtIndex(i)
-////#define gsp  EAPosition *p=shortPositions.GetNodeAtIndex(i)
-//#define glhp EAPosition *p=longHedgePositions.GetNodeAtIndex(i)
-//#define showPanel if (bool (usingStrategyValue.runMode&_RUN_SHOW_PANEL)) 
+#define usp  strategyParameters.sb    
+#define gmp  EAPosition *p=martingalePositions.GetNodeAtIndex(i)
+#define glp  EAPosition *p=longPositions.GetNodeAtIndex(i)
+#define gsp  EAPosition *p=shortPositions.GetNodeAtIndex(i)
+#define glhp EAPosition *p=longHedgePositions.GetNodeAtIndex(i)
+#define showPanel if (!MQLInfoInteger(MQL_TESTER)) 
 #define commentLine FileWrite(_txtHandle,"--------------------------------------------------")
 #define writeLog FileWrite(_txtHandle,ss); FileFlush(_txtHandle)
 
 
+
 #include "EAEnum.mqh"
-//#include "EAStrategyParameters.mqh"
-#include "EARunOptimization.mqh"
-//#include "EAMain.mqh"
-//#include "EAPanel.mqh"
+#include "EAStrategyParameters.mqh"
+//#include "EARunOptimization.mqh"
+#include "EAMain.mqh"
+#include "EAPanel.mqh"
 
 
 //+------------------------------------------------------------------+
@@ -43,18 +44,21 @@
 
 unsigned                ACTIVE_HEDGE;
 unsigned                TRADING_CIRCUIT_BREAKER;
-//CList                   longPositions, shortPositions, martingalePositions, longHedgePositions;
+CList                   longPositions, shortPositions, martingalePositions, longHedgePositions;
 
-//EAStrategyParameters    *param;
-//EAMain                  *ea; 
-//EAPanel                 *mp; 
+EAMain                  *expertAdvisor; 
+EAPanel                 *infoPanel; 
+EAStrategyParameters    *strategyParameters; 
 EAEnum                  _runMode;
-//int                     _dbHandle, _optimizeDB, _txtHandle, _strategyNumber;
+int                     _dbHandle, _txtHandle, _optimizeHandle;
 string                  _dbName="strategies.sqlite";
 string                  _optimizeDBName="optimization.sqlite";
 
-//EAStrategyParameters    param;
-EARunOptimization       optimization;
+
+
+
+
+//EARunOptimization       optimization;
 //+------------------------------------------------------------------+
 
 
@@ -64,49 +68,90 @@ EARunOptimization       optimization;
 //+------------------------------------------------------------------+
 int OnInit() {
 
-    Print(__FUNCTION__);
+    #ifdef _WRITELOG
+        string ss;
+    #endif
 
     EventSetTimer(60);
 
+    if (!MQLInfoInteger(MQL_TESTER)) {
+        _txtHandle=FileOpen("eaLog.txt",FILE_COMMON|FILE_READ|FILE_WRITE|FILE_ANSI|FILE_TXT);  
+    }
 
-/*
-    param=new EAStrategyParameters;
-    if (CheckPointer(param)==POINTER_INVALID) {
-        #ifdef _DEBUG_MYEA
-            Print(" -> Error instantiating strategy parameters");
+    // Open the database in the common terminal folder
+    _dbHandle=DatabaseOpen(_dbName, DATABASE_OPEN_READWRITE | DATABASE_OPEN_COMMON);
+    if (_dbHandle==INVALID_HANDLE) {
+        #ifdef _WRITELOG
+            ss=StringFormat("1 ->  Failed to open Main DB with errorcode:%d",GetLastError());
+            writeLog;
+            printf(ss);
+        #endif
+        ExpertRemove();
+    } else {
+        #ifdef _WRITELOG
+            ss="1 -> Open Main DB success";
+            writeLog;
+            printf(ss);
+        #endif
+    }
+
+    strategyParameters=new EAStrategyParameters;
+    if (CheckPointer(strategyParameters)==POINTER_INVALID) {
+        #ifdef _WRITELOG
+            ss="2 -> Error instantiating strategy parameters";
+            writeLog;
+            printf(ss);
         #endif 
         ExpertRemove();
-    } 
-*/
-
-/*
-    showPanel {
-        mp=new EAPanel;                                                                          
-        if (CheckPointer(mp)==POINTER_INVALID) {
-            #ifdef _DEBUG_MYEA
-                Print(" -> Error instantiating info panel");
-            #endif  
-        } else {
-            mp.createPanel("fff",0,10,10,800,650);
-            mp.showPanelDetails();
-        } 
+    } else {
+        #ifdef _WRITELOG
+            ss="2 -> Success instantiating strategy parameters";
+            writeLog;
+            printf(ss);
+        #endif 
     }
 
 
-    
+    showPanel {
+        infoPanel=new EAPanel;                                                                          
+        if (CheckPointer(infoPanel)==POINTER_INVALID) {
+            #ifdef _WRITELOG
+                ss="3 -> Error instantiating info panel";
+                writeLog;
+                printf(ss);
+            #endif  
+            ExpertRemove();
+        } else {
+            infoPanel.createPanel("Panel",0,10,10,800,650);
+            #ifdef _WRITELOG
+                ss="3 -> Success instantiating info panel";
+                writeLog;
+                printf(ss);
+            #endif  
+        } 
+    }
 
-    ea=new EAMain;                                  // Instantiate the EA                                           
-    if (CheckPointer(ea)==POINTER_INVALID) {
-        #ifdef _DEBUG_MYEA
-            Print(" -> Error instantiating main EA");
+    expertAdvisor=new EAMain;                                  // Instantiate the EA                                           
+    if (CheckPointer(expertAdvisor)==POINTER_INVALID) {
+        #ifdef _WRITELOG
+            ss="4  -> Error instantiating main EA";
+            writeLog;
+            printf(ss);
         #endif 
+        ExpertRemove();
         
+    } else {
+        #ifdef _WRITELOG
+            ss="4  -> Success instantiating main EA";
+            writeLog;
+            printf(ss);
+        #endif 
     }
     
     
     TRADING_CIRCUIT_BREAKER=IS_UNLOCKED;          // Initially allow trading operations across all object
     ACTIVE_HEDGE=_NO;
-*/
+
     
     return(INIT_SUCCEEDED);
 }
@@ -122,13 +167,13 @@ void OnDeinit(const int reason) {
 //+------------------------------------------------------------------+
 void OnTick() {
 
-    /*
     static datetime lastBar, lastDay;
 
    //=========
    // ON TICK!
    //=========
-    ea.runOnTick();
+    expertAdvisor.runOnTick();
+    showPanel infoPanel.positionInfoUpdate();
 
    //=========
    // ON BAR ! 
@@ -138,7 +183,8 @@ void OnTick() {
         #ifdef _DEBUG_MYEA
             Print(__FUNCTION__," _-> In OnTick fire OnBar");
         #endif 
-        ea.runOnBar();   
+        expertAdvisor.runOnBar(); 
+        showPanel infoPanel.accountInfoUpdate();  
     }
 
    //========
@@ -149,10 +195,8 @@ void OnTick() {
         #ifdef _DEBUG_MYEA
             Print(__FUNCTION__," -> In OnTick fire OnDay");
         #endif 
-        ea.runOnDay();                       
+        expertAdvisor.runOnDay();                       
     } 
-
-    */
     
 }       
 
@@ -185,9 +229,8 @@ void OnTimer() {
 //+------------------------------------------------------------------+
 int OnTesterInit() {
 
-    printf ("===============OnTesterInit==================");
-  
-    return(optimization.OnTesterInit());
+    //return(optimization.OnTesterInit());
+    return 1;
 
 }
 //+------------------------------------------------------------------+
@@ -195,10 +238,7 @@ int OnTesterInit() {
 //+------------------------------------------------------------------+
 void OnTesterDeinit() {
 
-    printf ("===============OnTesterDeinit==================");
-    optimization.OnTesterDeinit(); 
-    printf ("===============OnTesterDeinit==================");
-    optimization.closeSQLDatabase();
+    //optimization.OnTesterDeinit(); 
 
 }
 
@@ -207,6 +247,7 @@ void OnTesterDeinit() {
 //+------------------------------------------------------------------+
 double OnTester() {
 
+/*
 
     printf ("================OnTester=================");
 
@@ -215,13 +256,16 @@ double OnTester() {
     //--- create a custom optimization criterion as the ratio of a net profit to a relative balance drawdown
     if(balance_dd!=0)
         ret=TesterStatistics(STAT_PROFIT)/balance_dd;
-        optimization.OnTester(ret);
+        //optimization.OnTester(ret);
     return(ret);
+    */
+    
+    return 1;
     
 }
 //+------------------------------------------------------------------+
 void OnTesterPass() {
-   
-   optimization.OnTesterPass();
+
+   //optimization.OnTesterPass();
 
 }

@@ -77,7 +77,7 @@ void EALong::updateOnInterval(EAEnum interval) {
         if (interval==_RUN_ONBAR||interval==_RUN_ONTICK) {
             for (int i=0;i<longPositions.Total();i++) {
                 glp;
-                usingPositionValue.calcPositionPnL();
+                p.calcPositionPnL();
                 #ifdef _DEBUG_LONG
                     printf("L,%d,%g",p.ticket,p.currentPnL);
                 #endif 
@@ -88,8 +88,8 @@ void EALong::updateOnInterval(EAEnum interval) {
         if (interval==_RUN_ONDAY) {
             for (int i=0;i<longPositions.Total();i++) {
                 glp;
-                usingPositionValue.daysOpen++; 
-                usingPositionValue.calcPositionSwapCost();
+                p.daysOpen++; 
+                p.calcPositionSwapCost();
                 #ifdef _DEBUG_LONG
                     printf("L,%d,%d,%g",p.ticket,p.daysOpen,p.swapCosts);
                 #endif 
@@ -112,21 +112,21 @@ void EALong::closeOnFixedTiming() {
 
         //----
         #ifdef _DEBUG_LONG
-            if (usingPositionValue.closingTypes&_CLOSE_AT_EOD&&usingStrategyValue.maxTotalDaysToHold>=0) {
+            if (p.closingTypes&_CLOSE_AT_EOD&&usp.maxDailyHold>=0) {
                 ss=StringFormat(" -> Long position flagged to close at a future date:%s",TimeToString(p.closingDateTime));
                 Print (ss);
             }
         #endif
         //----
 
-        if (usingPositionValue.closingDateTime<TimeCurrent() && usingStrategyValue.maxTotalDaysToHold>=0 && bool(p.closingTypes&_CLOSE_AT_EOD)) {    // Check when current date exceeded future date hence due date passed
+        if (p.closingDateTime<TimeCurrent() && usp.maxDailyHold>=0 && bool(p.closingTypes&_CLOSE_AT_EOD)) {    // Check when current date exceeded future date hence due date passed
             if (Trade.PositionClose(p.ticket,p.deviationInPoints)) {
                 //----
                 #ifdef _DEBUG_LONG 
                     Print (" -> Long Close EOD"); 
                 #endif
                 //----
-                usingStrategyValue.closeSQLPosition(p);
+                closeSQLPosition(p);
                 if (longPositions.Delete(i)) {
                     #ifdef _DEBUG_LONG 
                         Print (" -> Long Close at EOD removed from CList"); 
@@ -153,19 +153,19 @@ void EALong::closeOnStealthProfit() {
 
     for (int i=0;i<longPositions.Total();i++) {
         glp; 
-        usingPositionValue.calcPositionPnL();
+        p.calcPositionPnL();
 
         if (last_tick.bid>p.fixedProfitTargetLevel)  {inProfit=true;};
         if (last_tick.bid<p.fixedProfitTargetLevel)  {inProfit=false;}; 
 
-        if (bool (usingPositionValue.closingTypes&_IN_PROFIT_CLOSE_POSITION)) {  
+        if (bool (p.closingTypes&_IN_PROFIT_CLOSE_POSITION)) {  
             if (inProfit) {
                 if (Trade.PositionClose(p.ticket,p.deviationInPoints)) {
                 //----
                     #ifdef _DEBUG_LONG 
                         Print (" -> Long Close in profit"); 
                     #endif
-                        usingStrategyValue.closeSQLPosition(p);
+                        closeSQLPosition(p);
                     if (longPositions.Delete(i)) {
                         #ifdef _DEBUG_LONG 
                             Print (" -> Long Close in profit object removed from CList"); 
@@ -200,9 +200,9 @@ void EALong::closeOnStealthLoss() {
         if (last_tick.bid<p.fixedLossTargetLevel)    {inLoss=true;};
         if (last_tick.bid>p.fixedLossTargetLevel)    {inLoss=false;};
 
-        if (bool (usingPositionValue.closingTypes&_IN_LOSS_CLOSE_POSITION)) {
+        if (bool (p.closingTypes&_IN_LOSS_CLOSE_POSITION)) {
             if (inLoss) {
-                if (usingPositionValue.closingTypes&_IN_LOSS_OPEN_MARTINGALE&&martingalePositions.Total()<param.maxMartingalePositions) {                    // Martingale close in "loss"
+                if (p.closingTypes&_IN_LOSS_OPEN_MARTINGALE&&martingalePositions.Total()<usp.maxMg) {                    // Martingale close in "loss"
                     //Create a copy of the postion to be copied over to martingalePositions
                     // this method used because CList detach does not work as expected
                     EAPosition *np=new EAPosition(p);       // Create new with copy constructor called
@@ -221,7 +221,7 @@ void EALong::closeOnStealthLoss() {
                         #ifdef _DEBUG_LONG 
                             Print (" -> Long Close in loss"); 
                         #endif
-                        usingStrategyValue.closeSQLPosition(p);
+                        closeSQLPosition(p);
                         if (longPositions.Delete(i)) {
                             #ifdef _DEBUG_LONG 
                             Print (" -> Long Close in profit object removed from CList"); 
@@ -246,14 +246,14 @@ bool EALong::newPosition() {
         Print (__FUNCTION__); 
         for (int i=0;i<longPositions.Total();i++) {
             glp;
-            ss=StringFormat(" -> T:%d S:%d",usingPositionValue.ticket,usingPositionValue.status);
+            ss=StringFormat(" -> T:%d S:%d",p.ticket,p.status);
             Print(ss);
         }
     #endif  
   //----
 
 
-        if (longPositions.Total()>=usingStrategyValue.maxPositionsLong) {
+        if (longPositions.Total()>=usp.maxLong) {
             //showPanel mp.updateInfo2Value(16,StringFormat("%d Maximum Reached",param.maxPositionsLong));
             // ----
             #ifdef _DEBUG_LONG
@@ -267,14 +267,14 @@ bool EALong::newPosition() {
 
         // Build a new position object based on defaults
         EAPosition *p=new EAPosition();                     // Create new position object
-        p.strategyNumber=usingStrategyValue.strategyNumber;              // copy over strategy defaults
-        p.lotSize=usingStrategyValue.lotSize;
+        p.strategyNumber=usp.strategyNumber;              // copy over strategy defaults
+        p.lotSize=usp.lotSize;
         p.status=_LONG;
         p.entryPrice=getUpdatedPrice(ORDER_TYPE_BUY,_TOOPEN);
         p.orderTypeToOpen=ORDER_TYPE_BUY;                   // type is a LONG
-        p.closingTypes=usingStrategyValue.closingTypes;
-        p.fixedProfitTargetLevel=p.entryPrice+param.fixedProfitTargetLong;  
-        p.fixedLossTargetLevel=p.entryPrice+param.fixedLossTargetLong; 
+        p.closingTypes=usp.closingTypes;
+        p.fixedProfitTargetLevel=p.entryPrice+usp.fptl;  
+        p.fixedLossTargetLevel=p.entryPrice+usp.fltl; 
 
 
         if (openPosition(p)) {

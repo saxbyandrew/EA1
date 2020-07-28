@@ -18,7 +18,6 @@ class EATechnicalParameters {
 private:
 //=========
 
-   int _mainDB, _optimizeDB, _txtHandle;
 
 //=========
 protected:
@@ -31,10 +30,8 @@ protected:
 //=========
 public:
 //=========
-EATechnicalParameters(int mainDB, int txtHandle);
+EATechnicalParameters();
 ~EATechnicalParameters();
-
-
 
 
 
@@ -200,10 +197,7 @@ EATechnicalParameters(int mainDB, int txtHandle);
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-EATechnicalParameters::EATechnicalParameters(int mainDB, int txtHandle) {
-
-   _mainDB=mainDB;
-   _txtHandle=txtHandle;
+EATechnicalParameters::EATechnicalParameters() {
 
 
    #ifdef _WRITELOG
@@ -215,11 +209,9 @@ EATechnicalParameters::EATechnicalParameters(int mainDB, int txtHandle) {
    
    // Determine where we get the technicl values from based on if we are in normal running mode
    // on in strategy optimization mode
-   if (bool (_runMode&_RUN_STRATEGY_OPTIMIZATION)) {
+   if (MQLInfoInteger(MQL_TESTER)) {
       copyValuesFromInputs();
-   } 
-
-   if (bool (_runMode&_RUN_NORMAL)) {
+   } else {
       copyValuesFromDatabase();
    }
 
@@ -245,9 +237,9 @@ void EATechnicalParameters::copyValuesFromDatabase() {
       string ss;
    #endif
 
-   int request=DatabasePrepare(_mainDB,"SELECT * FROM STRATEGIES WHERE isActive=1");
+   int request=DatabasePrepare(_dbHandle,"SELECT * FROM STRATEGIES WHERE isActive=1");
    if (!DatabaseRead(request)) {
-      Print(" -> 2 DB request failed with code:", GetLastError()); 
+      Print(" -> DB request failed with code:", GetLastError()); 
       ExpertRemove();
    } else {
       DatabaseColumnInteger   (request,55,t.s_ADXperiod);
@@ -636,7 +628,7 @@ string request1a="INSERT INTO TECHPASSES ("
       string request1=StringFormat("%s%s%s%s%s%s%s%s%s%s%s%s",request1a,request1b,request1c,request1d,request1e,request1f,request1g,request1h,request1i,request1j,request1k,request1l);
 
       
-      if (!DatabaseExecute(_optimizeDB, request1)) {
+      if (!DatabaseExecute(_optimizeHandle, request1)) {
          printf(" -> Failed to insert PASSES %d with code %d", t.iterationNumber, GetLastError());
       } else {
          #ifdef _DEBUG_OPTIMIZATION
@@ -647,7 +639,7 @@ string request1a="INSERT INTO TECHPASSES ("
 
 string request2 = StringFormat("UPDATE TECHPASSES SET nnData=?1 WHERE strategyNumber=%d AND iterationNumber=%d",t.strategyNumber,t.iterationNumber);
 
-int prepare1=DatabasePrepare(_optimizeDB, request2);
+int prepare1=DatabasePrepare(_optimizeHandle, request2);
 DatabaseBindArray(prepare1, 0, nnData); // Will this work as its a CArrayDouble not a Array/Double
 DatabaseFinalize(prepare1);
 

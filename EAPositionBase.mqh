@@ -34,6 +34,7 @@ private:
 //=========
 protected:
 //=========
+    
 
     CAccountInfo        AccountInfo;
     CTrade              Trade;
@@ -44,6 +45,9 @@ protected:
     bool        accountInfoChecks();
     double      getUpdatedPrice(ENUM_ORDER_TYPE orderType, EAEnum positionOpenClose);
     bool        openPosition(EAPosition *p);
+    void        deleteSQLPosition(int ticket);
+    void        closeSQLPosition(EAPosition *p);
+    void        updateSQLSwapCosts(EAPosition *p);
 
 //=========
 public:
@@ -60,9 +64,17 @@ EAPositionBase();
 //+------------------------------------------------------------------+
 EAPositionBase::EAPositionBase() {
 
+    #ifdef _WRITELOG
+        string ss;
+        commentLine;
+        ss=" -> EAPositionBase Object Created ....";
+        writeLog;
+    #endif
+    
+
     Trade.SetAsyncMode(false);     
-    Trade.SetExpertMagicNumber(usingStrategyValue.magicNumber);            
-    Trade.SetDeviationInPoints(usingStrategyValue.deviationInPoints);  
+    Trade.SetExpertMagicNumber(usp.magicNumber);            
+    Trade.SetDeviationInPoints(usp.deviationInPoints);  
 
 }
 //+------------------------------------------------------------------+
@@ -72,6 +84,66 @@ EAPositionBase::~EAPositionBase() {
 
 }
 
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+void EAPositionBase::closeSQLPosition(EAPosition *p) {
+
+    updateSQLSwapCosts(p);
+    deleteSQLPosition(p.ticket);
+
+}
+
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+void EAPositionBase::deleteSQLPosition(int ticket) {
+
+
+   if (bool (usp.runMode&_RUN_STRATEGY_OPTIMIZATION)) return;   // No state saving during optimizations
+   if (!bool (usp.runMode&_RUN_SAVE_STATE)) return;             // No state saving enabled
+
+    string sql=StringFormat("DELETE FROM STATE WHERE ticket=%d",ticket);
+    if (!DatabaseExecute(_dbHandle,sql)) {
+        #ifdef _WRITELOG
+            string ss=StringFormat(" -> DB request failed with code ", GetLastError());
+            writeLog;
+        #endif
+    }
+
+}
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+void EAPositionBase::updateSQLSwapCosts(EAPosition *p) {
+
+
+    int request;
+    double swapCosts;
+    string sql;
+
+    if (MQLInfoInteger(MQL_TESTER))  return;   // No state saving during optimizations
+
+    sql=StringFormat("SELECT swapCosts FROM STRATEGIES WHERE strategyNumber=%d",usp.strategyNumber);
+    request=DatabasePrepare(_dbHandle,sql); 
+    DatabaseRead(request);
+    DatabaseColumnDouble(request,0,swapCosts); 
+
+
+    // Bump the swap costs
+    double result=swapCosts+p.swapCosts;
+    TesterWithdrawal(p.swapCosts);  // withdraw from account when testing
+
+    // Update DB
+    sql=StringFormat("UPDATE STRATEGIES SET swapCosts=%g WHERE strategyNumber=%d",result, usp.strategyNumber);
+    if (!DatabaseExecute(_dbHandle,sql)) {
+        #ifdef _WRITELOG
+            string ss=StringFormat(" -> DB request failed with code ", GetLastError());
+            writeLog;
+        #endif
+    }
+
+}
 
 //+------------------------------------------------------------------+
 //|                                                                  |
@@ -145,20 +217,20 @@ bool EAPositionBase::accountInfoChecks() {
             c[2]=true;
         }
 
-        if (SymbolInfo.Spread()>param.maxSpread) {
-            s[3]=StringFormat("%d/%d",SymbolInfo.Spread(),param.maxSpread);
+        if (SymbolInfo.Spread()>usp.maxSpread) {
+            s[3]=StringFormat("%d/%d",SymbolInfo.Spread(),usp.maxSpread);
             c[3]=false;
         } else {
-            s[3]=s[3]=StringFormat("%d/%d",SymbolInfo.Spread(),param.maxSpread);
+            s[3]=s[3]=StringFormat("%d/%d",SymbolInfo.Spread(),usp.maxSpread);
             c[3]=true;
         }
     
         ss=StringFormat("%s -- %s",s[0],s[1]);
-        mp.updateInfo2Label(27,ss);
+        infoPanel.updateInfo2Label(27,ss);
         ss=StringFormat("%s -- Spread %s",s[2],s[3]);
-        mp.updateInfo2Label(28,ss);
-        mp.updateInfo2Value(27,"");
-        mp.updateInfo2Value(28,"");
+        infoPanel.updateInfo2Label(28,ss);
+        infoPanel.updateInfo2Value(27,"");
+        infoPanel.updateInfo2Value(28,"");
     
         for (int i=0;i<ArraySize(c);i++) {
             if (c[0]==false) return false;
@@ -167,7 +239,7 @@ bool EAPositionBase::accountInfoChecks() {
         if (AccountInfo.TradeAllowed()==false) return false;
         if (AccountInfo.TradeExpert()==false) return false;
         if (SymbolInfo.IsSynchronized()==false) return false;
-        if (SymbolInfo.Spread()>param.maxSpread) return false;
+        if (SymbolInfo.Spread()>usp.maxSpread) return false;
     }
 
 
@@ -179,12 +251,12 @@ bool EAPositionBase::accountInfoChecks() {
 //+------------------------------------------------------------------+
 bool EAPositionBase::openPosition(EAPosition *p) {
 
-          //----
-    #ifdef _DEBUG_POSITION_ORDERS 
-        Print(__FUNCTION__); 
+    #ifdef _WRITELOG
         string ss;
-    #endif 
-   //----
+        commentLine;
+        ss=" -> openPosition ....";
+        writeLog;
+    #endif
 
     if (accountInfoChecks()==false) return false;
 
@@ -195,8 +267,9 @@ bool EAPositionBase::openPosition(EAPosition *p) {
         if (AccountInfoInteger(ACCOUNT_TRADE_ALLOWED)) {  
             if (p.orderTypeToOpen==ORDER_TYPE_BUY) { // Market Order Buy
                //----
-                #ifdef _DEBUG_POSITION_ORDERS  
-                    Print(" -> Open buy order");            
+                #ifdef _WRITELOG  
+                    ss=" -> Open buy order";  
+                    writeLog;          
                 #endif 
                //----
                 tradeStatus=Trade.Buy(p.lotSize,_Symbol,p.entryPrice,0.0,0.0,IntegerToString(p.strategyNumber));
@@ -206,10 +279,9 @@ bool EAPositionBase::openPosition(EAPosition *p) {
             }
             if (p.orderTypeToOpen==ORDER_TYPE_SELL) { // Market Order Buy
                //----
-                #ifdef _DEBUG_POSITION_ORDERS 
+                #ifdef _WRITELOG
                     ss=StringFormat(" -> Lots:%d Price:%d",p.lotSize,p.entryPrice);
-                    Print(ss); 
-                    Print(" -> Open sell order");            
+                    writeLog;           
                 #endif 
                //----
                 tradeStatus=Trade.Sell(p.lotSize,_Symbol,p.entryPrice,0.0,0.0,IntegerToString(p.strategyNumber));
@@ -226,8 +298,9 @@ bool EAPositionBase::openPosition(EAPosition *p) {
 // Seems to have succeeded
     if (tradeStatus) { 
         //----
-        #ifdef _DEBUG_POSITION_ORDERS   
-            Print (" -> Trade submitted - OK");
+        #ifdef _WRITELOG  
+            ss=" -> Trade submitted - OK";
+            writeLog;
         #endif  
         //----
         MqlTradeRequest lastRequest;
@@ -235,11 +308,11 @@ bool EAPositionBase::openPosition(EAPosition *p) {
         Trade.Request(lastRequest); 
         Trade.Result(lastResult); 
 
-        p.ticket=Trade.ResultOrder();                      // Overwrite with trade server actual results
+        p.ticket=Trade.ResultOrder();                           // Overwrite with trade server actual results
         p.orderTypeToOpen=Trade.RequestType();
         p.entryPrice=Trade.RequestPrice(); 
 
-        if (bool (p.closingTypes&_CLOSE_AT_EOD)) {            // Set EOD close value if being used
+        if (bool (p.closingTypes&_CLOSE_AT_EOD)) {              // Set EOD close value if being used
             p.closingDateTime=t.sessionTimes(_CLOSE_AT_EOD);
         //----
         #ifdef _DEBUG_POSITION_ORDERS
@@ -249,7 +322,7 @@ bool EAPositionBase::openPosition(EAPosition *p) {
          //----
         }
 
-        if (bool (usingStrategyValue.runMode&_RUN_SAVE_STATE)) usingStrategyValue.saveSQLState(p);
+        //if (bool (usp.runMode&_RUN_SAVE_STATE)) usp.saveSQLState(p);
 
         return true;
     }

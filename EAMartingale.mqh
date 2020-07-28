@@ -51,7 +51,7 @@ public:
 EAMartingale::EAMartingale() {
 
 
-   if (usingStrategyValue.optimizationMartingale) {
+   if (usp.optimizationMartingale) {
       #ifdef _DEBUG_HEDGE
          ss=StringFormat(" -> Using optimization inputs");
          Print(ss);
@@ -61,9 +61,9 @@ EAMartingale::EAMartingale() {
       //copyValuesFromInputs();    
    } else {
       
-      //dnn=new EANeuralNetwork(usingStrategyValue.strategyNumber, usingStrategyValue.dnnMartingaleName, usingStrategyValue.dnnMartingaleNumber);
+      //dnn=new EANeuralNetwork(usp.strategyNumber, usp.dnnMartingaleName, usp.dnnMartingaleNumber);
       //#ifdef _DEBUG_HEDGE
-         //ss=StringFormat(" -> Using strategy %d with weights %d",usingStrategyValue.dnnMartingaleName, usingStrategyValue.dnnMartingaleNumber);
+         //ss=StringFormat(" -> Using strategy %d with weights %d",usp.dnnMartingaleName, usp.dnnMartingaleNumber);
          //Print(ss);
       //#endif 
    }
@@ -82,20 +82,18 @@ EAMartingale::~EAMartingale() {
 //+------------------------------------------------------------------+
 void EAMartingale::updateOnInterval(EAEnum interval) {
 
-//----
    #ifdef _DEBUG_MARTINGALE 
-   Print (__FUNCTION__); 
-   #endif  
-  //----
-
+      Print (__FUNCTION__); 
+      string ss;
+   #endif 
    
       if (interval==_RUN_ONBAR||interval==_RUN_ONTICK) {
          for (int i=0;i<martingalePositions.Total();i++) {
             gmp;
-            usingPositionValue.calcPositionPnL();
+            p.calcPositionPnL();
             #ifdef _DEBUG_MARTINGALE
                printf("M,%d,%g",p.ticket,p.currentPnL);
-               #endif 
+            #endif 
          }
       }
 
@@ -103,8 +101,8 @@ void EAMartingale::updateOnInterval(EAEnum interval) {
       if (interval==_RUN_ONDAY) {
          for (int i=0;i<martingalePositions.Total();i++) {
             gmp;
-            usingPositionValue.daysOpen++; 
-            usingPositionValue.calcPositionSwapCost();
+            p.daysOpen++; 
+            p.calcPositionSwapCost();
             #ifdef _DEBUG_MARTINGALE
                printf("M,%d,%d,%g",p.ticket,,p.daysOpen,p.swapCosts);
             #endif 
@@ -137,7 +135,7 @@ void EAMartingale::closeOnStealthProfit() {
 
    for (int i=0;i<martingalePositions.Total();i++) {
       gmp; 
-      usingPositionValue.calcPositionPnL();
+      p.calcPositionPnL();
 
       if (last_tick.bid>p.fixedProfitTargetLevel)  {inProfit=true;};
       if (last_tick.bid<p.fixedProfitTargetLevel)  {inProfit=false;}; 
@@ -148,7 +146,7 @@ void EAMartingale::closeOnStealthProfit() {
                #ifdef _DEBUG_MARTINGALE 
                   Print (" -> Martingale Close in profit"); 
                #endif
-               usingStrategyValue.closeSQLPosition(p);
+               closeSQLPosition(p);
                if (martingalePositions.Delete(i)) {
                   #ifdef _DEBUG_MARTINGALE 
                      Print (" -> Martingale Close in profit object removed from CList");  
@@ -184,7 +182,7 @@ void EAMartingale::closeOnStealthLoss() {
       if (last_tick.bid>p.fixedLossTargetLevel)    {inLoss=false;};
 
       // Check for LONG position in loss copied over
-      if (inLoss&&usingPositionValue.status==_LONG) {                // found a new LONg loosing Long
+      if (inLoss&&p.status==_LONG) {                // found a new LONg loosing Long
          #ifdef _DEBUG_MARTINGALE 
             ss=StringFormat(" -> LONG Object with Ref:%u",p);
             Print(ss);
@@ -194,10 +192,10 @@ void EAMartingale::closeOnStealthLoss() {
       }
 
       // Check for loosing MG position as well
-      if (inLoss&&usingPositionValue.status==_MARTINGALE) {
+      if (inLoss&&p.status==_MARTINGALE) {
 
          if (p.Next()==NULL) { 
-            string s=StringFormat("-> possible MG for ticket:%d",usingPositionValue.ticket);
+            string s=StringFormat("-> possible MG for ticket:%d",p.ticket);
             newPosition(p);                         // Try open MG on a losing MG
          }
          #ifdef _DEBUG_MARTINGALE 
@@ -223,14 +221,14 @@ bool EAMartingale::newPosition(EAPosition *pp) {
       // Count MG totals only, exclude and LONGS moved over
       for (int i=0;i<martingalePositions.Total();i++) {
          gmp; 
-         if (usingPositionValue.status==_MARTINGALE) ++cnt;
+         if (p.status==_MARTINGALE) ++cnt;
       }
       // ----
       #ifdef _DEBUG_MARTINGALE
          Print (" -> Quantity checked mpg count:",cnt);
       #endif 
       // ----
-      if (cnt>param.maxMartingalePositions) return false;
+      if (cnt>usp.maxMg) return false;
 
    //----
       #ifdef _DEBUG_MARTINGALE
@@ -248,20 +246,20 @@ bool EAMartingale::newPosition(EAPosition *pp) {
       #endif
    //----
 
-      if (martingalePositions.Total()>param.maxMartingalePositions) return false;
+      if (martingalePositions.Total()>usp.maxMg) return false;
 
          // Build a new position object based on defaults
          EAPosition *p=new EAPosition();
-         p.strategyNumber=param.strategyNumber;
+         p.strategyNumber=usp.strategyNumber;
          p.entryPrice=getUpdatedPrice(ORDER_TYPE_BUY,_TOOPEN);
          p.orderTypeToOpen=ORDER_TYPE_BUY;                             
-         p.closingTypes=param.closingTypes;
+         p.closingTypes=usp.closingTypes;
          p.status=_MARTINGALE;
 
          // update this new MG based on the entry positions values
-         p.lotSize=pp.lotSize*usingStrategyValue.martingaleMultiplier;           // New lot Size
-         p.fixedProfitTargetLevel=p.entryPrice+(usingStrategyValue.fixedProfitTargetLong*usingStrategyValue.martingaleMultiplier);
-         p.fixedLossTargetLevel=p.entryPrice+(usingStrategyValue.fixedLossTargetShort*usingStrategyValue.martingaleMultiplier);
+         p.lotSize=pp.lotSize*usp.multiMg;           // New lot Size
+         p.fixedProfitTargetLevel=p.entryPrice+(usp.fptl*usp.multiMg);
+         p.fixedLossTargetLevel=p.entryPrice+(usp.flts*usp.multiMg);
          pp.status=_MARTINGALE;                                                  // Re status the position that causes this 
 
 
@@ -295,7 +293,7 @@ bool EAMartingale::execute(EAEnum action) {
    #endif  
 
    // Check if we are even doing martingales
-   if (bool (usingStrategyValue.closingTypes&_IN_LOSS_OPEN_MARTINGALE)==false) return false;
+   if (bool (usp.closingTypes&_IN_LOSS_OPEN_MARTINGALE)==false) return false;
 
 
    if (ACTIVE_HEDGE==_YES) {

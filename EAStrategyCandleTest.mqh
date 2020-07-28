@@ -74,29 +74,29 @@ EAStrategyCandleTest::EAStrategyCandleTest() {
    #endif 
 
    
-   if (bool (usingStrategyValue.runMode&_RUN_STRATEGY_OPTIMIZATION)&&usingStrategyValue.optimizationLong) {
+   if (bool (pb.runMode&_RUN_STRATEGY_OPTIMIZATION)&&pb.optimizationLong) {
       #ifdef _DEBUG_STRATGEY_CANDLETEST  
          printf (" -> Using optimization inputs");
       #endif 
-      dnn=new EANeuralNetwork(usingStrategyValue.runMode);
+      dnn=new EANeuralNetwork(pb.runMode);
    } else {
       // Determine which DNN to load
-      switch (usingStrategyValue.dnnType) {
-         case _LONG: dnn=new EANeuralNetwork(usingStrategyValue.strategyNumber, usingStrategyValue.dnnLongNumber);
+      switch (pb.dnnType) {
+         case _LONG: dnn=new EANeuralNetwork(pb.strategyNumber, pb.dnnLongNumber);
          break;
-         case _SHORT: dnn=new EANeuralNetwork(usingStrategyValue.strategyNumber, usingStrategyValue.dnnShortNumber);
+         case _SHORT: dnn=new EANeuralNetwork(pb.strategyNumber, pb.dnnShortNumber);
          break;
       }
 
       // Display the first and last value of the dnn weights so we can just check
       showPanel {
          // Determine which type of DNN
-         if (bool (usingStrategyValue.dnnType&_LONG)) {
-            mp.updateInfo2Label(13,StringFormat("DNN strategy#:%d (Long) start:%1.2f end:%1.2f",usingStrategyValue.dnnLongNumber,dnn.weight[0],dnn.weight[ArraySize(dnn.weight)-1])); 
+         if (bool (pb.dnnType&_LONG)) {
+            mp.updateInfo2Label(13,StringFormat("DNN strategy#:%d (Long) start:%1.2f end:%1.2f",pb.dnnLongNumber,dnn.weight[0],dnn.weight[ArraySize(dnn.weight)-1])); 
             mp.updateInfo2Value(13,"");
          }
-         if (bool (usingStrategyValue.dnnType&_SHORT)) {
-            mp.updateInfo2Label(14,StringFormat("DNN strategy#:%d (Short) start:%1.2f end:%1.2f",usingStrategyValue.dnnShortNumber,dnn.weight[0],dnn.weight[ArraySize(dnn.weight)-1])); 
+         if (bool (pb.dnnType&_SHORT)) {
+            mp.updateInfo2Label(14,StringFormat("DNN strategy#:%d (Short) start:%1.2f end:%1.2f",pb.dnnShortNumber,dnn.weight[0],dnn.weight[ArraySize(dnn.weight)-1])); 
             mp.updateInfo2Value(14,""); 
          }
 
@@ -135,7 +135,7 @@ EAEnum EAStrategyCandleTest::waitOnTriggers() {
       Print(__FUNCTION__);
    #endif 
 
-      shortTermCandle.candleWeights(inputs,usingStrategyValue.period1);
+      shortTermCandle.candleWeights(inputs,pb.period1);
       
 
       dnn.computeOutputs(inputs,outputs);
@@ -159,27 +159,27 @@ EAEnum EAStrategyCandleTest::waitOnTriggers() {
    
 
    #ifdef _DEBUG_STRATGEY_CANDLETEST     
-      if (bool (usingStrategyValue.dnnType&_LONG)) printf("Allow LONG");
-      if (bool (usingStrategyValue.dnnType&_SHORT)) printf("Allow SHORT");
+      if (bool (pb.dnnType&_LONG)) printf("Allow LONG");
+      if (bool (pb.dnnType&_SHORT)) printf("Allow SHORT");
    #endif 
 
    // LONG         
-   if (bool (usingStrategyValue.dnnType&_LONG)&&outputs[0]>0.6) {    
+   if (bool (pb.dnnType&_LONG)&&outputs[0]>0.6) {    
       #ifdef _DEBUG_STRATGEY_CANDLETEST                                                                 
          Print(__FUNCTION__," -> ANN returned Long trigger");
       #endif 
       
-      usingStrategyValue.orderTypeToOpen=ORDER_TYPE_BUY;  // Cast the specific values before opening a position !!!
+      pb.orderTypeToOpen=ORDER_TYPE_BUY;  // Cast the specific values before opening a position !!!
       triggers[_TLAST]=_NEW_POSITION;                     // !!! Always copy this line to the last trigger  
    }   
    
    // SHORT  
-   if (bool (usingStrategyValue.dnnType&_SHORT)&&outputs[1]>0.6) {    
+   if (bool (pb.dnnType&_SHORT)&&outputs[1]>0.6) {    
       #ifdef _DEBUG_STRATGEY_CANDLETEST                                                                 
          Print(__FUNCTION__," -> ANN returned Short trigger");
       #endif 
       
-      usingStrategyValue.orderTypeToOpen=ORDER_TYPE_SELL;   // Cast the specific values before opening a position !!!
+      pb.orderTypeToOpen=ORDER_TYPE_SELL;   // Cast the specific values before opening a position !!!
       triggers[_TLAST]=_NEW_POSITION;                       // !!! Always copy this line to the last trigger  
 
    } 
@@ -188,7 +188,7 @@ EAEnum EAStrategyCandleTest::waitOnTriggers() {
    if (triggers[_TLAST]==_NEW_POSITION) {
       resetTriggers(_NEW_POSITION);
 
-      switch (usingStrategyValue.orderTypeToOpen) {
+      switch (pb.orderTypeToOpen) {
          case ORDER_TYPE_BUY: return (_OPEN_LONG);   
          break;
          case ORDER_TYPE_SELL: return(_OPEN_SHORT);

@@ -49,8 +49,8 @@ EAStrategyTester::EAStrategyTester() {
    #endif  
 
    // If we are running optimizations close the DB for this EA instance
-   if (bool (usingStrategyValue.runMode&_RUN_STRATEGY_OPTIMIZATION)) {
-      usingStrategyValue.copyValuesFromInputs();       
+   if (bool (pb.runMode&_RUN_STRATEGY_OPTIMIZATION)) {
+      pb.copyValuesFromInputs();       
    }
 }
 //+------------------------------------------------------------------+
@@ -97,12 +97,12 @@ EAEnum EAStrategyTester::waitOnTriggers() {
    }
 
    
-      usingStrategyValue.orderTypeToOpen=ORDER_TYPE_BUY;   // Cast the specific values before opening a position !!!
+      pb.orderTypeToOpen=ORDER_TYPE_BUY;   // Cast the specific values before opening a position !!!
       triggers[_TLAST]=_NEW_POSITION; 
       
       
 
-      //usingStrategyValue.orderTypeToOpen=ORDER_TYPE_SELL;   // Cast the specific values before opening a position !!!
+      //pb.orderTypeToOpen=ORDER_TYPE_SELL;   // Cast the specific values before opening a position !!!
       //triggers[_TLAST]=_NEW_POSITION; 
 
 
@@ -114,7 +114,7 @@ EAEnum EAStrategyTester::waitOnTriggers() {
    #endif 
       resetTriggers(_NEW_POSITION);
 
-      switch (usingStrategyValue.orderTypeToOpen) {
+      switch (pb.orderTypeToOpen) {
          case ORDER_TYPE_BUY: {
                #ifdef _DEBUG_STRATGY_TESTER
                   Print(" -> Request order type buy");

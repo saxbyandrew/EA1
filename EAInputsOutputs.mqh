@@ -29,9 +29,6 @@ private:
    EAModuleTechnicals   *shortTerm;
    EAModuleTechnicals   *mediumTerm;
    EAModuleTechnicals   *longTerm;
-   int                  _txtHandle;
-
-
 
 
 //=========
@@ -43,7 +40,7 @@ protected:
 //=========
 public:
 //=========
-EAInputsOutputs(EATechnicalParameters &t, int txtHandle);
+EAInputsOutputs(EATechnicalParameters &t);
 ~EAInputsOutputs();
 
    virtual int Type() const {return _STRATEGY;};
@@ -62,9 +59,8 @@ EAInputsOutputs(EATechnicalParameters &t, int txtHandle);
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-EAInputsOutputs::EAInputsOutputs(EATechnicalParameters &tech, int txtHandle) {
+EAInputsOutputs::EAInputsOutputs(EATechnicalParameters &tech) {
 
-   _txtHandle=txtHandle;
 
    #ifdef _WRITELOG
       string ss;

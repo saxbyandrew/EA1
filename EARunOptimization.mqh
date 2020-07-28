@@ -12,10 +12,10 @@
 #define _DEBUG_OPTIMIZATION
 
 #include "EAEnum.mqh"
-#include "EADataFrame.mqh"
-#include "EANeuralNetwork.mqh"
-#include "EAInputsOutputs.mqh"
-#include "EATechnicalParameters.mqh"
+//#include "EADataFrame.mqh"
+//#include "EANeuralNetwork.mqh"
+//#include "EAInputsOutputs.mqh"
+//#include "EATechnicalParameters.mqh"
 
 class EAPosition;
 
@@ -24,10 +24,10 @@ class EARunOptimization {
 //=========
 private:
 //=========
-   EATechnicalParameters   *tech;
-   EAInputsOutputs         *io;      // NN Input Output Module
-   EADataFrame             *df;      // The dataframe object
-   EANeuralNetwork         *nn;      // The network 
+   //EATechnicalParameters   *tech;
+   //EAInputsOutputs         *io;      // NN Input Output Module
+   //EADataFrame             *df;      // The dataframe object
+   //EANeuralNetwork         *nn;      // The network 
    
 
    int               _dnnNumber;
@@ -46,12 +46,11 @@ private:
 protected:
 //=========
    
-   int         _optimizeDB, _mainDB, _txtHandle, _strategyNumber;
+   int         _strategyNumber;
 
    void        dropSQLOptimizationTables();
    void        createSQLOptimizationTables();
-   void        openSQLDatabase();
-   //void        closeSQLDatabase();
+
 
 //=========
 public:
@@ -63,7 +62,6 @@ EARunOptimization();
    void        OnTesterDeinit(void);
    void        OnTester(const double OnTesterValue);
    void        OnTesterPass();
-   void        closeSQLDatabase();
 
 };
 
@@ -73,39 +71,6 @@ EARunOptimization();
 //+------------------------------------------------------------------+
 EARunOptimization::EARunOptimization() {
 
-   printf (" -> Instantiate EARunOptimization object");
-
-   _runMode=_RUN_STRATEGY_OPTIMIZATION;
-
-   #ifdef _WRITELOG
-      string ss;
-      ss=StringFormat(" -> System now set to mode:%s",EnumToString(_runMode));
-      writeLog;
-      ss=StringFormat("%d.txt",(1000+MathRand()%1000)+(2000+MathRand()%2000)+(3000+MathRand()%3000));
-      _txtHandle=FileOpen(ss,FILE_COMMON|FILE_READ|FILE_WRITE|FILE_ANSI|FILE_TXT);  
-      writeLog; 
-   #endif
-
-       // Open the database in the common terminal folder
-   _mainDB=DatabaseOpen(_dbName, DATABASE_OPEN_READWRITE | DATABASE_OPEN_COMMON);
-   if (_mainDB==INVALID_HANDLE) {
-      #ifdef _WRITELOG
-         ss=StringFormat(" -> Failed with errorcode:%d",GetLastError());
-         writeLog;
-      #endif
-   } 
-
-       // Get the strategy number save it globally
-   int request=DatabasePrepare(_mainDB,"SELECT strategyNumber FROM STRATEGIES WHERE isActive=1"); 
-   if (DatabaseRead(request)) {
-      DatabaseColumnInteger(request,0,_strategyNumber);
-   } else {
-      #ifdef _WRITELOG
-         ss=StringFormat(" -> Failed with errorcode:%d",GetLastError());
-         writeLog;
-      #endif
-      ExpertRemove();
-   }
 
 
 }
@@ -137,7 +102,21 @@ int EARunOptimization::OnTesterInit(void) {
    #ifdef _WRITELOG
       string ss;
    #endif
-   
+
+   #ifdef _WRITELOG
+      ss=StringFormat("%d.txt",(1000+MathRand()%1000)+(2000+MathRand()%2000)+(3000+MathRand()%3000));
+      _txtHandle=FileOpen(ss,FILE_COMMON|FILE_READ|FILE_WRITE|FILE_ANSI|FILE_TXT);  
+      writeLog; 
+   #endif
+
+   //--- create or open the database in the common terminal folder
+   _optimizeHandle=DatabaseOpen(_optimizeDBName, DATABASE_OPEN_READWRITE | DATABASE_OPEN_COMMON| DATABASE_OPEN_CREATE);
+   if (_optimizeHandle==INVALID_HANDLE) {
+      printf(" -> Optimization DB open failed with code %d",GetLastError());
+      ExpertRemove();
+   } 
+
+ /*  
    MqlDateTime start;
    
    start.year=2018;
@@ -152,83 +131,48 @@ int EARunOptimization::OnTesterInit(void) {
       ss=StringFormat("Starting at %s\n",TimeToString(sampleStartDateTime,TIME_DATE)); 
       writeLog;
    #endif
-
+*/
    // 1/ Create the tecnhincals object and in this case because we are in optimization mode the
    // tech object will read its values from the optimization inputs
-   tech=new EATechnicalParameters(_mainDB,_txtHandle);
-   if (CheckPointer(tech)==POINTER_INVALID) {
-      Print("-> Error created technical object");
-         ExpertRemove();
-   } 
+   //tech=new EATechnicalParameters(_mainDB,_txtHandle);
+   //if (CheckPointer(tech)==POINTER_INVALID) {
+      //Print("-> Error created technical object");
+         //ExpertRemove();
+   //} 
 
    // 2/ Create a input/output object passing it the new technical values
-   io=new EAInputsOutputs(tech, _txtHandle);
-   if (CheckPointer(io)==POINTER_INVALID) {
-      Print("-> Error created input/output object");
-      ExpertRemove();
-   }
+   //io=new EAInputsOutputs(tech, _txtHandle);
+   //if (CheckPointer(io)==POINTER_INVALID) {
+      //Print("-> Error created input/output object");
+      //ExpertRemove();
+   //}
    // 3/ Create a data frame object, build a new data frame based on the starting date
-   df=new EADataFrame(_mainDB,_txtHandle);
-   if (CheckPointer(df)==POINTER_INVALID) {
-      Print("-> Error created dataframe object");
-      ExpertRemove();
-   }
-   df.buildDataFrame(PERIOD_CURRENT,sampleStartDateTime,io);
+   //df=new EADataFrame(_mainDB,_txtHandle);
+   //if (CheckPointer(df)==POINTER_INVALID) {
+      //Print("-> Error created dataframe object");
+      //ExpertRemove();
+   //}
+   //df.buildDataFrame(PERIOD_CURRENT,io);
 
    // 4/ create a new network to train based on the dataframe
-   nn=new EANeuralNetwork(_mainDB,_txtHandle);
-   if (CheckPointer(nn)==POINTER_INVALID) {
-      Print("-> Error created neural network object");
-      ExpertRemove();
-   }
-   nn.trainNetwork(df);
+   //nn=new EANeuralNetwork(_mainDB,_txtHandle);
+   //if (CheckPointer(nn)==POINTER_INVALID) {
+      //Print("-> Error created neural network object");
+      //ExpertRemove();
+   //}
+   //nn.trainNetwork(df);
 
-   #ifdef _WRITELOG
-      ss=StringFormat("In OnTesterInit Neural Network Inputs:%d and Outputs:%d\n",ArraySize(io.inputs),ArraySize(io.outputs)); 
-      writeLog;
-   #endif
+   //#ifdef _WRITELOG
+      //ss=StringFormat("In OnTesterInit Neural Network Inputs:%d and Outputs:%d\n",ArraySize(io.inputs),ArraySize(io.outputs)); 
+      //writeLog;
+   //#endif
 
       
 
    return(INIT_SUCCEEDED);
 }
 
-//+------------------------------------------------------------------+
-//|                                                                  |
-//+------------------------------------------------------------------+
-void EARunOptimization::openSQLDatabase() {
 
-   #ifdef _WRITELOG
-      string ss;
-      commentLine;
-      ss=" -> EARunOptimization::openSQLDatabase ....";
-      writeLog;
-   #endif
-
-
-   //--- create or open the database in the common terminal folder
-   _optimizeDB=DatabaseOpen(_optimizeDBName, DATABASE_OPEN_READWRITE | DATABASE_OPEN_COMMON| DATABASE_OPEN_CREATE);
-   if (_optimizeDB==INVALID_HANDLE) {
-      printf(" -> DB open failed with code %d",GetLastError());
-      //ExpertRemove();
-   } 
-
-
-}
-//+------------------------------------------------------------------+
-//|                                                                  |
-//+------------------------------------------------------------------+
-void EARunOptimization::closeSQLDatabase() {
-
-   #ifdef _WRITELOG
-      string ss;
-      commentLine;
-      ss=" -> EARunOptimization::closeSQLDatabase ....";
-      writeLog;
-   #endif
-
-   DatabaseClose(_optimizeDB);
-}
 
 //+------------------------------------------------------------------+
 //|                                                                  |
@@ -700,9 +644,7 @@ void EARunOptimization::OnTesterDeinit() {
       writeLog;
    #endif
 
-   
-
-   openSQLDatabase();
+  
 
 
    //--- variables for reading frames

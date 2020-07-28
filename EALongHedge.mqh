@@ -72,7 +72,7 @@ EALongHedge::EALongHedge() {
    #endif
    //---- 
    
-   if (usingStrategyValue.optimizationHedge) {
+   if (usp.optimizationHedge) {
       copyValuesFromInputs();
    } else {
 
@@ -84,18 +84,18 @@ EALongHedge::EALongHedge() {
 
    //---
    
-   if (bool (usingStrategyValue.runMode&_RUN_STRATEGY_OPTIMIZATION)&&usingStrategyValue.optimizationHedge) {
+   if (bool (usp.runMode&_RUN_STRATEGY_OPTIMIZATION)&&usp.optimizationHedge) {
       #ifdef _DEBUG_STRATGEY_PRICEACTION
          printf (" -> Using optimization inputs");
       #endif 
-      //dnn=new EANeuralNetwork(usingStrategyValue.runMode);
-      //usingStrategyValue.copyValuesFromInputs(); 
+      //dnn=new EANeuralNetwork(usp.runMode);
+      //usp.copyValuesFromInputs(); 
    } else {
       /*
-      dnn=new EANeuralNetwork(usingStrategyValue.strategyNumber, usingStrategyValue.dnnLongNumber); // TESTING WITH LONG VALUES
+      dnn=new EANeuralNetwork(usp.strategyNumber, usp.dnnLongNumber); // TESTING WITH LONG VALUES
 
       showPanel {
-         mp.updateInfo2Label(29,StringFormat("DNN Hedge strategy#:%d start:%1.2f end:%1.2f",usingStrategyValue.dnnLongNumber,dnn.weight[0],dnn.weight[ArraySize(dnn.weight)-1])); 
+         mp.updateInfo2Label(29,StringFormat("DNN Hedge strategy#:%d start:%1.2f end:%1.2f",usp.dnnLongNumber,dnn.weight[0],dnn.weight[ArraySize(dnn.weight)-1])); 
          mp.updateInfo2Value(29,"");
       }
       */
@@ -132,12 +132,12 @@ bool EALongHedge::newPosition(double ls) {
 
       // Build a new position object based on defaults
       EAPosition *p=new EAPosition();                       // Create new position object
-      p.strategyNumber=param.strategyNumber;                // copy over strategy defaults
+      p.strategyNumber=usp.strategyNumber;                // copy over strategy defaults
       p.lotSize=ls;
       p.status=_HEDGE;
       p.entryPrice=getUpdatedPrice(ORDER_TYPE_SELL,_TOOPEN);
       p.orderTypeToOpen=ORDER_TYPE_SELL;                   // type is a SELL
-      p.closingTypes=param.closingTypes;
+      p.closingTypes=usp.closingTypes;
       p.fixedProfitTargetLevel=0;  
       p.fixedLossTargetLevel=0; 
 
@@ -267,11 +267,11 @@ void EALongHedge::checkAccountPnL() {
    // Martingales
    for (i=0;i<martingalePositions.Total();i++) {   
       gmp;
-      PnL=PnL+usingPositionValue.currentPnL;
+      PnL=PnL+p.currentPnL;
 
       //----
       #ifdef _DEBUG_LONGHEDGE 
-         ss=StringFormat(" -> MG Ticket:%d PnL:%g",usingPositionValue.ticket,usingPositionValue.currentPnL);
+         ss=StringFormat(" -> MG Ticket:%d PnL:%g",p.ticket,p.currentPnL);
          Print (ss);
       #endif
       //----
@@ -280,16 +280,16 @@ void EALongHedge::checkAccountPnL() {
    // Longs
    for (i=0;i<longPositions.Total();i++) {  
       glp;
-      PnL=PnL+usingPositionValue.currentPnL;
+      PnL=PnL+p.currentPnL;
       //----
       #ifdef _DEBUG_LONGHEDGE 
-         ss=StringFormat(" -> L Ticket:%d PnL:%g",usingPositionValue.ticket,usingPositionValue.currentPnL);
+         ss=StringFormat(" -> L Ticket:%d PnL:%g",p.ticket,p.currentPnL);
          Print (ss);
       #endif
       //----
    }
 
-   if (PnL<usingStrategyValue.maxLongHedgeLossAmountAllowed) {
+   if (PnL<usp.maxLongHedgeLoss) {
       #ifdef _DEBUG_LONGHEDGE 
          ss=StringFormat(" -> xxxxxxxxxxxxxxxxx Total hedge PnL:%g",PnL);
          Print (ss);
@@ -312,7 +312,7 @@ bool EALongHedge::execute(EAEnum action) {
    #endif  
 
       // Check if we are even doing hedges
-   if (bool (usingStrategyValue.closingTypes&_IN_LOSS_OPEN_LONG_HEDGE)==false) return false;
+   if (bool (usp.closingTypes&_IN_LOSS_OPEN_LONG_HEDGE)==false) return false;
 
    
    if (ACTIVE_HEDGE==_YES) {
@@ -337,5 +337,5 @@ bool EALongHedge::execute(EAEnum action) {
 //+------------------------------------------------------------------+
 void EALongHedge::copyValuesFromInputs() {
 
-   //usingStrategyValue.maxLongHedgeLossAmountAllowed=longHLossamt;
+   //usp.maxLongHedgeLossAmountAllowed=longHLossamt;
 }

@@ -13,13 +13,15 @@
 #include "EAInputsOutputs.mqh"
 #include <Math\Alglib\alglib.mqh>
 
+class EAInputsOutputs;
+class EATechnicalParameters;
+
 class EADataFrame  {
 
 //=========
 private:
 //=========
 
-   int      _txtHandle, _mainDB;
 
 //=========
 protected:
@@ -27,29 +29,28 @@ protected:
 
    void     setDataFrameSize(int x, int y) {dataFrame.Resize(x,y); };
    void     addDataFrameValues(double &inputs[], double &outputs[]);
+   EAInputsOutputs   *io;
 
 //=========
 public:
 //=========
-EADataFrame(int mainDB, int txtHandle);
+EADataFrame(EAInputsOutputs &inputOutputs);
 ~EADataFrame();
 
    CMatrixDouble  dataFrame;
 
    int      nnIn;       // Neural network inputs and outputs
    int      nnOut;
+   int      barCnt;
 
-   void     buildDataFrame(ENUM_TIMEFRAMES period, datetime startTime, EAInputsOutputs &io);
+   void     buildDataFrame();
 
 
 };
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-EADataFrame::EADataFrame(int mainDB, int txtHandle) {
-
-   _mainDB=mainDB;
-   _txtHandle=txtHandle;
+EADataFrame::EADataFrame(EAInputsOutputs &inputOutputs) {
 
 
    #ifdef _WRITELOG
@@ -58,6 +59,27 @@ EADataFrame::EADataFrame(int mainDB, int txtHandle) {
       ss=" -> EADataFrame Object Created ....";
       writeLog;
    #endif 
+
+
+   int request=DatabasePrepare(_dbHandle,"SELECT dataFrameSize FROM STRATEGIES WHERE WHERE isActive=1"); 
+   if (request==INVALID_HANDLE) {
+      Print(" -> DB request failed with code ", GetLastError());
+      ExpertRemove();
+   }
+   DatabaseColumnInteger   (request,0,barCnt);
+   #ifdef _WRITELOG   
+      ss=StringFormat(" ->  DF size:%d ",barCnt);
+      writeLog;
+   #endif 
+
+   io=inputOutputs;              // Save a local pointer 
+
+   // Set the public properties
+   nnIn=ArraySize(io.inputs);
+   nnOut=ArraySize(io.outputs);
+
+   // Initialize the new dataframe size
+   setDataFrameSize(barCnt,nnIn+nnOut);
 
 
 }
@@ -118,88 +140,21 @@ void EADataFrame::addDataFrameValues(double &inputs[], double& outputs[]) {
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-void EADataFrame::buildDataFrame(ENUM_TIMEFRAMES period, datetime startTime, EAInputsOutputs &io) {
-
-   #ifdef _DEBUG_STRATGEY_LIVE  
-      Print(__FUNCTION__);  
-   #endif 
+void EADataFrame::buildDataFrame() {
 
    #ifdef _WRITELOG  
       string ss;
    #endif
 
-   // TODO fix
-   //int  barNumber=iBarShift(_Symbol,period,startTime,true);          // Starting bar for DF creation
-   int barNumber=500;
-
-   // Set the public properties
-   nnIn=ArraySize(io.inputs);
-   nnOut=ArraySize(io.outputs);
-
-   // Initialize the new dataframe size
-   setDataFrameSize(barNumber,nnIn+nnOut);
-
    #ifdef _WRITELOG   // Log the start of DF history capture
-      ss=StringFormat(" -> Starting DF collection at bar:%d time:%s",barNumber,TimeToString(startTime,TIME_DATE));
+      ss=StringFormat(" ->  DF collection at bar:%d ",barCnt);
       writeLog;
    #endif 
    
-   while (barNumber>0) {
+   io.getInputs(barCnt);
+   io.getOutputs(barCnt);
+   addDataFrameValues(io.inputs,io.outputs);                   // Create a new dataframe row entry
+   barCnt--;
 
-      io.getInputs(barNumber);
-      io.getOutputs(barNumber);
-      addDataFrameValues(io.inputs,io.outputs);                   // Create a new dataframe row entry
-      barNumber--;
-   }
-
-
-   #ifdef _WRITELOG   // Log the start of DF history capture
-      ss=StringFormat(" -> End DF collection at bar:%d time:%s",barNumber,TimeToString(startTime,TIME_DATE));
-      writeLog;
-   #endif 
-
-/*
-   // Ending Checks
-   if (frameCnt>=usingStrategyValue.dataFrameSize) {   
-      #ifdef _WRITELOG  
-         ss=StringFormat(" -> Ending dataframe collection last bar was:%s:%s and frame count is:%d",
-            TimeToString(iTime(_Symbol,PERIOD_CURRENT,barCnt),TIME_DATE),TimeToString(iTime(_Symbol,PERIOD_CURRENT,barCnt),TIME_MINUTES),frameCnt);
-         writeLog;
-      #endif
-      dnn.trainNetwork();                                               // Train network
-      return;
-   } else {
-
-      // Interate over and get all historical values if needed
-      while (barCnt>2) {   
-
-         #ifdef _WRITELOG   // Log the start of DF history capture
-            if (frameCnt==0) {
-               ss=StringFormat(" -> Starting DF collection in history at bar:%s:%s",TimeToString(iTime(_Symbol,PERIOD_CURRENT,barCnt),TIME_DATE),TimeToString(iTime(_Symbol,PERIOD_CURRENT,barCnt),TIME_MINUTES));
-               writeLog;
-            }
-         #endif  
-
-         setInputs(barCnt);
-         setOutputs(barCnt);
-         dnn.addDataFrameValues(inputs,outputs,true);                   // Create a new dataframe row entry
-         ++frameCnt;
-         --barCnt;
-         #ifdef _DEBUG_STRATGEY_LIVE  
-            printf(" --> Adding History bar:%d frame:%d",barCnt,frameCnt);
-         #endif 
-      }
-
-      // Now continue to capture current values for the dataframe in real time until we reach dataFrameSize
-      setInputs(1);
-      setOutputs(1);
-      dnn.addDataFrameValues(inputs,outputs,true);    // Create a new dataframe row entry
-      ++frameCnt;
-      #ifdef _DEBUG_STRATGEY_LIVE  
-         printf(" --> Adding current bar:%d frame:%d",barCnt,frameCnt);
-      #endif 
-
-   }
-*/
 
 }

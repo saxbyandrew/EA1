@@ -37,13 +37,10 @@ EAPosition();
 EAPosition(EAPosition &cp);
 ~EAPosition();
 
-   virtual int Type() const {return _NORMAL;};
-
-   //virtual int Type() const {return _HEDGE;};
+  virtual int Type() const {return _NORMAL;};
 
   // POSITION
     int               strategyNumber;            // Name of strategy for comment 
-    //ulong             ticket;
     int               ticket;
     double            entryPrice; 
     double            lotSize; 
@@ -57,16 +54,12 @@ EAPosition(EAPosition &cp);
     datetime          closingDateTime;
     EAEnum            closingTypes;
     int               deviationInPoints;
-    
-    //string            textObjName;
-    //string            profitLineObject;
-    //string            lossLineObject;
-
+    double            brokerAdminPercent;
+    double            interBankPercentage;
 
     int               positionExists(int ticket) {return (PositionInfo.SelectByTicket(ticket));};
     void              calcPositionPnL();
     void              calcPositionSwapCost();
-    //void              setTextLabel(color clr);
 
 };
 //+------------------------------------------------------------------+
@@ -74,27 +67,30 @@ EAPosition(EAPosition &cp);
 //+------------------------------------------------------------------+
 EAPosition::EAPosition() {
 
-strategyNumber=0;            // Name of strategy for comment 
-ticket=0;
-entryPrice=0; 
-lotSize=0; 
-orderTypeToOpen=NULL;
-fixedProfitTargetLevel=0;    // Price Level
-fixedLossTargetLevel=0;      // Price Level
-daysOpen=0;
-currentPnL=0;
-swapCosts=0;
-status=_NOTSET;
-closingDateTime=NULL;
-closingTypes=NULL;
-deviationInPoints=0;
-//textObjName=NULL;
-//profitLineObject=NULL;
-//lossLineObject=NULL;
+      //----
+    #ifdef _DEBUG_POSITION
+      Print (" ->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+      Print (__FUNCTION__," Default Constructor"); 
+      Print (" ->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+    #endif  
+  //----
 
-
-    //font="Arial";
-    //fontSize=10;
+  strategyNumber=0;            // Name of strategy for comment 
+  ticket=0;
+  entryPrice=0; 
+  lotSize=0; 
+  orderTypeToOpen=NULL;
+  fixedProfitTargetLevel=0;    // Price Level
+  fixedLossTargetLevel=0;      // Price Level
+  daysOpen=0;
+  currentPnL=0;
+  swapCosts=0;
+  status=_NOTSET;
+  closingDateTime=NULL;
+  closingTypes=NULL;
+  deviationInPoints=0;
+  brokerAdminPercent=0;
+  interBankPercentage=0;
 
 
 }
@@ -127,13 +123,8 @@ EAPosition::EAPosition(EAPosition &cp) {
     closingDateTime=cp.closingDateTime;
     closingTypes=cp.closingTypes;
     deviationInPoints=cp.deviationInPoints;
-    //textObjName=cp.textObjName;
-    //profitLineObject=cp.profitLineObject;
-    //lossLineObject=cp.lossLineObject;
-
-    
-    //font="Arial";
-    //fontSize=10;
+    brokerAdminPercent=cp.brokerAdminPercent;
+    interBankPercentage=cp.interBankPercentage;
 
 }
 //+------------------------------------------------------------------+
@@ -149,10 +140,6 @@ EAPosition::~EAPosition() {
     #endif  
   //----
 
-    //ObjectDelete(0,textObjName);
-    //ObjectDelete(0,profitLineObject);
-    //ObjectDelete(0,lossLineObject);
-
 }
 //+------------------------------------------------------------------+
 //|                                                                  |
@@ -162,7 +149,7 @@ void EAPosition::calcPositionSwapCost() {
   // TODO check if this calc is correct OR is we can rather get it from the actual broker!
   // there are STD lib functions for thisbut have only retured 0
   // Trade size * Close Price * (2.5% +/- LIBOR)/365
-  swapCosts=daysOpen*(lotSize*iClose(_Symbol,PERIOD_D1,1)*(param.brokerAdminPercent+param.interBankPercentage))/365;
+  swapCosts=daysOpen*(lotSize*iClose(_Symbol,PERIOD_D1,1)*(brokerAdminPercent+interBankPercentage))/365;
 }
 //+------------------------------------------------------------------+
 //|                                                                  |

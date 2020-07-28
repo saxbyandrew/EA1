@@ -51,10 +51,11 @@ protected:
 //=========
 public:
 //=========
-EANeuralNetwork(int mainDB, int txtHandle);
+EANeuralNetwork();
 ~EANeuralNetwork();
 
 
+   bool           isTrained;
    CArrayDouble   *nnArray;
    void           trainNetwork(EADataFrame &df);
 
@@ -66,10 +67,8 @@ EANeuralNetwork(int mainDB, int txtHandle);
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-EANeuralNetwork::EANeuralNetwork(int mainDB, int txtHandle) {
+EANeuralNetwork::EANeuralNetwork() {
 
-   _mainDB=mainDB;
-   _txtHandle=txtHandle;
 
    #ifdef _WRITELOG
       string ss;
@@ -79,13 +78,11 @@ EANeuralNetwork::EANeuralNetwork(int mainDB, int txtHandle) {
    #endif
 
 
-   if (bool (_runMode&_RUN_STRATEGY_OPTIMIZATION)) {
+   if (MQLInfoInteger(MQL_TESTER)) { 
       copyValuesFromDatabase();
       // we use the L1 L2 and NNTYPE from the DB but the NN is created later in the training  function
       // and the IN / OUT is based on the IO objects number of inputs and outputs
-   } 
-
-   if (bool (_runMode&_RUN_NORMAL)) {
+   } else { 
       copyValuesFromDatabase();
       createNewNetwork();
       loadNetwork();
@@ -93,7 +90,10 @@ EANeuralNetwork::EANeuralNetwork(int mainDB, int txtHandle) {
          ss=" -> Load NN from DB values";
          writeLog;
       #endif
+
    }
+
+   isTrained=false;
 
    nnArray=new CArrayDouble;
 
@@ -121,12 +121,7 @@ void EANeuralNetwork::copyValuesFromDatabase() {
    #endif
 
 
-   string sql="SELECT isActive,strategyNumber,dnnType,dnnIn,dnnLayer1,dnnLayer2,dnnOut FROM STRATEGIES WHERE isActive=1";
-   #ifdef _WRITELOG
-      ss=StringFormat(" -> %s",sql);
-      writeLog;
-   #endif
-   int request=DatabasePrepare(_mainDB,sql);
+   int request=DatabasePrepare(_dbHandle,"SELECT dnnType,dnnIn,dnnLayer1,dnnLayer2,dnnOut FROM STRATEGIES WHERE isActive=1");
    if (request==INVALID_HANDLE) {
       #ifdef _WRITELOG
          ss=StringFormat(" -> Error in database SELECT, %d",GetLastError());
@@ -134,7 +129,7 @@ void EANeuralNetwork::copyValuesFromDatabase() {
       #endif
    }
    if (!DatabaseRead(request)) {
-      Print(" -> 2 DB request failed with code:", GetLastError()); 
+      Print(" -> DB read request failed with code:", GetLastError()); 
       ExpertRemove();
    } else {
       DatabaseColumnInteger   (request,2,n.nnType);
@@ -163,7 +158,7 @@ void EANeuralNetwork::networkProperties()  {
 
    /*
    showPanel {
-      string s1=StringFormat("I:%d L1:%d L2:%d O:%d W:%d",nInputs,usingStrategyValue.dnnLayer1,usingStrategyValue.dnnLayer2,nOutputs,nWeights);
+      string s1=StringFormat("I:%d L1:%d L2:%d O:%d W:%d",nInputs,pb.dnnLayer1,pb.dnnLayer2,nOutputs,nWeights);
       mp.updateInfo2Label(20,s1);
    }
    */
@@ -215,7 +210,7 @@ bool EANeuralNetwork::saveNetwork() {
    string fileName;
    double nn[];
 
-   //fileName=IntegerToString(usingStrategyValue.strategyNumber);
+   //fileName=IntegerToString(pb.strategyNumber);
    //= fileName+".dnn";
    //FileDelete(fileName, FILE_COMMON);
    ResetLastError();
@@ -301,7 +296,7 @@ bool EANeuralNetwork::loadNetwork() {
    double threshold= 0, weights= 0, media= 0, sigma= 0;
    //string fileName;
 
-   //fileName=IntegerToString(usingStrategyValue.strategyNumber);
+   //fileName=IntegerToString(pb.strategyNumber);
    //fileName= fileName+".dnn";
    //binFileHandle= FileOpen(fileName, FILE_READ|FILE_BIN|FILE_COMMON);
    //networkLoaded= binFileHandle!=INVALID_HANDLE;
@@ -317,9 +312,9 @@ bool EANeuralNetwork::loadNetwork() {
       //for(k= 0; k<numLayers; k++) network[k]= (int)FileReadDouble(binFileHandle); 
       for(k= 0; k<numLayers; k++) network[k]= (int)nnArray.At(idx++); 
       createNewNetwork();
-      //no.MLPCreateC2(usingStrategyValue.dnnIn,usingStrategyValue.dnnLayer1,usingStrategyValue.dnnLayer2,usingStrategyValue.dnnOut,ps);
-      //no.MLPCreate2(usingStrategyValue.dnnIn,usingStrategyValue.dnnLayer1,usingStrategyValue.dnnLayer2,usingStrategyValue.dnnOut,ps);
-      //no.MLPCreateR2(usingStrategyValue.dnnIn,usingStrategyValue.dnnLayer1,usingStrategyValue.dnnLayer2,usingStrategyValue.dnnOut,0,1,ps);
+      //no.MLPCreateC2(pb.dnnIn,pb.dnnLayer1,pb.dnnLayer2,pb.dnnOut,ps);
+      //no.MLPCreate2(pb.dnnIn,pb.dnnLayer1,pb.dnnLayer2,pb.dnnOut,ps);
+      //no.MLPCreateR2(pb.dnnIn,pb.dnnLayer1,pb.dnnLayer2,pb.dnnOut,0,1,ps);
       //networkProperties();
 
          for(k= 0; k<numLayers; k++) {
@@ -370,10 +365,10 @@ EANeuralNetwork::addTargetValues(double& outputs[]) {
    // will are teh targets which we have to train to.
      // tack on output values at the end of the array
    // [row][in,in,in,in,etc,out,out,out,etc]
-   for (int j=0; j<usingStrategyValue.dnnOut;j++) {
-      dataFrame[rowCnt].Set(j+usingStrategyValue.dnnIn,outputs[j]);
+   for (int j=0; j<pb.dnnOut;j++) {
+      dataFrame[rowCnt].Set(j+pb.dnnIn,outputs[j]);
       #ifdef _DEBUG_DATAFRAME
-         ss=ss+" "+DoubleToString(dataFrame[rowCnt][j+usingStrategyValue.dnnIn],2);
+         ss=ss+" "+DoubleToString(dataFrame[rowCnt][j+pb.dnnIn],2);
       #endif
    }
 }
@@ -383,7 +378,7 @@ EANeuralNetwork::addTargetValues(double& outputs[]) {
 void EANeuralNetwork::clearDataFrameValues() {
 
    for (int i=0;i<dataFrame.Size();i++) {
-      for (int j=0;j<usingStrategyValue.dnnIn+usingStrategyValue.dnnOut;j++) {
+      for (int j=0;j<pb.dnnIn+pb.dnnOut;j++) {
          dataFrame[i].Set(j,0);
       }
    }
@@ -428,13 +423,13 @@ void EANeuralNetwork::networkForcast(double &inputs[], double &outputs[]) {
    /*
    showPanel {
       //mp.updateInfo2Label(21,"DDN Inputs:");
-      for (int i=0;i<usingStrategyValue.dnnIn;i++) {
+      for (int i=0;i<pb.dnnIn;i++) {
          ss=ss+" "+StringFormat("%0.2f",inputs[i]);
       }
       mp.updateInfo2Label(21,ss);
       ss="";
       //mp.updateInfo2Label(22,"DDN Outputs:");
-      for (int j=0;j<usingStrategyValue.dnnOut;j++) {
+      for (int j=0;j<pb.dnnOut;j++) {
          ss=ss+" "+StringFormat("%0.2f",outputs[j]);
       }
       mp.updateInfo2Label(22,ss);
@@ -446,7 +441,7 @@ void EANeuralNetwork::networkForcast(double &inputs[], double &outputs[]) {
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-void EANeuralNetwork::trainNetwork(EADataFrame  &df) {
+void EANeuralNetwork::trainNetwork(EADataFrame &df) {
 
    #ifdef _DEBUG_DNN
       Print(__FUNCTION__);
@@ -495,7 +490,9 @@ void EANeuralNetwork::trainNetwork(EADataFrame  &df) {
       writeLog;
    #endif
 
-   saveNetwork();
+   isTrained=true;
+
+   //saveNetwork();
 
 }
 
