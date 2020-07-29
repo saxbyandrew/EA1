@@ -33,7 +33,7 @@
 
 #include "EAEnum.mqh"
 #include "EAStrategyParameters.mqh"
-//#include "EARunOptimization.mqh"
+#include "EARunOptimization.mqh"
 #include "EAMain.mqh"
 #include "EAPanel.mqh"
 
@@ -55,10 +55,7 @@ string                  _dbName="strategies.sqlite";
 string                  _optimizeDBName="optimization.sqlite";
 
 
-
-
-
-//EARunOptimization       optimization;
+EARunOptimization       optimization;
 //+------------------------------------------------------------------+
 
 
@@ -74,7 +71,7 @@ int OnInit() {
 
     EventSetTimer(60);
 
-    if (!MQLInfoInteger(MQL_TESTER)) {
+    if (!MQLInfoInteger(MQL_OPTIMIZATION)) {
         _txtHandle=FileOpen("eaLog.txt",FILE_COMMON|FILE_READ|FILE_WRITE|FILE_ANSI|FILE_TXT);  
     }
 
@@ -229,8 +226,7 @@ void OnTimer() {
 //+------------------------------------------------------------------+
 int OnTesterInit() {
 
-    //return(optimization.OnTesterInit());
-    return 1;
+    return(optimization.OnTesterInit());
 
 }
 //+------------------------------------------------------------------+
@@ -238,7 +234,7 @@ int OnTesterInit() {
 //+------------------------------------------------------------------+
 void OnTesterDeinit() {
 
-    //optimization.OnTesterDeinit(); 
+    optimization.OnTesterDeinit(); 
 
 }
 
@@ -247,7 +243,6 @@ void OnTesterDeinit() {
 //+------------------------------------------------------------------+
 double OnTester() {
 
-/*
 
     printf ("================OnTester=================");
 
@@ -258,14 +253,12 @@ double OnTester() {
         ret=TesterStatistics(STAT_PROFIT)/balance_dd;
         //optimization.OnTester(ret);
     return(ret);
-    */
-    
-    return 1;
+
     
 }
 //+------------------------------------------------------------------+
 void OnTesterPass() {
 
-   //optimization.OnTesterPass();
+    optimization.OnTesterPass();
 
 }

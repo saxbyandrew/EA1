@@ -122,7 +122,7 @@ void EAPositionBase::updateSQLSwapCosts(EAPosition *p) {
     double swapCosts;
     string sql;
 
-    if (MQLInfoInteger(MQL_TESTER))  return;   // No state saving during optimizations
+    if (MQLInfoInteger(MQL_OPTIMIZATION))  return;   // No state saving during optimizations
 
     sql=StringFormat("SELECT swapCosts FROM STRATEGIES WHERE strategyNumber=%d",usp.strategyNumber);
     request=DatabasePrepare(_dbHandle,sql); 

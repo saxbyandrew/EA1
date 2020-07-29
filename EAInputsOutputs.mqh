@@ -62,11 +62,9 @@ EAInputsOutputs(EATechnicalParameters &t);
 EAInputsOutputs::EAInputsOutputs(EATechnicalParameters &tech) {
 
 
-   #ifdef _WRITELOG
+   #ifdef _DEBUG_NN_INPUTS_OUTPUTS
       string ss;
-      commentLine;
-      ss=" -> EAInputsOutputs Object Created ....";
-      writeLog;
+      printf(" -> EAInputsOutputs Object Created ....");
    #endif 
 
    shortTerm=new EAModuleTechnicals;
@@ -93,18 +91,16 @@ EAInputsOutputs::~EAInputsOutputs() {
 //+------------------------------------------------------------------+
 void EAInputsOutputs::setupTechnicalParameters(EATechnicalParameters &tech) {
 
-   #ifdef _WRITELOG
+   #ifdef _DEBUG_NN_INPUTS_OUTPUTS
       string ss;
-      commentLine;
-      ss=" -> setupTechnicalParameters ....";
-      writeLog;
+      printf(" -> setupTechnicalParameters ....");
    #endif 
 
     //if (tech.t.useADX) {
-      #ifdef _WRITELOG
-         ss=StringFormat("Short ADX Period:%s\n Short ADX MA:%d\n Medium ADX Period:%s\n Medium ADX MA:%d\n Long ADX Period:%s\n Long ADX MA:%d\n",
+      #ifdef _DEBUG_NN_INPUTS_OUTPUTS
+         ss=StringFormat(" Short ADX Period:%s\n Short ADX MA:%d\n Medium ADX Period:%s\n Medium ADX MA:%d\n Long ADX Period:%s\n Long ADX MA:%d\n",
          EnumToString(tech.t.s_ADXperiod),tech.t.s_ADXma,EnumToString(tech.t.m_ADXperiod),tech.t.m_ADXma,EnumToString(tech.t.l_ADXperiod),tech.t.l_ADXma);
-         writeLog;
+         printf(ss);
       #endif
       // ADX      ADXNormalizedValue(int start, int buffer) 0=Main 1=DI+ 2=DI-
       shortTerm.ADXSetParameters(tech.t.s_ADXperiod,tech.t.s_ADXma);
@@ -114,10 +110,15 @@ void EAInputsOutputs::setupTechnicalParameters(EATechnicalParameters &tech) {
    //}
 
    //if (tech.t.useRSI) {
+      #ifdef _DEBUG_NN_INPUTS_OUTPUTS
+         ss=StringFormat(" Short RSI Period:%s\n Short RSI MA:%d\n Medium RSI Period:%s\n Medium RSI MA:%d\n Long RSI Period:%s\n Long RSI MA:%d\n",
+         EnumToString(tech.t.s_RSIperiod),tech.t.s_RSIma,EnumToString(tech.t.m_RSIperiod),tech.t.m_RSIma,EnumToString(tech.t.l_RSIperiod),tech.t.l_RSIperiod);
+         printf(ss);
+      #endif
       // RSI     RSINormalizedValue(int start)
       shortTerm.RSISetParameters(tech.t.s_RSIperiod,tech.t.s_RSIma,tech.t.s_RSIap);
       mediumTerm.RSISetParameters(tech.t.m_RSIperiod,tech.t.m_RSIma,tech.t.m_RSIap);
-      longTerm.RSISetParameters(tech.t.l_RSIperiod,tech.t.l_RSIma,tech.t.l_RSIap);
+      longTerm.RSISetParameters(tech.t.l_RSIperiod,tech.t.l_RSIperiod,tech.t.l_RSIap);
    //}
 /*
    if (tech.t.useMFI) {
@@ -170,17 +171,19 @@ void EAInputsOutputs::setupTechnicalParameters(EATechnicalParameters &tech) {
    }
 */
    //if (tech.t.useZZ) {
-      #ifdef _WRITELOG
-         ss=StringFormat("Short ZZ Period:%s\nMedium ZZ Period:%s\nLong ZZ Period:%s\n",
+      #ifdef _DEBUG_NN_INPUTS_OUTPUTS
+         ss=StringFormat(" Short ZZ Period:%s\nMedium ZZ Period:%s\nLong ZZ Period:%s\n",
          EnumToString(tech.t.s_ZZperiod),EnumToString(tech.t.m_ZZperiod),EnumToString(tech.t.l_ZZperiod));
-         writeLog;
+         printf(ss);
       #endif
+
       shortTerm.ZIGZAGSetupParameters(tech.t.s_ZZperiod);
       mediumTerm.ZIGZAGSetupParameters(tech.t.m_ZZperiod);
       longTerm.ZIGZAGSetupParameters(tech.t.l_ZZperiod);
    //}
 
-   // Prime the input and output arrays
+   // Prime the input and output arrays we do this so that the DF and NN objects know
+   // the matrix size we are deailing with.
    getInputs(1);
    getOutputs(1);
 
@@ -191,8 +194,10 @@ void EAInputsOutputs::setupTechnicalParameters(EATechnicalParameters &tech) {
 //+------------------------------------------------------------------+
 void EAInputsOutputs::getInputs(int currentBar) {
 
-
-
+   #ifdef _DEBUG_NN_INPUTS_OUTPUTS
+      Print(__FUNCTION__);
+      printf(" -> getInputs current bar:%d",currentBar);
+   #endif 
 
    double   i[100];
    int      j=0;
@@ -223,12 +228,13 @@ void EAInputsOutputs::getInputs(int currentBar) {
 
    // Create a new array only with the correct input values
    ArrayCopy(inputs,i,0,0,j);
-   /*
-   #ifdef _WRITELOG
+   
+   #ifdef _DEBUG_NN_INPUTS_OUTPUTS
       string ss=StringFormat(" -> Neural Network Inputs:%d\n",ArraySize(inputs)); 
-      writeLog;
+      printf(ss);
+      ArrayPrint(inputs);
    #endif
-   */
+   
    
 
 
@@ -240,6 +246,7 @@ void EAInputsOutputs::getOutputs(int currentBar) {
 
    #ifdef _DEBUG_NN_INPUTS_OUTPUTS
       Print(__FUNCTION__);
+      printf(" -> getOutputs current bar:%d",currentBar);
    #endif 
 
    double  o[2];
@@ -262,12 +269,12 @@ void EAInputsOutputs::getOutputs(int currentBar) {
    }
 
    ArrayCopy(outputs,o,0,0,j);
-   /*
-   #ifdef _WRITELOG
+   
+   #ifdef _DEBUG_NN_INPUTS_OUTPUTS
       string ss=StringFormat(" -> Neural Network Outputs:%d\n",ArraySize(outputs)); 
-      writeLog;
+      printf(ss);
+      ArrayPrint(outputs);
    #endif
-   */
 
 }
 

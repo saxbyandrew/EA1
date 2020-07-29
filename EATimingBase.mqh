@@ -7,7 +7,7 @@
 #property link      "https://www.mql5.com"
 #property version   "1.00"
 
-//#define _DEBUG_STRATEGY_TIME
+#define _DEBUG_STRATEGY_TIME
 
 #include <Object.mqh>
 

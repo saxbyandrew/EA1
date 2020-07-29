@@ -282,7 +282,7 @@ void EAPanel::mainInfoPanel() {
          updateInfo2Label(7, "Hedge Loss Amt");  
          updateInfo2Value(7,StringFormat("$%5.2f",usp.maxLongHedgeLoss));
          updateInfo2Label(8, "Hedge Number"); 
-         updateInfo2Value(8,StringFormat("%d",usp.dnnHedgeNumber));
+         //pdateInfo2Value(8,StringFormat("%d",usp.dnnHedgeNumber));
    } else {
          updateInfo2Value(6,"No");
          updateInfo2Label(7, "-");  

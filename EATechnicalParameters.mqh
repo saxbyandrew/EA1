@@ -200,25 +200,22 @@ EATechnicalParameters();
 EATechnicalParameters::EATechnicalParameters() {
 
 
-   #ifdef _WRITELOG
+   #ifdef _DEBUG_TECHNICAL_PARAMETERS
       string ss;
-      commentLine;
-      ss=" -> EATechnicalParameters Object Created ....";
-      writeLog;
+      printf (" -> EATechnicalParameters Object Created ....");
    #endif
    
+
    // Determine where we get the technicl values from based on if we are in normal running mode
    // on in strategy optimization mode
-   if (MQLInfoInteger(MQL_TESTER)) {
+   
+   if (MQLInfoInteger(MQL_OPTIMIZATION)) {
       copyValuesFromInputs();
    } else {
       copyValuesFromDatabase();
    }
 
-   #ifdef _WRITELOG
-      ss=StringFormat(" -> Run Mode is:%d",_runMode);
-      writeLog;
-   #endif
+
 
 }
 //+------------------------------------------------------------------+
@@ -233,152 +230,150 @@ EATechnicalParameters::~EATechnicalParameters() {
 //+------------------------------------------------------------------+
 void EATechnicalParameters::copyValuesFromDatabase() {
 
-   #ifdef _WRITELOG
+   #ifdef _DEBUG_TECHNICAL_PARAMETERS
       string ss;
+      printf (" -> EATechnicalParameters copyValuesFromDatabase ....");
    #endif
 
    int request=DatabasePrepare(_dbHandle,"SELECT * FROM STRATEGIES WHERE isActive=1");
    if (!DatabaseRead(request)) {
-      Print(" -> DB request failed with code:", GetLastError()); 
+      Print(" -> EATechnicalParameters copyValuesFromDatabase DB request failed with code:", GetLastError()); 
       ExpertRemove();
    } else {
-      DatabaseColumnInteger   (request,55,t.s_ADXperiod);
-      DatabaseColumnInteger   (request,56,t.s_ADXma);
-      DatabaseColumnInteger   (request,57,t.m_ADXperiod);
-      DatabaseColumnInteger   (request,58,t.m_ADXma);
-      DatabaseColumnInteger   (request,59,t.l_ADXperiod);
-      DatabaseColumnInteger   (request,60,t.l_ADXma);
-      DatabaseColumnInteger   (request,61,t.s_RSIperiod);
-      DatabaseColumnInteger   (request,62,t.s_RSIma);
-      DatabaseColumnInteger   (request,63,t.s_RSIap);
-      DatabaseColumnInteger   (request,64,t.m_RSIperiod);
-      DatabaseColumnInteger   (request,65,t.m_RSIma);
-      DatabaseColumnInteger   (request,66,t.s_RSIap);
-      DatabaseColumnInteger   (request,67,t.l_RSIperiod);
-      DatabaseColumnInteger   (request,68,t.l_RSIma);
-      DatabaseColumnInteger   (request,69,t.l_RSIap);
-      DatabaseColumnInteger   (request,70,t.s_MFIperiod);
-      DatabaseColumnInteger   (request,71,t.s_MFIma);
-      DatabaseColumnInteger   (request,72,t.m_MFIperiod);
-      DatabaseColumnInteger   (request,73,t.m_MFIma);
-      DatabaseColumnInteger   (request,74,t.l_MFIperiod);
-      DatabaseColumnInteger   (request,75,t.l_MFIma);
-      DatabaseColumnInteger   (request,76,t.s_SARperiod);
-      DatabaseColumnDouble    (request,77,t.s_SARstep);
-      DatabaseColumnDouble    (request,78,t.s_SARmax);
-      DatabaseColumnInteger   (request,79,t.m_SARperiod);
-      DatabaseColumnDouble    (request,80,t.m_SARstep);
-      DatabaseColumnDouble    (request,81,t.m_SARmax);
-      DatabaseColumnInteger   (request,82,t.l_SARperiod);
-      DatabaseColumnDouble    (request,83,t.l_SARstep);
-      DatabaseColumnDouble    (request,84,t.l_SARmax);
-      DatabaseColumnInteger   (request,85,t.s_ICHperiod);
-      DatabaseColumnInteger   (request,86,t.s_tenkan_sen);
-      DatabaseColumnInteger   (request,87,t.s_kijun_sen);
-      DatabaseColumnInteger   (request,88,t.s_senkou_span_b);
-      DatabaseColumnInteger   (request,89,t.m_ICHperiod);
-      DatabaseColumnInteger   (request,90,t.m_tenkan_sen);
-      DatabaseColumnInteger   (request,91,t.m_kijun_sen);
-      DatabaseColumnInteger   (request,92,t.m_senkou_span_b);
-      DatabaseColumnInteger   (request,93,t.l_ICHperiod);
-      DatabaseColumnInteger   (request,94,t.l_tenkan_sen);
-      DatabaseColumnInteger   (request,95,t.l_kijun_sen);
-      DatabaseColumnInteger   (request,96,t.l_senkou_span_b);
-      DatabaseColumnInteger   (request,97,t.s_RVIperiod);
-      DatabaseColumnInteger   (request,98,t.s_RVIma);
-      DatabaseColumnInteger   (request,99,t.m_RVIperiod);
-      DatabaseColumnInteger   (request,100,t.m_RVIma);
-      DatabaseColumnInteger   (request,101,t.l_RVIperiod);
-      DatabaseColumnInteger   (request,102,t.l_RVIma);
-      DatabaseColumnInteger   (request,103,t.s_STOCperiod);
-      DatabaseColumnInteger   (request,104,t.s_kPeriod);
-      DatabaseColumnInteger   (request,105,t.s_dPeriod);
-      DatabaseColumnInteger   (request,106,t.s_slowing);
-      DatabaseColumnInteger   (request,107,t.s_STOCmamethod);
-      DatabaseColumnInteger   (request,108,t.s_STOCpa);
-      DatabaseColumnInteger   (request,109,t.m_STOCperiod);
-      DatabaseColumnInteger   (request,110,t.m_kPeriod);
-      DatabaseColumnInteger   (request,111,t.m_dPeriod);
-      DatabaseColumnInteger   (request,112,t.m_slowing);
-      DatabaseColumnInteger   (request,113,t.m_STOCmamethod);
-      DatabaseColumnInteger   (request,114,t.m_STOCpa);
-      DatabaseColumnInteger   (request,115,t.l_STOCperiod);
-      DatabaseColumnInteger   (request,116,t.l_kPeriod);
-      DatabaseColumnInteger   (request,117,t.l_dPeriod);
-      DatabaseColumnInteger   (request,118,t.l_slowing);
-      DatabaseColumnInteger   (request,119,t.l_STOCmamethod);
-      DatabaseColumnInteger   (request,120,t.l_STOCpa);
-      DatabaseColumnInteger   (request,121,t.s_OSMAperiod);
-      DatabaseColumnInteger   (request,122,t.s_OSMAfastEMA);
-      DatabaseColumnInteger   (request,123,t.s_OSMAslowEMA);
-      DatabaseColumnInteger   (request,124,t.s_OSMAsignalPeriod);
-      DatabaseColumnInteger   (request,125,t.s_OSMApa);
-      DatabaseColumnInteger   (request,126,t.m_OSMAperiod);
-      DatabaseColumnInteger   (request,127,t.m_OSMAfastEMA);
-      DatabaseColumnInteger   (request,128,t.m_OSMAslowEMA);
-      DatabaseColumnInteger   (request,129,t.m_OSMAsignalPeriod);
-      DatabaseColumnInteger   (request,130,t.m_OSMApa);
-      DatabaseColumnInteger   (request,131,t.l_OSMAperiod);
-      DatabaseColumnInteger   (request,132,t.l_OSMAfastEMA);
-      DatabaseColumnInteger   (request,133,t.l_OSMAslowEMA);
-      DatabaseColumnInteger   (request,134,t.l_OSMAsignalPeriod);
-      DatabaseColumnInteger   (request,135,t.l_OSMApa);
-      DatabaseColumnInteger   (request,136,t.s_MACDDperiod);
-      DatabaseColumnInteger   (request,137,t.s_MACDDfastEMA);
-      DatabaseColumnInteger   (request,138,t.s_MACDDslowEMA);
-      DatabaseColumnInteger   (request,139,t.s_MACDDsignalPeriod);
-      DatabaseColumnInteger   (request,140,t.m_MACDDperiod);
-      DatabaseColumnInteger   (request,141,t.m_MACDDfastEMA);
-      DatabaseColumnInteger   (request,142,t.m_MACDDslowEMA);
-      DatabaseColumnInteger   (request,143,t.m_MACDDsignalPeriod);
-      DatabaseColumnInteger   (request,144,t.l_MACDDperiod);
-      DatabaseColumnInteger   (request,145,t.l_MACDDfastEMA);
-      DatabaseColumnInteger   (request,146,t.l_MACDDslowEMA);
-      DatabaseColumnInteger   (request,147,t.l_MACDDsignalPeriod);
-      DatabaseColumnInteger   (request,148,t.s_MACDBULLperiod);
-      DatabaseColumnInteger   (request,149,t.s_MACDBULLfastEMA);
-      DatabaseColumnInteger   (request,150,t.s_MACDBULLslowEMA);
-      DatabaseColumnInteger   (request,151,t.s_MACDBULLsignalPeriod);
-      DatabaseColumnInteger   (request,152,t.m_MACDBULLperiod);
-      DatabaseColumnInteger   (request,153,t.m_MACDBULLfastEMA);
-      DatabaseColumnInteger   (request,154,t.m_MACDBULLslowEMA);
-      DatabaseColumnInteger   (request,155,t.m_MACDBULLsignalPeriod);
-      DatabaseColumnInteger   (request,156,t.l_MACDBULLperiod);
-      DatabaseColumnInteger   (request,157,t.l_MACDBULLfastEMA);
-      DatabaseColumnInteger   (request,158,t.l_MACDBULLslowEMA);
-      DatabaseColumnInteger   (request,159,t.l_MACDBULLsignalPeriod);
-      DatabaseColumnInteger   (request,160,t.s_MACDBEARperiod);
-      DatabaseColumnInteger   (request,161,t.s_MACDBEARfastEMA);
-      DatabaseColumnInteger   (request,162,t.s_MACDBEARslowEMA);
-      DatabaseColumnInteger   (request,163,t.s_MACDBEARsignalPeriod);
-      DatabaseColumnInteger   (request,164,t.m_MACDBEARperiod);
-      DatabaseColumnInteger   (request,165,t.m_MACDBEARfastEMA);
-      DatabaseColumnInteger   (request,166,t.m_MACDBEARslowEMA);
-      DatabaseColumnInteger   (request,167,t.m_MACDBEARsignalPeriod);
-      DatabaseColumnInteger   (request,168,t.l_MACDBEARperiod);
-      DatabaseColumnInteger   (request,169,t.l_MACDBEARfastEMA);
-      DatabaseColumnInteger   (request,170,t.l_MACDBEARslowEMA);
-      DatabaseColumnInteger   (request,171,t.l_MACDBEARsignalPeriod);
-      //DatabaseColumnInteger   (request,172,useADX);
-      //DatabaseColumnInteger   (request,173,useRSI);
-      //DatabaseColumnInteger   (request,174,useMFI);
-      //DatabaseColumnInteger   (request,175,useSAR);
-      //DatabaseColumnInteger   (request,176,useICH);
-      //DatabaseColumnInteger   (request,177,useRVI);
-      //DatabaseColumnInteger   (request,178,useSTOC);
-      //DatabaseColumnInteger   (request,179,useOSMA);
-      //DatabaseColumnInteger   (request,180,useMACD);
-      //DatabaseColumnInteger   (request,181,useMACDBULLDIV);
-      //DatabaseColumnInteger   (request,182,useMACDBEARDIV);
+      DatabaseColumnInteger   (request,54,t.s_ADXperiod);
+      DatabaseColumnInteger   (request,55,t.s_ADXma);
+      DatabaseColumnInteger   (request,56,t.m_ADXperiod);
+      DatabaseColumnInteger   (request,57,t.m_ADXma);
+      DatabaseColumnInteger   (request,58,t.l_ADXperiod);
+      DatabaseColumnInteger   (request,59,t.l_ADXma);
+      DatabaseColumnInteger   (request,60,t.s_RSIperiod);
+      DatabaseColumnInteger   (request,61,t.s_RSIma);
+      DatabaseColumnInteger   (request,62,t.s_RSIap);
+      DatabaseColumnInteger   (request,63,t.m_RSIperiod);
+      DatabaseColumnInteger   (request,64,t.m_RSIma);
+      DatabaseColumnInteger   (request,65,t.s_RSIap);
+      DatabaseColumnInteger   (request,66,t.l_RSIperiod);
+      DatabaseColumnInteger   (request,67,t.l_RSIma);
+      DatabaseColumnInteger   (request,68,t.l_RSIap);
+      DatabaseColumnInteger   (request,69,t.s_MFIperiod);
+      DatabaseColumnInteger   (request,70,t.s_MFIma);
+      DatabaseColumnInteger   (request,71,t.m_MFIperiod);
+      DatabaseColumnInteger   (request,72,t.m_MFIma);
+      DatabaseColumnInteger   (request,73,t.l_MFIperiod);
+      DatabaseColumnInteger   (request,74,t.l_MFIma);
+      DatabaseColumnInteger   (request,75,t.s_SARperiod);
+      DatabaseColumnDouble    (request,76,t.s_SARstep);
+      DatabaseColumnDouble    (request,77,t.s_SARmax);
+      DatabaseColumnInteger   (request,78,t.m_SARperiod);
+      DatabaseColumnDouble    (request,79,t.m_SARstep);
+      DatabaseColumnDouble    (request,80,t.m_SARmax);
+      DatabaseColumnInteger   (request,81,t.l_SARperiod);
+      DatabaseColumnDouble    (request,82,t.l_SARstep);
+      DatabaseColumnDouble    (request,83,t.l_SARmax);
+      DatabaseColumnInteger   (request,84,t.s_ICHperiod);
+      DatabaseColumnInteger   (request,85,t.s_tenkan_sen);
+      DatabaseColumnInteger   (request,86,t.s_kijun_sen);
+      DatabaseColumnInteger   (request,87,t.s_senkou_span_b);
+      DatabaseColumnInteger   (request,88,t.m_ICHperiod);
+      DatabaseColumnInteger   (request,89,t.m_tenkan_sen);
+      DatabaseColumnInteger   (request,90,t.m_kijun_sen);
+      DatabaseColumnInteger   (request,91,t.m_senkou_span_b);
+      DatabaseColumnInteger   (request,92,t.l_ICHperiod);
+      DatabaseColumnInteger   (request,93,t.l_tenkan_sen);
+      DatabaseColumnInteger   (request,94,t.l_kijun_sen);
+      DatabaseColumnInteger   (request,95,t.l_senkou_span_b);
+      DatabaseColumnInteger   (request,96,t.s_RVIperiod);
+      DatabaseColumnInteger   (request,97,t.s_RVIma);
+      DatabaseColumnInteger   (request,98,t.m_RVIperiod);
+      DatabaseColumnInteger   (request,99,t.m_RVIma);
+      DatabaseColumnInteger   (request,100,t.l_RVIperiod);
+      DatabaseColumnInteger   (request,101,t.l_RVIma);
+      DatabaseColumnInteger   (request,102,t.s_STOCperiod);
+      DatabaseColumnInteger   (request,103,t.s_kPeriod);
+      DatabaseColumnInteger   (request,104,t.s_dPeriod);
+      DatabaseColumnInteger   (request,105,t.s_slowing);
+      DatabaseColumnInteger   (request,106,t.s_STOCmamethod);
+      DatabaseColumnInteger   (request,107,t.s_STOCpa);
+      DatabaseColumnInteger   (request,108,t.m_STOCperiod);
+      DatabaseColumnInteger   (request,109,t.m_kPeriod);
+      DatabaseColumnInteger   (request,110,t.m_dPeriod);
+      DatabaseColumnInteger   (request,111,t.m_slowing);
+      DatabaseColumnInteger   (request,112,t.m_STOCmamethod);
+      DatabaseColumnInteger   (request,113,t.m_STOCpa);
+      DatabaseColumnInteger   (request,114,t.l_STOCperiod);
+      DatabaseColumnInteger   (request,115,t.l_kPeriod);
+      DatabaseColumnInteger   (request,116,t.l_dPeriod);
+      DatabaseColumnInteger   (request,117,t.l_slowing);
+      DatabaseColumnInteger   (request,118,t.l_STOCmamethod);
+      DatabaseColumnInteger   (request,119,t.l_STOCpa);
+      DatabaseColumnInteger   (request,130,t.s_OSMAperiod);
+      DatabaseColumnInteger   (request,121,t.s_OSMAfastEMA);
+      DatabaseColumnInteger   (request,122,t.s_OSMAslowEMA);
+      DatabaseColumnInteger   (request,123,t.s_OSMAsignalPeriod);
+      DatabaseColumnInteger   (request,124,t.s_OSMApa);
+      DatabaseColumnInteger   (request,125,t.m_OSMAperiod);
+      DatabaseColumnInteger   (request,126,t.m_OSMAfastEMA);
+      DatabaseColumnInteger   (request,127,t.m_OSMAslowEMA);
+      DatabaseColumnInteger   (request,128,t.m_OSMAsignalPeriod);
+      DatabaseColumnInteger   (request,129,t.m_OSMApa);
+      DatabaseColumnInteger   (request,130,t.l_OSMAperiod);
+      DatabaseColumnInteger   (request,131,t.l_OSMAfastEMA);
+      DatabaseColumnInteger   (request,132,t.l_OSMAslowEMA);
+      DatabaseColumnInteger   (request,133,t.l_OSMAsignalPeriod);
+      DatabaseColumnInteger   (request,134,t.l_OSMApa);
+      DatabaseColumnInteger   (request,135,t.s_MACDDperiod);
+      DatabaseColumnInteger   (request,136,t.s_MACDDfastEMA);
+      DatabaseColumnInteger   (request,137,t.s_MACDDslowEMA);
+      DatabaseColumnInteger   (request,138,t.s_MACDDsignalPeriod);
+      DatabaseColumnInteger   (request,139,t.m_MACDDperiod);
+      DatabaseColumnInteger   (request,140,t.m_MACDDfastEMA);
+      DatabaseColumnInteger   (request,141,t.m_MACDDslowEMA);
+      DatabaseColumnInteger   (request,142,t.m_MACDDsignalPeriod);
+      DatabaseColumnInteger   (request,143,t.l_MACDDperiod);
+      DatabaseColumnInteger   (request,144,t.l_MACDDfastEMA);
+      DatabaseColumnInteger   (request,145,t.l_MACDDslowEMA);
+      DatabaseColumnInteger   (request,146,t.l_MACDDsignalPeriod);
+      DatabaseColumnInteger   (request,147,t.s_MACDBULLperiod);
+      DatabaseColumnInteger   (request,148,t.s_MACDBULLfastEMA);
+      DatabaseColumnInteger   (request,149,t.s_MACDBULLslowEMA);
+      DatabaseColumnInteger   (request,150,t.s_MACDBULLsignalPeriod);
+      DatabaseColumnInteger   (request,151,t.m_MACDBULLperiod);
+      DatabaseColumnInteger   (request,152,t.m_MACDBULLfastEMA);
+      DatabaseColumnInteger   (request,153,t.m_MACDBULLslowEMA);
+      DatabaseColumnInteger   (request,154,t.m_MACDBULLsignalPeriod);
+      DatabaseColumnInteger   (request,155,t.l_MACDBULLperiod);
+      DatabaseColumnInteger   (request,156,t.l_MACDBULLfastEMA);
+      DatabaseColumnInteger   (request,157,t.l_MACDBULLslowEMA);
+      DatabaseColumnInteger   (request,158,t.l_MACDBULLsignalPeriod);
+      DatabaseColumnInteger   (request,159,t.s_MACDBEARperiod);
+      DatabaseColumnInteger   (request,160,t.s_MACDBEARfastEMA);
+      DatabaseColumnInteger   (request,161,t.s_MACDBEARslowEMA);
+      DatabaseColumnInteger   (request,162,t.s_MACDBEARsignalPeriod);
+      DatabaseColumnInteger   (request,163,t.m_MACDBEARperiod);
+      DatabaseColumnInteger   (request,164,t.m_MACDBEARfastEMA);
+      DatabaseColumnInteger   (request,165,t.m_MACDBEARslowEMA);
+      DatabaseColumnInteger   (request,166,t.m_MACDBEARsignalPeriod);
+      DatabaseColumnInteger   (request,167,t.l_MACDBEARperiod);
+      DatabaseColumnInteger   (request,168,t.l_MACDBEARfastEMA);
+      DatabaseColumnInteger   (request,169,t.l_MACDBEARslowEMA);
+      DatabaseColumnInteger   (request,170,t.l_MACDBEARsignalPeriod);
+      //DatabaseColumnInteger   (request,171,useADX);
+      //DatabaseColumnInteger   (request,172,useRSI);
+      //DatabaseColumnInteger   (request,173,useMFI);
+      //DatabaseColumnInteger   (request,174,useSAR);
+      //DatabaseColumnInteger   (request,175,useICH);
+      //DatabaseColumnInteger   (request,176,useRVI);
+      //DatabaseColumnInteger   (request,177,useSTOC);
+      //DatabaseColumnInteger   (request,178,useOSMA);
+      //DatabaseColumnInteger   (request,179,useMACD);
+      //DatabaseColumnInteger   (request,180,useMACDBULLDIV);
+      //DatabaseColumnInteger   (request,181,useMACDBEARDIV);
+
+      #ifdef _DEBUG_TECHNICAL_PARAMETERS
+         printf(" -> copyValuesFromDataBase -> s_ADXperiod:%d m_ADXperiod:%d l_ADXperiod:%d",t.s_ADXperiod,t.m_ADXperiod, t.l_ADXperiod);
+      #endif 
       
    }
-
-   #ifdef _WRITELOG
-      commentLine;
-      ss=" -> copyValuesFromDatabase ....";
-      writeLog;
-   #endif
-
 
 }
 

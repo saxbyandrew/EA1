@@ -56,15 +56,6 @@ private:
 protected:
 //=========
 
-   struct MainBase {
-      int      strategyNumber;
-      int      maxLong;
-      int      maxShort;
-      int      maxMg;
-      int      maxDaily;
-      double   maxHedgeLossAmountAllowed;
-   } sb;
-   
    bool                 checkMaxDailyOpenQty();
    void                 infoPanel();
 
@@ -170,7 +161,7 @@ bool EAMain::checkMaxDailyOpenQty() {
    string s;
 
    //showPanel infoPanel.updateInfo1Label(9, "Max Positions/Day");  
-   if (usp.maxDaily==-1) {
+   if (usp.maxDaily<=0) {
       #ifdef _DEBUG_MAIN_LOOP 
          Print(" -> No max number of daily positions specfied");
          #endif    

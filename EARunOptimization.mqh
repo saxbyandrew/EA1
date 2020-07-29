@@ -99,75 +99,12 @@ int EARunOptimization::OnTesterInit(void) {
 
    printf ("===============OnTesterInit==================");
 
-   #ifdef _WRITELOG
-      string ss;
-   #endif
-
-   #ifdef _WRITELOG
-      ss=StringFormat("%d.txt",(1000+MathRand()%1000)+(2000+MathRand()%2000)+(3000+MathRand()%3000));
-      _txtHandle=FileOpen(ss,FILE_COMMON|FILE_READ|FILE_WRITE|FILE_ANSI|FILE_TXT);  
-      writeLog; 
-   #endif
-
    //--- create or open the database in the common terminal folder
    _optimizeHandle=DatabaseOpen(_optimizeDBName, DATABASE_OPEN_READWRITE | DATABASE_OPEN_COMMON| DATABASE_OPEN_CREATE);
    if (_optimizeHandle==INVALID_HANDLE) {
       printf(" -> Optimization DB open failed with code %d",GetLastError());
       ExpertRemove();
    } 
-
- /*  
-   MqlDateTime start;
-   
-   start.year=2018;
-   start.mon=12;
-   start.day=1;
-   start.min=0;
-   start.hour=1;
-
-   
-   datetime sampleStartDateTime=StructToTime(start);
-   #ifdef _WRITELOG
-      ss=StringFormat("Starting at %s\n",TimeToString(sampleStartDateTime,TIME_DATE)); 
-      writeLog;
-   #endif
-*/
-   // 1/ Create the tecnhincals object and in this case because we are in optimization mode the
-   // tech object will read its values from the optimization inputs
-   //tech=new EATechnicalParameters(_mainDB,_txtHandle);
-   //if (CheckPointer(tech)==POINTER_INVALID) {
-      //Print("-> Error created technical object");
-         //ExpertRemove();
-   //} 
-
-   // 2/ Create a input/output object passing it the new technical values
-   //io=new EAInputsOutputs(tech, _txtHandle);
-   //if (CheckPointer(io)==POINTER_INVALID) {
-      //Print("-> Error created input/output object");
-      //ExpertRemove();
-   //}
-   // 3/ Create a data frame object, build a new data frame based on the starting date
-   //df=new EADataFrame(_mainDB,_txtHandle);
-   //if (CheckPointer(df)==POINTER_INVALID) {
-      //Print("-> Error created dataframe object");
-      //ExpertRemove();
-   //}
-   //df.buildDataFrame(PERIOD_CURRENT,io);
-
-   // 4/ create a new network to train based on the dataframe
-   //nn=new EANeuralNetwork(_mainDB,_txtHandle);
-   //if (CheckPointer(nn)==POINTER_INVALID) {
-      //Print("-> Error created neural network object");
-      //ExpertRemove();
-   //}
-   //nn.trainNetwork(df);
-
-   //#ifdef _WRITELOG
-      //ss=StringFormat("In OnTesterInit Neural Network Inputs:%d and Outputs:%d\n",ArraySize(io.inputs),ArraySize(io.outputs)); 
-      //writeLog;
-   //#endif
-
-      
 
    return(INIT_SUCCEEDED);
 }
@@ -399,12 +336,7 @@ void EARunOptimization::OnTesterPass() {
          end of a single pass in the OnTester() handler.
    */
 
-   #ifdef _WRITELOG
-      string ss;
-      commentLine;
-      ss=" -> EARunOptimization::OnTesterPass ....";
-      writeLog;
-   #endif
+   printf ("===============OnTesterPass==================");
 
 
       string name ="";  // Public name/frame label
@@ -412,9 +344,9 @@ void EARunOptimization::OnTesterPass() {
       long   id   =0;   // Public id of the frame
       double val  =0.0; // Single numerical value of the frame
       //---
-      FrameNext(pass,name,id,val,values);
+      FrameNext(pass,name,id,val,v);
       //---
-      Print("Name: ",name," pass: "+IntegerToString(pass)+"; STAT_PROFIT: ",DoubleToString(values[2],2), "SHARPE: ",DoubleToString(values[5],2));
+      //Print("Name: ",name," pass: "+IntegerToString(pass)+"; STAT_PROFIT: ",DoubleToString(v[1].v0[2],2), "SHARPE: ",DoubleToString(v[1].v0[5],2));
 
 }
 //+------------------------------------------------------------------+
@@ -431,12 +363,7 @@ void EARunOptimization::OnTester(const double onTesterValue) {
       criterion for genetic optimization of input parameters.
    */
 
-   #ifdef _WRITELOG
-      string ss;
-      commentLine;
-      ss=" -> EARunOptimization::OnTester ....";
-      writeLog;
-   #endif
+   printf ("===============OnTester==================");
 
 
    int    trades=(int)TesterStatistics(STAT_PROFIT_TRADES);
@@ -455,12 +382,12 @@ void EARunOptimization::OnTester(const double onTesterValue) {
       v[0].v0[7]=TesterStatistics(STAT_RECOVERY_FACTOR);
       v[0].v0[8]=TesterStatistics(STAT_EXPECTED_PAYOFF);
       v[0].v0[9]=onTesterValue;
-      v[0].v0[10]=balance;
-      v[0].v0[11]=balance_plus_profitfactor;
-      v[0].v0[12]=balance_plus_expectedpayoff;
-      v[0].v0[13]=balance_plus_dd;
-      v[0].v0[14]=balance_plus_recoveryfactor;
-      v[0].v0[15]=balance_plus_sharpe;
+      //v[0].v0[10]=balance;
+      //v[0].v0[11]=balance_plus_profitfactor;
+      //v[0].v0[12]=balance_plus_expectedpayoff;
+      //v[0].v0[13]=balance_plus_dd;
+      //v[0].v0[14]=balance_plus_recoveryfactor;
+      //v[0].v0[15]=balance_plus_sharpe;
 
       v[0].v1[0]=ilsize;
       v[0].v1[1]=ifptl;
@@ -608,7 +535,6 @@ void EARunOptimization::OnTester(const double onTesterValue) {
       v[0].v2[130]=iuseMACDBULLDIV;
       v[0].v2[131]=iuseMACDBEARDIV;
 
-
       //--- create a data frame and send it to the terminal
       if (!FrameAdd(MQLInfoString(MQL_PROGRAM_NAME)+"_stats", STATS_FRAME, v[0].v0[0], v)) {
          Print(" -> Stats Frame add error: ", GetLastError());
@@ -637,14 +563,7 @@ void EARunOptimization::OnTesterDeinit() {
       The function is used for final processing of all optimization results.
    */
 
-   #ifdef _WRITELOG
-      string ss;
-      commentLine;
-      ss=" -> EARunOptimization::OnTesterDeinit ....";
-      writeLog;
-   #endif
-
-  
+   printf ("===============OnTesterDeinit==================");
 
 
    //--- variables for reading frames
@@ -660,7 +579,7 @@ void EARunOptimization::OnTesterDeinit() {
 
    bool failed=false;
    //DatabaseTransactionBegin(_optimizeDB);
-   while (FrameNext(iterationNumber, name, id, value, values)) {
+   while (FrameNext(iterationNumber, name, id, v[0].v0[0], v)) {
       printf(" -> ?");
 
    }

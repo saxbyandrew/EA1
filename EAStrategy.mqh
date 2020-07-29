@@ -8,7 +8,7 @@
 #property version   "1.00"
 
 
-//#define  _DEBUG_STRATGEY_LIVE
+#define  _DEBUG_STRATGEY_LIVE
 
 
 #include "EAEnum.mqh"
@@ -89,22 +89,21 @@ EAStrategy::EAStrategy() {
       ExpertRemove();
    }
 
-   // 3/ Create a data frame object
-   df=new EADataFrame(io);
-   if (CheckPointer(df)==POINTER_INVALID) {
-      Print("-> Error created dataframe object");
-      ExpertRemove();
-   }
-
-   // 4/ create a new network to train based on the dataframe if needed
-   nn=new EANeuralNetwork();
+   // 3/ create a new network to train based on the dataframe if needed
+   nn=new EANeuralNetwork(usp.dnnBaseStrategyNumber,io);
    if (CheckPointer(nn)==POINTER_INVALID) {
       Print("-> Error created neural network object");
       ExpertRemove();
    }
-   nn.trainNetwork(df);
-   
 
+   // 4/ Create a data frame object if we are in optimization mode
+   if (MQLInfoInteger(MQL_OPTIMIZATION) || MQLInfoInteger(MQL_VISUAL_MODE) || MQLInfoInteger(MQL_TESTER)) {
+      df=new EADataFrame(io);
+      if (CheckPointer(df)==POINTER_INVALID) {
+         Print("-> Error created dataframe object");
+         ExpertRemove();
+      }
+   }
    
 
 }
@@ -129,10 +128,10 @@ EAEnum EAStrategy::waitOnTriggers() {
    // Pass in the live values into the trained model
    // Get the updated inputs from the input/output model and 
    // pass these to the NN to forecast a output
-   //io.getInputs(1);                             // Inputs for the current bar
-   //nn.networkForcast(io.inputs,io.outputs);        // ask the NN to forcast a output(s)
+   //io.getInputs(1);                              // Inputs for the current bar
+   nn.networkForcast(io.inputs,io.outputs);        // ask the NN to forcast a output(s)
    
-/*
+   /*
    showPanel {
       
          //mp.updateInfo2Label(20,"DDN Inputs:");
@@ -177,24 +176,24 @@ EAEnum EAStrategy::waitOnTriggers() {
    }
    */
 
-/*
-   // LONG         
-   if (bool (pb.dnnType&_LONG)&&outputs[0]>0.6) {    
+
+   // Allow LONG/SHORTS if strategy values have been set       
+   if (usp.maxLong>0 && io.outputs[0]>0.6) {    
       #ifdef _DEBUG_STRATGEY_LIVE                                                               
          Print(__FUNCTION__," -> Network returned Long trigger");
       #endif 
-      
-      pb.orderTypeToOpen=ORDER_TYPE_BUY;  // Cast the specific values before opening a position !!!
+   
+      usp.orderTypeToOpen=ORDER_TYPE_BUY;  // Cast the specific values before opening a position !!!
       triggers[_TLAST]=_NEW_POSITION;                     // !!! Always copy this line to the last trigger  
    }   
    
    // SHORT  
-   if (bool (pb.dnnType&_SHORT)&&outputs[1]>0.6) {    
+   if (usp.maxShort>0 && io.outputs[1]>0.6) {    
       #ifdef _DEBUG_STRATGEY_LIVE                                                               
          Print(__FUNCTION__," -> Network returned Short trigger");
       #endif 
       
-      pb.orderTypeToOpen=ORDER_TYPE_SELL;   // Cast the specific values before opening a position !!!
+      usp.orderTypeToOpen=ORDER_TYPE_SELL;   // Cast the specific values before opening a position !!!
       triggers[_TLAST]=_NEW_POSITION;                       // !!! Always copy this line to the last trigger  
 
    } 
@@ -203,7 +202,7 @@ EAEnum EAStrategy::waitOnTriggers() {
    if (triggers[_TLAST]==_NEW_POSITION) {
       resetTriggers(_NEW_POSITION);
 
-      switch (pb.orderTypeToOpen) {
+      switch (usp.orderTypeToOpen) {
          case ORDER_TYPE_BUY: return (_OPEN_LONG);   
          break;
          case ORDER_TYPE_SELL: return(_OPEN_SHORT);
@@ -211,7 +210,7 @@ EAEnum EAStrategy::waitOnTriggers() {
       }
       
    }
-   */
+   
    return _NO_ACTION;
 
 
@@ -228,18 +227,24 @@ EAEnum EAStrategy::runOnBar() {
    
    EAEnum retValue;
 
+
    // Check if we are building a DataFrame either in strategy testing mode or specified via the DB
-   if (MQLInfoInteger(MQL_TESTER)) {
+   if (MQLInfoInteger(MQL_OPTIMIZATION) || MQLInfoInteger(MQL_VISUAL_MODE) || MQLInfoInteger(MQL_TESTER)) {
       if (df.barCnt>0) { 
-         df.buildDataFrame(); // Get the next bars info and store it
+         #ifdef _DEBUG_STRATGEY_LIVE
+            printf(" -> buildDataFrame:%d",df.barCnt);
+         #endif 
+         df.buildDataFrame(io); // Get the next bars info and store it
          return _NO_ACTION;
       }
       // Once DF is completed we train the network
       if (df.barCnt==0&&nn.isTrained==false) { 
+         #ifdef _DEBUG_STRATGEY_LIVE
+            printf(" -> trainNetwork");
+         #endif 
          nn.trainNetwork(df);
       }
    }
-
    retValue=waitOnTriggers();
 
    // Check trading times first

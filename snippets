@@ -1,0 +1,222 @@
+/*
+   // Create a new file name/number if needed and update DB
+   if (n.fileName==NULL) {
+      n.fileName=networkFileName();
+      // Update DB
+      sql=StringFormat("UPDATE NNETWORKS SET fileName=%s WHERE strategyNumber=%d AND dnnNumber=%d",n.fileName,net.StrategyNumber,n.dnnNumber);
+      #ifdef _DEBUG_DNN
+         Print(" -> ",sql);
+      #endif
+
+      request=DatabasePrepare(_dbHandle,sql); 
+      if (request==INVALID_HANDLE) {
+         #ifdef _DEBUG_DNN
+            printf(" -> DB read failed with code %d",GetLastError());
+         #endif
+      }
+      if (!DatabaseExecute(_dbHandle,sql)) {
+         #ifdef _DEBUG_DNN
+            printf(" -> DB read failed with code %d",GetLastError());
+         #endif
+      }
+   } else {
+      if (fileHandle=FileOpen("fn",FILE_WRITE|FILE_BIN|FILE_ANSI|FILE_COMMON)) {
+         if (!nnArray.Load(fileHandle)) {
+            #ifdef _DEBUG_DNN
+               printf( " -> SUCCESS loaded file:%s",fn);
+            #endif
+         } else {
+            #ifdef _DEBUG_DNN
+               printf( " -> ERROR loading file:%s -> %d",fn, GetLastError());
+            #endif
+         }
+      } else {
+         #ifdef _DEBUG_DNN
+            printf( " -> ERROR file:%s is missing -> %d",fn, GetLastError());
+         #endif
+      }
+   }
+
+
+   if (MQLInfoInteger(MQL_OPTIMIZATION)) { 
+      // if optimizing we will create the network when its trained
+   } else { 
+      createNewNetwork();
+      // loadNetwork();
+   }
+*/
+/*
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+string EANeuralNetwork::networkFileName() {
+
+   MqlDateTime t;
+   TimeToStruct(TimeCurrent(),t);
+
+   string fn=StringFormat("%d%d%d%d%d%d%d%d.bin",t.year,t.mon,t.day,t.hour,t.min,t.sec);
+
+   #ifdef _DEBUG_DNN
+      printf( " -> New file name:%s",fn);
+   #endif
+   return (fn);
+   
+
+}
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+EANeuralNetwork::saveNetworkToDisk() {
+
+   int fileHandle;
+
+   string fn=nnetworkFileName();
+   // If the file exists then remove it first before saving the new version
+   if (FileIsExist(fn,FILE_COMMON)) {
+      if (FileDelete(fn,FILE_COMMON)) {
+         #ifdef _DEBUG_DNN
+            printf( " -> DELETING existing file:%s",fn);
+         #endif
+      };
+   }
+
+   // Now create it
+   if (fileHandle=FileOpen("fn",FILE_WRITE|FILE_BIN|FILE_ANSI|FILE_COMMON)) {
+      if (!nnArray.Save(fileHandle)) {
+         #ifdef _DEBUG_DNN
+            printf( " -> SUCCESS created file:%s",fn);
+         #endif
+      } else {
+         #ifdef _DEBUG_DNN
+            printf( " -> ERROR saving file:%s -> %d",fn, GetLastError());
+         #endif
+      }
+   } else {
+      #ifdef _DEBUG_DNN
+         printf( " ->  ERROR creating file:%s-> %d",fn, GetLastError());
+      #endif
+   }; 
+
+   FileClose(fileHandle);
+
+}
+
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+EANeuralNetwork::loadNetworkFromDisk() {
+
+   int fileHandle;
+
+   string fn=nnetworkFileName();
+   // If the file exists then remove it first before saving the new version
+   if (FileIsExist(fn,FILE_COMMON)) {
+      if (fileHandle=FileOpen("fn",FILE_READ|FILE_BIN|FILE_ANSI|FILE_COMMON)) {
+         if (!nnArray.Load(fileHandle)) {
+            #ifdef _DEBUG_DNN
+               printf( " -> SUCCESS loaded file:%s",fn);
+            #endif
+         } else {
+            #ifdef _DEBUG_DNN
+               printf( " -> ERROR loading file:%s -> %d",fn, GetLastError());
+            #endif
+         }
+      } else {
+         #ifdef _DEBUG_DNN
+            printf( " -> ERROR opening handle for file:%s -> %d",fn, GetLastError());
+         #endif
+      }
+   } else {
+      #ifdef _DEBUG_DNN
+         printf( " -> ERROR file:%s is missing -> %d",fn, GetLastError());
+      #endif
+   }
+
+   FileClose(fileHandle);
+
+}
+*/
+
+ #ifdef _DEBUG_DNN
+      ss=StringFormat(" -> Saved network with:%d elements",nnArray.Total());
+      printf(ss);
+   #endif 
+
+   // Save network to Database
+
+   DatabaseTransactionBegin(_dbHandle);
+
+   int request=DatabasePrepare(_dbHandle, "INSERT INTO NETWORKS (strategyNumber,nn) VALUES (?1,?2);");
+   if (request==INVALID_HANDLE) {
+      #ifdef _DEBUG_DNN
+         printf(" -> DB DatabasePrepare request failed with code ", GetLastError());
+      #endif
+   }
+
+   ArrayResize(nn,nnArray.Total());
+   for (int i=0;i<nnArray.Total();i++) {
+      nn[i]=DoubleToString(nnArray.At(i),8);
+      printf(" -> nnArray:%2.2f nn:%s",nnArray.At(i),nn[i]);
+   }
+   //ArrayCopy(nn,nnArray,0,0,WHOLE_ARRAY);
+   printf("-------------------");
+   ArrayPrint(nn);
+   printf("-------------------");
+
+   if (!DatabaseBind(request,0,usp.strategyNumber)) {
+      #ifdef _DEBUG_DNN
+         printf(" -> DB DatabaseBind request failed with code ", GetLastError());
+      #endif
+   } else {
+      #ifdef _DEBUG_DNN
+         printf(" -> DB DatabaseBindArray request success %d",usp.strategyNumber);
+      #endif
+   }
+
+   if (!DatabaseBindArray(request,1,nn)) {
+      #ifdef _DEBUG_DNN
+         printf(" -> DB DatabaseBindArray request failed with code ", GetLastError());
+      #endif
+   } else {
+      #ifdef _DEBUG_DNN
+         printf(" -> DB DatabaseBindArray request success");
+      #endif
+   }
+
+   DatabaseRead(request);
+
+   DatabaseTransactionCommit(_dbHandle);
+
+   // Test reload
+   //loadNetwork();
+
+   
+   int sN;
+   string blobData[];
+
+   ArrayResize(blobData,nnArray.Total());
+
+   request=DatabasePrepare(_dbHandle, "SELECT strategyNumber, nn FROM NETWORKS"); 
+   DatabaseRead(request);
+   DatabaseColumnInteger   (request,0,sN);
+   DatabaseColumnBlob      (request,1,blobData);
+
+   printf(" -> Strategy number:%d",sN);
+   for (int i=0;i<ArraySize(blobData);i++) {
+      printf(" -> blobarray value:%s",blobData[i]);
+   }
+
+   delete(nnArray);
+   nnArray=new CArrayDouble;
+   printf(" -> blob array size:%d",ArraySize(blobData));
+   string val;
+   for (int i=0;i<ArraySize(blobData); i++) {
+      val = blobData[i];
+      nnArray.Add(StringToDouble(val));
+      printf(" -> reread %s",val);
+   }
+   printf("222222");
+   //loadNetwork();
+   printf("33333");
+
+   return true;

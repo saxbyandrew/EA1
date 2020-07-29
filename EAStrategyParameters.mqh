@@ -89,7 +89,7 @@ EAStrategyParameters();
       int               inLossOpenLongHedge;
       int               closeAtEOD;      
       int               allowWeekendTrading;        // _YES OR _NO    
-      int               dnnHedgeNumber;
+      int               dnnBaseStrategyNumber;
       int               dnnMartingaleNumber;
       int               dnnLongNumber;
       int               dnnShortNumber;
@@ -120,7 +120,7 @@ EAStrategyParameters();
       // Not stored in DB !
       unsigned          closingTypes;
       EAEnum            marketSessions[4];
-      ENUM_ORDER_TYPE   orderTypeToOpen;           // LONG SHORT etc set by stategy !
+      ENUM_ORDER_TYPE   orderTypeToOpen;           // LONG SHORT etc set by stategy once a trigger occurs !
       EAEnum            triggerReset;
       int               triggerResetCounter; 
       datetime          closingDateTime;
@@ -174,7 +174,7 @@ void EAStrategyParameters::resetValues() {
       sb.tradingStart="";           // NYSE time is 16:50=8:50 premarket to 23:00=16:00 market close                        
       sb.tradingEnd="";    
       sb.allowWeekendTrading=_NOTSET ;     // _YES OR _NO                
-      sb.sessionTradingTime=0 ;     // _ANYTIME OR _SESSION_TIME OR _FIXED_TIME
+      sb.sessionTradingTime=46 ;     // _FIXED_TIME=44, _SESSION_TIME=45, _ANYTIME=46, 
       sb.closingTypes=0; 
       sb.inProfitClosePosition=0;
       sb.inLossClosePosition=0;
@@ -193,7 +193,7 @@ void EAStrategyParameters::resetValues() {
       sb.dataFrameStartBar=1;
       sb.dataFrameSize=500;
       sb.dnnType=0;
-      sb.dnnHedgeNumber=0;
+      sb.dnnBaseStrategyNumber=0;
       sb.dnnMartingaleNumber=0;
       sb.dnnLongNumber=0;
       sb.dnnShortNumber=0;
@@ -226,10 +226,8 @@ void EAStrategyParameters::loadSQLStrategy() {
    int request;
 
    request=DatabasePrepare(_dbHandle,"SELECT * FROM STRATEGIES WHERE isActive=1"); 
-   if (!DatabaseRead(request)) {
-      Print(" -> loadSQLStrategy DB request failed with code:", GetLastError()); 
-      ExpertRemove();
-   } else {
+   DatabaseRead(request);
+
       DatabaseColumnInteger   (request,1,sb.isActive);
       DatabaseColumnText      (request,2,sb.strategyComment);
       DatabaseColumnInteger   (request,3,sb.strategyNumber);
@@ -255,7 +253,7 @@ void EAStrategyParameters::loadSQLStrategy() {
       DatabaseColumnInteger   (request,23,sb.inLossOpenLongHedge);
       DatabaseColumnInteger   (request,24,sb.closeAtEOD);
       DatabaseColumnInteger   (request,25,sb.allowWeekendTrading);
-      DatabaseColumnInteger   (request,26,sb.dnnHedgeNumber);
+      DatabaseColumnInteger   (request,26,sb.dnnBaseStrategyNumber);
       DatabaseColumnInteger   (request,27,sb.dnnMartingaleNumber);
       DatabaseColumnInteger   (request,28,sb.dnnLongNumber);
       DatabaseColumnInteger   (request,29,sb.dnnShortNumber);
@@ -287,7 +285,7 @@ void EAStrategyParameters::loadSQLStrategy() {
       #ifdef _DEBUG_PARAMETERS
          printf(" strategyNumber:%d brokerAdminPercent:%2.2f lotSize:%2.2f fptl:%2.2f maxLong:%d maxLongHedgeLoss:%2.2f ",sb.strategyNumber,sb.brokerAdminPercent,sb.lotSize,sb.fptl,sb.maxLong,sb.maxLongHedgeLoss);
       #endif 
-   }
+   
 
    // Convert some data fields so the new DB format works with 
    // the older code and does not required extensive changes
