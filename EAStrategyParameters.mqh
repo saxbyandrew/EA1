@@ -225,7 +225,7 @@ void EAStrategyParameters::loadSQLStrategy() {
    #endif 
    int request;
 
-   request=DatabasePrepare(_dbHandle,"SELECT * FROM STRATEGIES WHERE isActive=1"); 
+   request=DatabasePrepare(_mainDBHandle,"SELECT * FROM STRATEGIES WHERE isActive=1"); 
    DatabaseRead(request);
 
       DatabaseColumnInteger   (request,1,sb.isActive);
@@ -366,7 +366,7 @@ void EAStrategyParameters::checkSQLDatabase() {
    #endif 
 
    //--- create a query and get a handle for it
-   request1=DatabasePrepare(_dbHandle, sqlString);
+   request1=DatabasePrepare(_mainDBHandle, sqlString);
    if (request1==INVALID_HANDLE) {
       #ifdef _DEBUG_PARAMETERS
          Print(" -> DatabasePrepare: request failed with code ", GetLastError());
@@ -392,14 +392,14 @@ void EAStrategyParameters::checkSQLDatabase() {
       #ifdef _DEBUG_PARAMETERS
          Print(" -> ",sqlString);
       #endif
-      request2=DatabasePrepare(_dbHandle,sqlString); 
+      request2=DatabasePrepare(_mainDBHandle,sqlString); 
       if (request2==INVALID_HANDLE) {
          #ifdef _DEBUG_PARAMETERS
             Print(" -> DatabasePrepare failed with code ", GetLastError());
          #endif
          return;
       }
-      if (!DatabaseExecute(_dbHandle,sqlString)) {
+      if (!DatabaseExecute(_mainDBHandle,sqlString)) {
          #ifdef _DEBUG_PARAMETERS
             Print(" -> DB request failed with code ", GetLastError());
          #endif
@@ -654,7 +654,7 @@ void EAStrategyParameters::loadSQLState() {
    #endif
    
       //--- create a query and get a handle for it
-      request=DatabasePrepare(_dbHandle,sqlString); 
+      request=DatabasePrepare(_mainDBHandle,sqlString); 
       
       if(request==INVALID_HANDLE) {
          #ifdef _DEBUG_PARAMETERS
@@ -728,7 +728,7 @@ void EAStrategyParameters::saveSQLState(EAPosition *p) {
    #endif
    
 
-   request=DatabasePrepare(_dbHandle,sqlString); 
+   request=DatabasePrepare(_mainDBHandle,sqlString); 
    if (request==INVALID_HANDLE) {
       #ifdef _DEBUG_PARAMETERS
          Print(" -> DB request failed with code ", GetLastError());
@@ -736,7 +736,7 @@ void EAStrategyParameters::saveSQLState(EAPosition *p) {
       return;
    }
 
-   if(!DatabaseExecute(_dbHandle,sqlString)) {
+   if(!DatabaseExecute(_mainDBHandle,sqlString)) {
       #ifdef _DEBUG_PARAMETERS
          Print("DB: insert failed with code ", GetLastError());
       #endif
@@ -768,12 +768,12 @@ void EAStrategyParameters::deleteSQLPosition(int ticket) {
       Print(" -> ",sqlString);
    #endif
 
-   request=DatabasePrepare(_dbHandle,sqlString); 
+   request=DatabasePrepare(_mainDBHandle,sqlString); 
    if (request==INVALID_HANDLE) {
       Print(" -> DB request failed with code ", GetLastError());
          return;
    }
-   if (!DatabaseExecute(_dbHandle,sqlString)) {
+   if (!DatabaseExecute(_mainDBHandle,sqlString)) {
       Print(" -> DB request failed with code ", GetLastError());
    }
    
@@ -802,7 +802,7 @@ void EAStrategyParameters::updateSQLSwapCosts(EAPosition *p) {
       #endif
 
         //--- create a query and get a handle for it
-      request=DatabasePrepare(_dbHandle,sqlString); 
+      request=DatabasePrepare(_mainDBHandle,sqlString); 
       if (request==INVALID_HANDLE) {
          Print(" -> DB request failed with code ", GetLastError());
          return;
@@ -822,12 +822,12 @@ void EAStrategyParameters::updateSQLSwapCosts(EAPosition *p) {
          Print(" -> ",sqlString);
       #endif
 
-      request=DatabasePrepare(_dbHandle,sqlString); 
+      request=DatabasePrepare(_mainDBHandle,sqlString); 
       if( request==INVALID_HANDLE) {
          Print(" -> DB request failed with code ", GetLastError());
          return;
       }
-      if (!DatabaseExecute(_dbHandle,sqlString)) {
+      if (!DatabaseExecute(_mainDBHandle,sqlString)) {
          Print(" -> DB request failed with code ", GetLastError());
       }
       
@@ -848,8 +848,8 @@ void EAStrategyParameters::copyOptimizationResults() {
 
 
    //--- create or open the database in the common terminal folder
-   _dbHandle1=DatabaseOpen("optimization", DATABASE_OPEN_READWRITE | DATABASE_OPEN_COMMON);
-   if (_dbHandle1==INVALID_HANDLE) {
+   _mainDBHandle1=DatabaseOpen("optimization", DATABASE_OPEN_READWRITE | DATABASE_OPEN_COMMON);
+   if (_mainDBHandle1==INVALID_HANDLE) {
       #ifdef _DEBUG_OPTIMIZATIONCOPY
          printf(" -> DB open failed with code %d",GetLastError());
       #endif 
@@ -861,7 +861,7 @@ void EAStrategyParameters::copyOptimizationResults() {
 
 
       //--- create a query and get a handle for it
-      int request=DatabasePrepare(_dbHandle1,"SELECT * from PASSES where selection=1"); 
+      int request=DatabasePrepare(_mainDBHandle1,"SELECT * from PASSES where selection=1"); 
       if(request==INVALID_HANDLE) {
          #ifdef _DEBUG_OPTIMIZATIONCOPY
             printf(" -> DB query failed with code %d",GetLastError());
@@ -1065,7 +1065,7 @@ void EAStrategyParameters::copyOptimizationResults() {
 
       string sql1=StringFormat("%s%s%s%s%s",sql1a,sql1b,sql1c,sql1d,sql1e);
 
-   int request1=DatabasePrepare(_dbHandle,sql1); 
+   int request1=DatabasePrepare(_mainDBHandle,sql1); 
    if (request1==INVALID_HANDLE) {
       #ifdef _DEBUG_OPTIMIZATIONCOPY
          Print(" -> DB request failed with code ", GetLastError());
@@ -1073,7 +1073,7 @@ void EAStrategyParameters::copyOptimizationResults() {
       return;
    }
 
-   if(!DatabaseExecute(_dbHandle,sql1)) {
+   if(!DatabaseExecute(_mainDBHandle,sql1)) {
       #ifdef _DEBUG_OPTIMIZATIONCOPY
          Print("DB: udpate failed with code ", GetLastError());
       #endif
@@ -1099,7 +1099,7 @@ void EAStrategyParameters::optimizationCreateValues(int strategyNumber, int iter
    #endif 
    
    // =====create a query and get a handle for it
-   req1=DatabasePrepare(_dbHandle1,sql1); 
+   req1=DatabasePrepare(_mainDBHandle1,sql1); 
    if(req1==INVALID_HANDLE) {
       #ifdef _DEBUG_OPTIMIZATIONCOPY
          printf(" -> DB query failed with code %d",GetLastError());
@@ -1184,7 +1184,7 @@ void EAStrategyParameters::optimizationCreateValues(int strategyNumber, int iter
    #endif
    
 
-   req2=DatabasePrepare(_dbHandle,sql6); 
+   req2=DatabasePrepare(_mainDBHandle,sql6); 
    if (req2==INVALID_HANDLE) {
       #ifdef _DEBUG_OPTIMIZATIONCOPY
          Print(" -> DB request failed with code ", GetLastError());
@@ -1192,7 +1192,7 @@ void EAStrategyParameters::optimizationCreateValues(int strategyNumber, int iter
       return;
    }
 
-   if(!DatabaseExecute(_dbHandle,sql6)) {
+   if(!DatabaseExecute(_mainDBHandle,sql6)) {
       #ifdef _DEBUG_OPTIMIZATIONCOPY
          Print("DB: insert failed with code ", GetLastError());
       #endif

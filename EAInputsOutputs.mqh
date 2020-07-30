@@ -8,7 +8,7 @@
 #property version   "1.00"
 
 
-//#define  _DEBUG_NN_INPUTS_OUTPUTS
+
 
 #include "EAEnum.mqh"
 #include "EAModuleTechnicals.mqh"
@@ -246,9 +246,9 @@ void EAInputsOutputs::getInputs(int currentBar) {
    ArrayCopy(inputs,i,0,0,j);
    
    #ifdef _DEBUG_NN_INPUTS_OUTPUTS
-      ss="";
+      ss="getInputs -> ";
       for (int i=0;i<ArraySize(inputs);i++) {
-         ss=ss+":"+DoubleToString(inputs[i]);
+         ss=ss+"  "+DoubleToString(inputs[i]);
       }
       writeLog
       printf(ss);
@@ -291,9 +291,9 @@ void EAInputsOutputs::getOutputs(int currentBar) {
    ArrayCopy(outputs,o,0,0,j);
    
    #ifdef _DEBUG_NN_INPUTS_OUTPUTS
-      ss="";
+      ss="getOutputs -> ";
       for (int i=0;i<ArraySize(outputs);i++) {
-         ss=ss+":"+DoubleToString(outputs[i]);
+         ss=ss+"  "+DoubleToString(outputs[i]);
       }
       writeLog
       printf(ss);

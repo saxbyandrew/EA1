@@ -8,9 +8,6 @@
 #property version   "1.00"
 
 
-//#define  _DEBUG_STRATGEY
-//#define  _DEBUG_STRATGEY_TRIGGERS
-
 
 #include "EAEnum.mqh"
 #include "EATimingBase.mqh"
@@ -136,7 +133,7 @@ EAStrategy::EAStrategy() {
    }
 
    // 4/ Create a data frame object if we are in optimization mode
-   if (MQLInfoInteger(MQL_OPTIMIZATION) || MQLInfoInteger(MQL_VISUAL_MODE) || MQLInfoInteger(MQL_TESTER)) {
+   if (MQLInfoInteger(MQL_OPTIMIZATION) || MQLInfoInteger(MQL_VISUAL_MODE) || MQLInfoInteger(MQL_TESTER) && nn.createNewDataFrame) {
       df=new EADataFrame(io);
       if (CheckPointer(df)==POINTER_INVALID) {
          ss="EAStrategy -> ERROR created dataframe object";
@@ -187,7 +184,7 @@ EAEnum EAStrategy::waitOnTriggers() {
    // Pass in the live values into the trained model
    // Get the updated inputs from the input/output model and 
    // pass these to the NN to forecast a output
-   //io.getInputs(1);                              // Inputs for the current bar
+   io.getInputs(1);                                // Inputs for the current bar Outputs are returned
    nn.networkForcast(io.inputs,io.outputs);        // ask the NN to forcast a output(s)
    
    /*
@@ -220,7 +217,7 @@ EAEnum EAStrategy::waitOnTriggers() {
    }
 */
 /*
-  if (longTerm.ZIGZAGValue()==_UP) {
+   if (longTerm.ZIGZAGValue()==_UP) {
       printf("LONG TERM UP");
    }
    if (mediumTerm.ZIGZAGValue()==_UP) {
@@ -312,12 +309,13 @@ EAEnum EAStrategy::runOnBar() {
       }
    }
 
+/*
    if (reload) {
       EANeuralNetwork *test=new EANeuralNetwork(usp.dnnBaseStrategyNumber,io);
       reload=false;
       printf("------------------------------------------");
    }
-
+*/
    retValue=waitOnTriggers();
 
    // Check trading times first

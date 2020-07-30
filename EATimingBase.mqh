@@ -7,7 +7,7 @@
 #property link      "https://www.mql5.com"
 #property version   "1.00"
 
-#define _DEBUG_STRATEGY_TIME
+
 
 #include <Object.mqh>
 
@@ -19,6 +19,7 @@ class EATimingBase : public CObject{
 private:
 //=========
 
+  string ss;
 
 //=========
 protected:
@@ -56,10 +57,10 @@ public:
 //+------------------------------------------------------------------+
 EATimingBase::EATimingBase() {
 
-  #ifdef _WRITELOG
-      string ss;
-      ss=" -> EATimingBase Object Created ....";
+  #ifdef _DEBUG_STRATEGY_TIME
+      ss="EATimingBase ->  Object Created ....";
       writeLog;
+      printf(ss);
   #endif
 
   
@@ -96,11 +97,10 @@ ENUM_DAY_OF_WEEK EATimingBase::getDayName(int dayOfWeek) {
 //+------------------------------------------------------------------+
 void EATimingBase::getMarketSessionTimes() {
 
-    #ifdef _WRITELOG
-      string ss;
-      ss=" -> getMarketSessionTimes Object Created ....";
+    #ifdef _DEBUG_STRATEGY_TIME
+      ss="getMarketSessionTimes ->  ....";
       writeLog;
-   #endif
+    #endif
 
   MqlDateTime tm;
   static datetime sessionStart, sessionEnd, lastDay;
@@ -113,6 +113,7 @@ void EATimingBase::getMarketSessionTimes() {
       #ifdef _WRITELOG
         ss=StringFormat(" -> Get session details once a day Today is:%s",TimeToString(TimeCurrent()));
         writeLog;
+        printf(ss);
       #endif 
       
       // Get and store the current days session times
@@ -128,9 +129,10 @@ void EATimingBase::getMarketSessionTimes() {
         ast[l].end.year=tm.year;
         ast[l].end.day=tm.day;
         ast[l].end.mon=tm.mon;
-        #ifdef _WRITELOG
+        #ifdef _DEBUG_STRATEGY_TIME
             ss=StringFormat(" -> Index:%d Start:%s End:%s",l,TimeToString(sessionStart, TIME_MINUTES),TimeToString(sessionEnd,TIME_MINUTES));
             writeLog;
+            printf(ss);
         #endif 
         ++l;      
       }

@@ -7,7 +7,7 @@
 #property link      "https://www.mql5.com"
 #property version   "1.00"
 
-#define _DEBUG_LONG 
+
 
 #include "EAEnum.mqh"
 #include "EAPosition.mqh"

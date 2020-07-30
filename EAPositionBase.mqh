@@ -103,7 +103,7 @@ void EAPositionBase::deleteSQLPosition(int ticket) {
    if (!bool (usp.runMode&_RUN_SAVE_STATE)) return;             // No state saving enabled
 
     string sql=StringFormat("DELETE FROM STATE WHERE ticket=%d",ticket);
-    if (!DatabaseExecute(_dbHandle,sql)) {
+    if (!DatabaseExecute(_mainDBHandle,sql)) {
         #ifdef _WRITELOG
             string ss=StringFormat(" -> DB request failed with code ", GetLastError());
             writeLog;
@@ -124,7 +124,7 @@ void EAPositionBase::updateSQLSwapCosts(EAPosition *p) {
     if (MQLInfoInteger(MQL_OPTIMIZATION))  return;   // No state saving during optimizations
 
     sql=StringFormat("SELECT swapCosts FROM STRATEGIES WHERE strategyNumber=%d",usp.strategyNumber);
-    request=DatabasePrepare(_dbHandle,sql); 
+    request=DatabasePrepare(_mainDBHandle,sql); 
     DatabaseRead(request);
     DatabaseColumnDouble(request,0,swapCosts); 
 
@@ -135,7 +135,7 @@ void EAPositionBase::updateSQLSwapCosts(EAPosition *p) {
 
     // Update DB
     sql=StringFormat("UPDATE STRATEGIES SET swapCosts=%g WHERE strategyNumber=%d",result, usp.strategyNumber);
-    if (!DatabaseExecute(_dbHandle,sql)) {
+    if (!DatabaseExecute(_mainDBHandle,sql)) {
         #ifdef _WRITELOG
             string ss=StringFormat(" -> DB request failed with code ", GetLastError());
             writeLog;

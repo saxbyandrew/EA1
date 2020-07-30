@@ -241,7 +241,7 @@ void EATechnicalParameters::copyValuesFromDatabase() {
       printf(ss);
    #endif
 
-   int request=DatabasePrepare(_dbHandle,"SELECT * FROM STRATEGIES WHERE isActive=1");
+   int request=DatabasePrepare(_mainDBHandle,"SELECT * FROM STRATEGIES WHERE isActive=1");
    if (!DatabaseRead(request)) {
       #ifdef _DEBUG_TECHNICAL_PARAMETERS
          ss=StringFormat(" -> EATechnicalParameters copyValuesFromDatabase DB request failed with code:", GetLastError()); 
@@ -618,7 +618,7 @@ string request1a="INSERT INTO TECHPASSES ("
       string request1=StringFormat("%s%s%s%s%s%s%s%s%s%s%s%s",request1a,request1b,request1c,request1d,request1e,request1f,request1g,request1h,request1i,request1j,request1k,request1l);
 
       
-      if (!DatabaseExecute(_optimizeHandle, request1)) {
+      if (!DatabaseExecute(_optimizeDBHandle, request1)) {
          printf(" -> Failed to insert PASSES %d with code %d", t.iterationNumber, GetLastError());
       } else {
          #ifdef _DEBUG_OPTIMIZATION

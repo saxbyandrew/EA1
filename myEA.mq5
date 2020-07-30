@@ -9,6 +9,15 @@
 
 #define  STATS_FRAME  1
 //#define _DEBUG_MYEA
+//#define  _DEBUG_NN_INPUTS_OUTPUTS
+//#define _DEBUG_DNN
+//#define  _DEBUG_STRATGEY
+//#define  _DEBUG_STRATGEY_TRIGGERS
+//#define _DEBUG_DATAFRAME
+//#define _DEBUG_LONG 
+//#define _DEBUG_STRATEGY_TIME
+
+
 
 
 #include <Object.mqh>
@@ -24,7 +33,7 @@
 #define gsp  EAPosition *p=shortPositions.GetNodeAtIndex(i)
 #define glhp EAPosition *p=longHedgePositions.GetNodeAtIndex(i)
 #define showPanel if (!MQLInfoInteger(MQL_OPTIMIZATION)) 
-#define writeLog if (MQLInfoInteger(MQL_OPTIMIZATION)) {FileWrite(_txtHandle,ss); FileFlush(_txtHandle);}
+#define writeLog if (MQLInfoInteger(MQL_VISUAL_MODE) || MQLInfoInteger(MQL_TESTER)) {FileWrite(_txtHandle,ss); FileFlush(_txtHandle);}
 
 
 
@@ -47,8 +56,8 @@ EAMain                  *expertAdvisor;
 EAPanel                 *infoPanel; 
 EAStrategyParameters    *strategyParameters; 
 EAEnum                  _runMode;
-int                     _dbHandle, _txtHandle, _optimizeHandle;
-string                  _dbName="strategies.sqlite";
+int                     _mainDBHandle, _txtHandle, _optimizeDBHandle;
+string                  _mainDBName="strategies.sqlite";
 string                  _optimizeDBName="optimization.sqlite";
 
 
@@ -62,22 +71,20 @@ EARunOptimization       optimization;
 //+------------------------------------------------------------------+
 int OnInit() {
 
-    #ifdef _WRITELOG
+    #ifdef _DEBUG_MYEA
         string ss;
     #endif
 
-    if (MQLInfoInteger(MQL_OPTIMIZATION)) {
-        MqlDateTime t;
-        TimeToStruct(TimeCurrent(),t);
-        string fn=StringFormat("%d%d%d%d%d%d%d%d.log",t.year,t.mon,t.day,t.hour,t.min,t.sec);
-        _txtHandle=FileOpen(fn,FILE_COMMON|FILE_READ|FILE_WRITE|FILE_ANSI|FILE_TXT);  
-    }
-
+    MqlDateTime t;
+    TimeToStruct(TimeCurrent(),t);
+    string fn=StringFormat("%d%d%d%d%d%d%d%d.log",t.year,t.mon,t.day,t.hour,t.min,t.sec);
+    _txtHandle=FileOpen(fn,FILE_COMMON|FILE_READ|FILE_WRITE|FILE_ANSI|FILE_TXT);  
+    
     EventSetTimer(60);
 
     // Open the database in the common terminal folder
-    _dbHandle=DatabaseOpen(_dbName, DATABASE_OPEN_READWRITE | DATABASE_OPEN_COMMON);
-    if (_dbHandle==INVALID_HANDLE) {
+    _mainDBHandle=DatabaseOpen(_mainDBName, DATABASE_OPEN_READWRITE | DATABASE_OPEN_COMMON);
+    if (_mainDBHandle==INVALID_HANDLE) {
         #ifdef _DEBUG_MYEA
             ss=StringFormat("OnInit ->  Failed to open Main DB with errorcode:%d",GetLastError());
             writeLog
@@ -248,7 +255,7 @@ double OnTester() {
     //--- create a custom optimization criterion as the ratio of a net profit to a relative balance drawdown
     if(balance_dd!=0)
         ret=TesterStatistics(STAT_PROFIT)/balance_dd;
-        //optimization.OnTester(ret);
+        optimization.OnTester(ret);
     return(ret);
 
     
