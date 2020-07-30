@@ -58,7 +58,6 @@ EATimingBase::EATimingBase() {
 
   #ifdef _WRITELOG
       string ss;
-      commentLine;
       ss=" -> EATimingBase Object Created ....";
       writeLog;
   #endif
@@ -99,7 +98,6 @@ void EATimingBase::getMarketSessionTimes() {
 
     #ifdef _WRITELOG
       string ss;
-      commentLine;
       ss=" -> getMarketSessionTimes Object Created ....";
       writeLog;
    #endif

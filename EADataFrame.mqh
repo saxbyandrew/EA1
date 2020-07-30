@@ -7,7 +7,7 @@
 #property link      "https://www.mql5.com"
 #property version   "1.00"
 
-#define _DEBUG_DATAFRAME
+//#define _DEBUG_DATAFRAME
 
 #include "EAEnum.mqh"
 #include <Math\Alglib\alglib.mqh>
@@ -37,11 +37,8 @@ EADataFrame(EAInputsOutputs &io);
 ~EADataFrame();
 
    CMatrixDouble  dataFrame;
-
    int      barCnt;
-
    void     buildDataFrame(EAInputsOutputs &io);
-
 
 };
 //+------------------------------------------------------------------+
@@ -49,11 +46,13 @@ EADataFrame(EAInputsOutputs &io);
 //+------------------------------------------------------------------+
 EADataFrame::EADataFrame(EAInputsOutputs &io) {
 
-
    #ifdef _DEBUG_DATAFRAME
       string ss;
-      printf(" -> EADataFrame Object Created ....");
+      ss="EADataFrame -> Object Created ....";
+      writeLog
+      printf(ss);
    #endif 
+
    int numInput, numOutput;
    barCnt=usp.dataFrameSize; // Number of bars to grab and insert into the DF
 
@@ -65,10 +64,9 @@ EADataFrame::EADataFrame(EAInputsOutputs &io) {
    dataFrame.Resize(barCnt,numInput+numOutput);
 
    #ifdef _DEBUG_DATAFRAME
-      ss=StringFormat(" -> DataFrame size is %d",dataFrame.Size());
+      ss=StringFormat("EADataFrame -> size is %d",dataFrame.Size());
       printf(ss);
    #endif  
-
 
 }
 //+------------------------------------------------------------------+
@@ -85,10 +83,20 @@ EADataFrame::~EADataFrame() {
 void EADataFrame::addDataFrameValues(double &inputs[], double& outputs[]) {
 
    #ifdef _DEBUG_DATAFRAME
-      Print(__FUNCTION__);
       string ss;
-      ArrayPrint(inputs);
-      ArrayPrint(outputs);
+      ss="addDataFrameValues -> inputs ->";
+      for (int i=0;i<ArraySize(inputs);i++) {
+         ss=ss+":"+DoubleToString(inputs[i]);
+      }
+      writeLog
+      printf(ss);
+
+      ss="addDataFrameValues -> outputs ->";
+      for (int i=0;i<ArraySize(outputs);i++) {
+         ss=ss+":"+DoubleToString(outputs[i]);
+      }
+      writeLog
+      printf(ss);
    #endif  
 
    //int csvHandle1;
@@ -96,11 +104,13 @@ void EADataFrame::addDataFrameValues(double &inputs[], double& outputs[]) {
 
    // Insert input values
    // [row][in,in,in,in,etc]
+   #ifdef _DEBUG_DATAFRAME
+      ss="addDataFrameValues -> creating dataFrame row:"+rowCnt+" ";
+   #endif
    for (int i=0;i<ArraySize(inputs);i++) {
       dataFrame[rowCnt].Set(i,inputs[i]);
       #ifdef _DEBUG_DATAFRAME
          ss=ss+" "+DoubleToString(dataFrame[rowCnt][i],2);
-         printf(ss);
       #endif
    }
    // tack on output values at the end of the array
@@ -109,24 +119,15 @@ void EADataFrame::addDataFrameValues(double &inputs[], double& outputs[]) {
       dataFrame[rowCnt].Set(j+ArraySize(inputs),outputs[j]);
       #ifdef _DEBUG_DATAFRAME
          ss=ss+" "+DoubleToString(dataFrame[rowCnt][j+ArraySize(inputs)],2);
-         printf(ss);
       #endif
    }
    
-   /*
    #ifdef _DEBUG_DATAFRAME
-      static int logCnt=_LOGSIZE;
-      if (logCnt>=100) {    // Only write evert 100th entry to save space but prove it works
-         printf(ss);
-         logCnt=0;
-      } else {
-         ++logCnt;
-      }
+      writeLog
+      printf(ss);
    #endif 
-   */
 
    rowCnt++;
-   
 }
 //+------------------------------------------------------------------+
 //|                                                                  |
@@ -135,17 +136,13 @@ void EADataFrame::buildDataFrame(EAInputsOutputs &io) {
 
    #ifdef _DEBUG_DATAFRAME  
       string ss;
-   #endif
-
-   #ifdef _DEBUG_DATAFRAME   // Log the start of DF history capture
-      ss=StringFormat(" ->  DF collection at bar:%d ",barCnt);
+      ss="buildDataFrame -> ....";
+      writeLog
       printf(ss);
-   #endif 
+   #endif
    
    io.getInputs(1);
    io.getOutputs(1);
    addDataFrameValues(io.inputs,io.outputs);                   // Create a new dataframe row entry
    barCnt--;
-
-
 }

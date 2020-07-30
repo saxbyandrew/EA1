@@ -8,8 +8,6 @@
 #property version   "1.01"
 
 #define  STATS_FRAME  1
-#define _WRITELOG
-#define _LOGSIZE 1
 //#define _DEBUG_MYEA
 
 
@@ -25,9 +23,8 @@
 #define glp  EAPosition *p=longPositions.GetNodeAtIndex(i)
 #define gsp  EAPosition *p=shortPositions.GetNodeAtIndex(i)
 #define glhp EAPosition *p=longHedgePositions.GetNodeAtIndex(i)
-#define showPanel if (!MQLInfoInteger(MQL_TESTER)) 
-#define commentLine FileWrite(_txtHandle,"--------------------------------------------------")
-#define writeLog FileWrite(_txtHandle,ss); FileFlush(_txtHandle)
+#define showPanel if (!MQLInfoInteger(MQL_OPTIMIZATION)) 
+#define writeLog if (MQLInfoInteger(MQL_OPTIMIZATION)) {FileWrite(_txtHandle,ss); FileFlush(_txtHandle);}
 
 
 
@@ -69,40 +66,43 @@ int OnInit() {
         string ss;
     #endif
 
-    EventSetTimer(60);
-
-    if (!MQLInfoInteger(MQL_OPTIMIZATION)) {
-        _txtHandle=FileOpen("eaLog.txt",FILE_COMMON|FILE_READ|FILE_WRITE|FILE_ANSI|FILE_TXT);  
+    if (MQLInfoInteger(MQL_OPTIMIZATION)) {
+        MqlDateTime t;
+        TimeToStruct(TimeCurrent(),t);
+        string fn=StringFormat("%d%d%d%d%d%d%d%d.log",t.year,t.mon,t.day,t.hour,t.min,t.sec);
+        _txtHandle=FileOpen(fn,FILE_COMMON|FILE_READ|FILE_WRITE|FILE_ANSI|FILE_TXT);  
     }
+
+    EventSetTimer(60);
 
     // Open the database in the common terminal folder
     _dbHandle=DatabaseOpen(_dbName, DATABASE_OPEN_READWRITE | DATABASE_OPEN_COMMON);
     if (_dbHandle==INVALID_HANDLE) {
-        #ifdef _WRITELOG
-            ss=StringFormat("1 ->  Failed to open Main DB with errorcode:%d",GetLastError());
-            writeLog;
+        #ifdef _DEBUG_MYEA
+            ss=StringFormat("OnInit ->  Failed to open Main DB with errorcode:%d",GetLastError());
+            writeLog
             printf(ss);
         #endif
         ExpertRemove();
     } else {
-        #ifdef _WRITELOG
-            ss="1 -> Open Main DB success";
-            writeLog;
+        #ifdef _DEBUG_MYEA
+            ss="OnInit -> Open Main DB success";
+            writeLog
             printf(ss);
         #endif
     }
 
     strategyParameters=new EAStrategyParameters;
     if (CheckPointer(strategyParameters)==POINTER_INVALID) {
-        #ifdef _WRITELOG
-            ss="2 -> Error instantiating strategy parameters";
+        #ifdef _DEBUG_MYEA
+            ss="OnInit -> Error instantiating strategy parameters";
             writeLog;
             printf(ss);
         #endif 
         ExpertRemove();
     } else {
-        #ifdef _WRITELOG
-            ss="2 -> Success instantiating strategy parameters";
+        #ifdef _DEBUG_MYEA
+            ss="OnInit -> Success instantiating strategy parameters";
             writeLog;
             printf(ss);
         #endif 
@@ -112,17 +112,15 @@ int OnInit() {
     showPanel {
         infoPanel=new EAPanel;                                                                          
         if (CheckPointer(infoPanel)==POINTER_INVALID) {
-            #ifdef _WRITELOG
-                ss="3 -> Error instantiating info panel";
-                writeLog;
+            #ifdef _DEBUG_MYEA
+                ss="OnInit -> Error instantiating info panel";
                 printf(ss);
             #endif  
             ExpertRemove();
         } else {
             infoPanel.createPanel("Panel",0,10,10,800,650);
-            #ifdef _WRITELOG
-                ss="3 -> Success instantiating info panel";
-                writeLog;
+            #ifdef _DEBUG_MYEA
+                ss="OnInit -> Success instantiating info panel";
                 printf(ss);
             #endif  
         } 
@@ -130,21 +128,20 @@ int OnInit() {
 
     expertAdvisor=new EAMain;                                  // Instantiate the EA                                           
     if (CheckPointer(expertAdvisor)==POINTER_INVALID) {
-        #ifdef _WRITELOG
-            ss="4  -> Error instantiating main EA";
-            writeLog;
+        #ifdef _DEBUG_MYEA
+            ss="OnInit  -> Error instantiating main EA";
+            writeLog
             printf(ss);
         #endif 
         ExpertRemove();
         
     } else {
-        #ifdef _WRITELOG
-            ss="4  -> Success instantiating main EA";
-            writeLog;
+        #ifdef _DEBUG_MYEA
+            ss="OnInit  -> Success instantiating main EA";
+            writeLog
             printf(ss);
         #endif 
     }
-    
     
     TRADING_CIRCUIT_BREAKER=IS_UNLOCKED;          // Initially allow trading operations across all object
     ACTIVE_HEDGE=_NO;

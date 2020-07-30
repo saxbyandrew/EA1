@@ -86,6 +86,8 @@ EARunOptimization::~EARunOptimization() {
 //+------------------------------------------------------------------+
 int EARunOptimization::OnTesterInit(void) {
 
+
+
    /*
          TesterInit - this event is generated during the start of optimization 
          in the strategy tester before the very first pass. 
@@ -99,17 +101,19 @@ int EARunOptimization::OnTesterInit(void) {
 
    printf ("===============OnTesterInit==================");
 
+
    //--- create or open the database in the common terminal folder
    _optimizeHandle=DatabaseOpen(_optimizeDBName, DATABASE_OPEN_READWRITE | DATABASE_OPEN_COMMON| DATABASE_OPEN_CREATE);
    if (_optimizeHandle==INVALID_HANDLE) {
-      printf(" -> Optimization DB open failed with code %d",GetLastError());
+      printf("OnTesterInit -> Optimization DB open failed with code %d",GetLastError());
       ExpertRemove();
-   } 
+   } else {
+      string ss="OnTesterInit -> Optimization DB open success";
+      writeLog
+   }
 
    return(INIT_SUCCEEDED);
 }
-
-
 
 //+------------------------------------------------------------------+
 //|                                                                  |
@@ -118,7 +122,6 @@ void EARunOptimization::dropSQLOptimizationTables() {
 
    #ifdef _WRITELOG
       string ss;
-      commentLine;
       ss=" -> EARunOptimization::dropSQLOptimizationTables ....";
       writeLog;
    #endif
@@ -147,7 +150,6 @@ void EARunOptimization::createSQLOptimizationTables() {
 
    #ifdef _WRITELOG
       string ss;
-      commentLine;
       ss=" -> EARunOptimization::createSQLOptimizationTables ....";
       writeLog;
    #endif

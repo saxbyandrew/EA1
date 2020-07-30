@@ -7,7 +7,7 @@
 #property link      "https://www.mql5.com"
 #property version   "1.00"
 
-#define _DEBUG_TECHNICAL_PARAMETERS
+//#define _DEBUG_TECHNICAL_PARAMETERS
 
 #include "EAEnum.mqh"
 #include "EAOptimizationInputs.mqh"
@@ -18,6 +18,8 @@ class EATechnicalParameters {
 private:
 //=========
 
+   string      ss;
+
 
 //=========
 protected:
@@ -25,8 +27,7 @@ protected:
    void        copyValuesFromInputs();
    void        copyValuesFromDatabase();
    void        copyValuesToDatabase();
-   void        createNNArray(EANeuralNetwork &nn);
-
+   
 //=========
 public:
 //=========
@@ -190,8 +191,6 @@ EATechnicalParameters();
       ENUM_TIMEFRAMES l_ZZperiod;
    } t;
 
-   double nnData[];
-
 };
 
 //+------------------------------------------------------------------+
@@ -199,24 +198,30 @@ EATechnicalParameters();
 //+------------------------------------------------------------------+
 EATechnicalParameters::EATechnicalParameters() {
 
-
    #ifdef _DEBUG_TECHNICAL_PARAMETERS
-      string ss;
-      printf (" -> EATechnicalParameters Object Created ....");
+      printf ("EATechnicalParameters ->  Object Created ....");
+      writeLog
+      printf(ss);
    #endif
    
-
    // Determine where we get the technicl values from based on if we are in normal running mode
    // on in strategy optimization mode
    
    if (MQLInfoInteger(MQL_OPTIMIZATION)) {
+      #ifdef _DEBUG_TECHNICAL_PARAMETERS
+            ss="EATechnicalParameters ->  copy input values MQL_OPTIMIZATION ....";
+         writeLog
+         printf(ss);
+      #endif
       copyValuesFromInputs();
    } else {
+      #ifdef _DEBUG_TECHNICAL_PARAMETERS
+            ss="EATechnicalParameters ->  copy DB values ....";
+         writeLog
+         printf(ss);
+      #endif
       copyValuesFromDatabase();
    }
-
-
-
 }
 //+------------------------------------------------------------------+
 //|                                                                  |
@@ -231,13 +236,18 @@ EATechnicalParameters::~EATechnicalParameters() {
 void EATechnicalParameters::copyValuesFromDatabase() {
 
    #ifdef _DEBUG_TECHNICAL_PARAMETERS
-      string ss;
-      printf (" -> EATechnicalParameters copyValuesFromDatabase ....");
+      ss="copyValuesFromDatabase -> ....";
+      writeLog
+      printf(ss);
    #endif
 
    int request=DatabasePrepare(_dbHandle,"SELECT * FROM STRATEGIES WHERE isActive=1");
    if (!DatabaseRead(request)) {
-      Print(" -> EATechnicalParameters copyValuesFromDatabase DB request failed with code:", GetLastError()); 
+      #ifdef _DEBUG_TECHNICAL_PARAMETERS
+         ss=StringFormat(" -> EATechnicalParameters copyValuesFromDatabase DB request failed with code:", GetLastError()); 
+         writeLog
+      #endif
+      printf(ss);
       ExpertRemove();
    } else {
       DatabaseColumnInteger   (request,54,t.s_ADXperiod);
@@ -370,11 +380,12 @@ void EATechnicalParameters::copyValuesFromDatabase() {
       //DatabaseColumnInteger   (request,181,useMACDBEARDIV);
 
       #ifdef _DEBUG_TECHNICAL_PARAMETERS
-         printf(" -> copyValuesFromDataBase -> s_ADXperiod:%d m_ADXperiod:%d l_ADXperiod:%d",t.s_ADXperiod,t.m_ADXperiod, t.l_ADXperiod);
+         ss=StringFormat("copyValuesFromDataBase -> s_ADXperiod:%d m_ADXperiod:%d l_ADXperiod:%d",t.s_ADXperiod,t.m_ADXperiod, t.l_ADXperiod);
+         writeLog
+         printf(ss);
       #endif 
       
    }
-
 }
 
 //+------------------------------------------------------------------+
@@ -382,11 +393,10 @@ void EATechnicalParameters::copyValuesFromDatabase() {
 //+------------------------------------------------------------------+
 void EATechnicalParameters::copyValuesFromInputs() {
 
-   #ifdef _WRITELOG
-      string ss;
-      commentLine;
-      ss=" -> EATechnicalParameters Copy values from inputs (Optimization)";
+   #ifdef _DEBUG_TECHNICAL_PARAMETERS
+      ss="copyValuesFromInputs -> ....";
       writeLog;
+      printf(ss);
    #endif
 
 
@@ -398,11 +408,11 @@ void EATechnicalParameters::copyValuesFromInputs() {
    t.l_ADXperiod=il_ADXperiod;
    t.l_ADXma=il_ADXma;
    
-   #ifdef _WRITELOG
-      commentLine;
-      ss=StringFormat(" -> copyValuesFromInputs ->\nShort ADX Period:%s\n Short ADX MA:%d\n Medium ADX Period:%s\n Medium ADX MA:%d\n Long ADX Period:%s\n Long ADX MA:%d",
+   #ifdef _DEBUG_TECHNICAL_PARAMETERS
+      ss=StringFormat(" -> copyValuesFromInputs ->\n Short ADX Period:%s\n Short ADX MA:%d\n Medium ADX Period:%s\n Medium ADX MA:%d\n Long ADX Period:%s\n Long ADX MA:%d",
          EnumToString(t.s_ADXperiod),t.s_ADXma,EnumToString(t.m_ADXperiod),t.m_ADXma,EnumToString(t.l_ADXperiod),t.l_ADXma);
       writeLog;
+      printf(ss);
    #endif
    
    t.useRSI=iuseRSI;
@@ -538,11 +548,10 @@ void EATechnicalParameters::copyValuesFromInputs() {
    t.l_ZZperiod=il_ZZperiod;
 
    #ifdef _WRITELOG
-      commentLine;
-      ss=StringFormat(" -> copyValuesFromInputs ->\nShort ZZ Period:%s\n Medium ZZ Period:%s\n Long ZZ Period:%s\n",
+      ss=StringFormat(" -> copyValuesFromInputs ->\n Short ZZ Period:%s\n Medium ZZ Period:%s\n Long ZZ Period:%s\n",
          EnumToString(t.s_ZZperiod),EnumToString(t.m_ZZperiod),EnumToString(t.l_ZZperiod));
       writeLog;
-
+      printf(ss);
    #endif
 
    t.useMACDBULLDIV=iuseMACDBULLDIV;
@@ -550,20 +559,6 @@ void EATechnicalParameters::copyValuesFromInputs() {
 
 }
 
-//+------------------------------------------------------------------+
-//|                                                                  |
-//+------------------------------------------------------------------+
-void EATechnicalParameters::createNNArray(EANeuralNetwork &nn) {
-
-
-   ArrayResize(nnData,nn.nnArray.Total());
-   
-   for (int i=0;i<nn.nnArray.Total(); i++) {
-      nnData[i]=nn.nnArray.At(i);
-   }
-   
-
-}
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
@@ -630,12 +625,5 @@ string request1a="INSERT INTO TECHPASSES ("
             printf(" -> Insert into PASSES succcess:%d",t.iterationNumber);
          #endif
       }
-
-
-string request2 = StringFormat("UPDATE TECHPASSES SET nnData=?1 WHERE strategyNumber=%d AND iterationNumber=%d",t.strategyNumber,t.iterationNumber);
-
-int prepare1=DatabasePrepare(_optimizeHandle, request2);
-DatabaseBindArray(prepare1, 0, nnData); // Will this work as its a CArrayDouble not a Array/Double
-DatabaseFinalize(prepare1);
 
 }

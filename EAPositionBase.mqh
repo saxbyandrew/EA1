@@ -66,7 +66,6 @@ EAPositionBase::EAPositionBase() {
 
     #ifdef _WRITELOG
         string ss;
-        commentLine;
         ss=" -> EAPositionBase Object Created ....";
         writeLog;
     #endif
@@ -253,7 +252,6 @@ bool EAPositionBase::openPosition(EAPosition *p) {
 
     #ifdef _WRITELOG
         string ss;
-        commentLine;
         ss=" -> openPosition ....";
         writeLog;
     #endif

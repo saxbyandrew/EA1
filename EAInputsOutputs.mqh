@@ -8,14 +8,12 @@
 #property version   "1.00"
 
 
-#define  _DEBUG_NN_INPUTS_OUTPUTS
-
+//#define  _DEBUG_NN_INPUTS_OUTPUTS
 
 #include "EAEnum.mqh"
 #include "EAModuleTechnicals.mqh"
 
 class EATechnicalParameters;
-
 
 //=========
 class EAInputsOutputs  {
@@ -25,7 +23,7 @@ class EAInputsOutputs  {
 //=========
 private:
 //=========
-
+   string               ss;
    EAModuleTechnicals   *shortTerm;
    EAModuleTechnicals   *mediumTerm;
    EAModuleTechnicals   *longTerm;
@@ -55,7 +53,6 @@ EAInputsOutputs(EATechnicalParameters &t);
 
 };
 
-
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
@@ -63,8 +60,9 @@ EAInputsOutputs::EAInputsOutputs(EATechnicalParameters &tech) {
 
 
    #ifdef _DEBUG_NN_INPUTS_OUTPUTS
-      string ss;
-      printf(" -> EAInputsOutputs Object Created ....");
+      ss="EAInputsOutputs ->  Object Created ....";
+      writeLog
+      printf(ss);
    #endif 
 
    shortTerm=new EAModuleTechnicals;
@@ -72,9 +70,19 @@ EAInputsOutputs::EAInputsOutputs(EATechnicalParameters &tech) {
    longTerm=new EAModuleTechnicals;
 
    if (CheckPointer(shortTerm)==POINTER_INVALID||CheckPointer(mediumTerm)==POINTER_INVALID||CheckPointer(longTerm)==POINTER_INVALID) {
-         printf("-> Error creating technical shortTerm mediumTerm or longTerm objects");
-         ExpertRemove();
-   } 
+      #ifdef _DEBUG_NN_INPUTS_OUTPUTS
+         ss="-> ERROR creating technical shortTerm mediumTerm longTerm objects";
+         writeLog
+      #endif
+      printf(ss);
+      ExpertRemove();
+   } else {
+      #ifdef _DEBUG_NN_INPUTS_OUTPUTS
+         ss="-> SUCCESS creating technical shortTerm mediumTerm longTerm objects";
+         writeLog
+         printf(ss);
+      #endif
+   }
 
    setupTechnicalParameters(tech);
 
@@ -84,6 +92,9 @@ EAInputsOutputs::EAInputsOutputs(EATechnicalParameters &tech) {
 //+------------------------------------------------------------------+
 EAInputsOutputs::~EAInputsOutputs() {
 
+   delete shortTerm;
+   delete mediumTerm;
+   delete longTerm;
 }
 
 //+------------------------------------------------------------------+
@@ -92,14 +103,16 @@ EAInputsOutputs::~EAInputsOutputs() {
 void EAInputsOutputs::setupTechnicalParameters(EATechnicalParameters &tech) {
 
    #ifdef _DEBUG_NN_INPUTS_OUTPUTS
-      string ss;
-      printf(" -> setupTechnicalParameters ....");
+      ss="setupTechnicalParameters ->  ....";
+      writeLog
+      printf(ss);
    #endif 
 
     //if (tech.t.useADX) {
       #ifdef _DEBUG_NN_INPUTS_OUTPUTS
          ss=StringFormat(" Short ADX Period:%s\n Short ADX MA:%d\n Medium ADX Period:%s\n Medium ADX MA:%d\n Long ADX Period:%s\n Long ADX MA:%d\n",
          EnumToString(tech.t.s_ADXperiod),tech.t.s_ADXma,EnumToString(tech.t.m_ADXperiod),tech.t.m_ADXma,EnumToString(tech.t.l_ADXperiod),tech.t.l_ADXma);
+         writeLog
          printf(ss);
       #endif
       // ADX      ADXNormalizedValue(int start, int buffer) 0=Main 1=DI+ 2=DI-
@@ -113,6 +126,7 @@ void EAInputsOutputs::setupTechnicalParameters(EATechnicalParameters &tech) {
       #ifdef _DEBUG_NN_INPUTS_OUTPUTS
          ss=StringFormat(" Short RSI Period:%s\n Short RSI MA:%d\n Medium RSI Period:%s\n Medium RSI MA:%d\n Long RSI Period:%s\n Long RSI MA:%d\n",
          EnumToString(tech.t.s_RSIperiod),tech.t.s_RSIma,EnumToString(tech.t.m_RSIperiod),tech.t.m_RSIma,EnumToString(tech.t.l_RSIperiod),tech.t.l_RSIperiod);
+         writeLog
          printf(ss);
       #endif
       // RSI     RSINormalizedValue(int start)
@@ -172,8 +186,9 @@ void EAInputsOutputs::setupTechnicalParameters(EATechnicalParameters &tech) {
 */
    //if (tech.t.useZZ) {
       #ifdef _DEBUG_NN_INPUTS_OUTPUTS
-         ss=StringFormat(" Short ZZ Period:%s\nMedium ZZ Period:%s\nLong ZZ Period:%s\n",
+         ss=StringFormat(" Short ZZ Period:%s\n Medium ZZ Period:%s\n Long ZZ Period:%s\n",
          EnumToString(tech.t.s_ZZperiod),EnumToString(tech.t.m_ZZperiod),EnumToString(tech.t.l_ZZperiod));
+         writeLog
          printf(ss);
       #endif
 
@@ -195,8 +210,9 @@ void EAInputsOutputs::setupTechnicalParameters(EATechnicalParameters &tech) {
 void EAInputsOutputs::getInputs(int currentBar) {
 
    #ifdef _DEBUG_NN_INPUTS_OUTPUTS
-      Print(__FUNCTION__);
-      printf(" -> getInputs current bar:%d",currentBar);
+      ss=StringFormat("getInputs -> for bar number:%d",currentBar);
+      writeLog
+      printf(ss);
    #endif 
 
    double   i[100];
@@ -230,9 +246,12 @@ void EAInputsOutputs::getInputs(int currentBar) {
    ArrayCopy(inputs,i,0,0,j);
    
    #ifdef _DEBUG_NN_INPUTS_OUTPUTS
-      string ss=StringFormat(" -> Neural Network Inputs:%d\n",ArraySize(inputs)); 
+      ss="";
+      for (int i=0;i<ArraySize(inputs);i++) {
+         ss=ss+":"+DoubleToString(inputs[i]);
+      }
+      writeLog
       printf(ss);
-      ArrayPrint(inputs);
    #endif
    
    
@@ -245,9 +264,10 @@ void EAInputsOutputs::getInputs(int currentBar) {
 void EAInputsOutputs::getOutputs(int currentBar) {
 
    #ifdef _DEBUG_NN_INPUTS_OUTPUTS
-      Print(__FUNCTION__);
-      printf(" -> getOutputs current bar:%d",currentBar);
-   #endif 
+      ss=StringFormat("getOutputs ->for bar number:%d",currentBar);
+      writeLog
+      printf(ss);
+   #endif  
 
    double  o[2];
    int     j=0;
@@ -271,9 +291,12 @@ void EAInputsOutputs::getOutputs(int currentBar) {
    ArrayCopy(outputs,o,0,0,j);
    
    #ifdef _DEBUG_NN_INPUTS_OUTPUTS
-      string ss=StringFormat(" -> Neural Network Outputs:%d\n",ArraySize(outputs)); 
+      ss="";
+      for (int i=0;i<ArraySize(outputs);i++) {
+         ss=ss+":"+DoubleToString(outputs[i]);
+      }
+      writeLog
       printf(ss);
-      ArrayPrint(outputs);
    #endif
 
 }
