@@ -19,6 +19,7 @@ private:
 //=========
 
    string      ss;
+   int         _baseStrategyReference;
 
 
 //=========
@@ -26,30 +27,35 @@ protected:
 //=========
    void        copyValuesFromInputs();
    void        copyValuesFromDatabase();
+   int         copyValuesFromDatabase(string tableName);
    void        copyValuesToDatabase();
    
 //=========
 public:
 //=========
-EATechnicalParameters();
+EATechnicalParameters(int baseStrategyReference);
 ~EATechnicalParameters();
 
 
 
-   struct technicals {
-
+   struct ADX {
       int strategyNumber;
-      int iterationNumber;
-   
+      int typeRefernce;
       int useADX;
+
       ENUM_TIMEFRAMES s_ADXperiod;
       int s_ADXma;
       ENUM_TIMEFRAMES m_ADXperiod;
       int m_ADXma;
       ENUM_TIMEFRAMES l_ADXperiod;
       int l_ADXma;
+   } adx;
 
+   struct RSI {
+      int strategyNumber;
+      int typeRefernce;
       int useRSI;
+
       ENUM_TIMEFRAMES s_RSIperiod;
       int s_RSIma;
       ENUM_APPLIED_PRICE s_RSIap;
@@ -61,16 +67,26 @@ EATechnicalParameters();
       ENUM_TIMEFRAMES l_RSIperiod;
       int l_RSIma;
       ENUM_APPLIED_PRICE l_RSIap;
+   } rsi;
 
+   struct MFI {
+      int strategyNumber;
+      int typeRefernce;
       int useMFI;
+
       ENUM_TIMEFRAMES s_MFIperiod;
       int s_MFIma;
       ENUM_TIMEFRAMES m_MFIperiod;
       int m_MFIma;
       ENUM_TIMEFRAMES l_MFIperiod;
       int l_MFIma;
+   } mfi;
 
+   struct SAR {
+      int strategyNumber;
+      int typeRefernce;
       int useSAR;
+
       ENUM_TIMEFRAMES s_SARperiod;
       double s_SARstep;
       double s_SARmax;
@@ -80,8 +96,13 @@ EATechnicalParameters();
       ENUM_TIMEFRAMES l_SARperiod;
       double l_SARstep;
       double l_SARmax;
+   } sar;
 
+   struct ICH {
+      int strategyNumber;
+      int typeRefernce;
       int useICH;
+
       ENUM_TIMEFRAMES s_ICHperiod;
       int s_tenkan_sen;
       int s_kijun_sen;
@@ -94,16 +115,26 @@ EATechnicalParameters();
       int l_tenkan_sen;
       int l_kijun_sen;
       int l_senkou_span_b;
+   } ich;
 
+   struct RVI {
+      int strategyNumber;
+      int idx;
       int useRVI;
+
       ENUM_TIMEFRAMES s_RVIperiod;
       int s_RVIma;
       ENUM_TIMEFRAMES m_RVIperiod;
       int m_RVIma;
       ENUM_TIMEFRAMES l_RVIperiod;
       int l_RVIma;
+   } rvi;
 
+   struct STOC {
+      int strategyNumber;
+      int typeRefernce;
       int useSTOC;
+
       ENUM_TIMEFRAMES s_STOCperiod;
       int s_kPeriod;
       int s_dPeriod;
@@ -124,8 +155,13 @@ EATechnicalParameters();
       int l_slowing;
       ENUM_MA_METHOD l_STOCmamethod;
       ENUM_STO_PRICE l_STOCpa;
+   } stoc;
 
+   struct OSMA {
+      int strategyNumber;
+      int typeRefernce;
       int useOSMA;
+
       ENUM_TIMEFRAMES s_OSMAperiod;
       int s_OSMAfastEMA;
       int s_OSMAslowEMA;
@@ -142,8 +178,13 @@ EATechnicalParameters();
       int l_OSMAslowEMA;
       int l_OSMAsignalPeriod;
       int l_OSMApa;
+   } osma;
 
+   struct MACD {
+      int strategyNumber;
+      int idx;
       int useMACD;
+
       ENUM_TIMEFRAMES s_MACDDperiod;
       int s_MACDDfastEMA;
       int s_MACDDslowEMA;
@@ -156,8 +197,13 @@ EATechnicalParameters();
       int l_MACDDfastEMA;
       int l_MACDDslowEMA;
       int l_MACDDsignalPeriod;
+   } macd;
 
-      int useMACDBULLDIV;
+   struct MACDBULL {
+      int strategyNumber;
+      int typeRefernce;
+      int useMACDBULL;
+
       ENUM_TIMEFRAMES s_MACDBULLperiod;
       int s_MACDBULLfastEMA;
       int s_MACDBULLslowEMA;
@@ -170,8 +216,13 @@ EATechnicalParameters();
       int l_MACDBULLfastEMA;
       int l_MACDBULLslowEMA;
       int l_MACDBULLsignalPeriod;
+   } macdbull;
 
-      int useMACDBEARDIV;
+   struct MACDBEAR {
+      int strategyNumber;
+      int typeRefernce;
+      int useMACDBEAR;
+
       ENUM_TIMEFRAMES s_MACDBEARperiod;
       int s_MACDBEARfastEMA;
       int s_MACDBEARslowEMA;
@@ -184,25 +235,30 @@ EATechnicalParameters();
       int l_MACDBEARfastEMA;
       int l_MACDBEARslowEMA;
       int l_MACDBEARsignalPeriod;
+   } macdbear;
 
+   struct ZZ {
       int useZZ;
       ENUM_TIMEFRAMES s_ZZperiod;
       ENUM_TIMEFRAMES m_ZZperiod;
       ENUM_TIMEFRAMES l_ZZperiod;
-   } t;
+} zz;
+   
 
 };
 
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-EATechnicalParameters::EATechnicalParameters() {
+EATechnicalParameters::EATechnicalParameters(int baseStrategyReference) {
 
    #ifdef _DEBUG_TECHNICAL_PARAMETERS
       printf ("EATechnicalParameters ->  Object Created ....");
       writeLog
       printf(ss);
    #endif
+
+   _baseStrategyReference=baseStrategyReference;
    
    // Determine where we get the technicl values from based on if we are in normal running mode
    // on in strategy optimization mode
@@ -233,159 +289,224 @@ EATechnicalParameters::~EATechnicalParameters() {
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-void EATechnicalParameters::copyValuesFromDatabase() {
+int EATechnicalParameters::copyValuesFromDatabase(string tableName) {
 
    #ifdef _DEBUG_TECHNICAL_PARAMETERS
       ss="copyValuesFromDatabase -> ....";
-      writeLog
       printf(ss);
    #endif
 
-   int request=DatabasePrepare(_mainDBHandle,"SELECT * FROM STRATEGIES WHERE isActive=1");
+   string sql=StringFormat("SELECT * FROM %s where strategyNumber=%d AND typeReference=%d",tableName,usp.strategyNumber,_baseStrategyReference);
+   int request=DatabasePrepare(_mainDBHandle,sql);
    if (!DatabaseRead(request)) {
-      #ifdef _DEBUG_TECHNICAL_PARAMETERS
-         ss=StringFormat(" -> EATechnicalParameters copyValuesFromDatabase DB request failed with code:", GetLastError()); 
-         writeLog
-      #endif
+      ss=StringFormat(" -> EATechnicalParameters copyValuesFromDatabase DB request failed %s %d %d with code:",tableName,usp.strategyNumber,_baseStrategyReference, GetLastError()); 
       printf(ss);
       ExpertRemove();
-   } else {
-      DatabaseColumnInteger   (request,54,t.s_ADXperiod);
-      DatabaseColumnInteger   (request,55,t.s_ADXma);
-      DatabaseColumnInteger   (request,56,t.m_ADXperiod);
-      DatabaseColumnInteger   (request,57,t.m_ADXma);
-      DatabaseColumnInteger   (request,58,t.l_ADXperiod);
-      DatabaseColumnInteger   (request,59,t.l_ADXma);
-      DatabaseColumnInteger   (request,60,t.s_RSIperiod);
-      DatabaseColumnInteger   (request,61,t.s_RSIma);
-      DatabaseColumnInteger   (request,62,t.s_RSIap);
-      DatabaseColumnInteger   (request,63,t.m_RSIperiod);
-      DatabaseColumnInteger   (request,64,t.m_RSIma);
-      DatabaseColumnInteger   (request,65,t.s_RSIap);
-      DatabaseColumnInteger   (request,66,t.l_RSIperiod);
-      DatabaseColumnInteger   (request,67,t.l_RSIma);
-      DatabaseColumnInteger   (request,68,t.l_RSIap);
-      DatabaseColumnInteger   (request,69,t.s_MFIperiod);
-      DatabaseColumnInteger   (request,70,t.s_MFIma);
-      DatabaseColumnInteger   (request,71,t.m_MFIperiod);
-      DatabaseColumnInteger   (request,72,t.m_MFIma);
-      DatabaseColumnInteger   (request,73,t.l_MFIperiod);
-      DatabaseColumnInteger   (request,74,t.l_MFIma);
-      DatabaseColumnInteger   (request,75,t.s_SARperiod);
-      DatabaseColumnDouble    (request,76,t.s_SARstep);
-      DatabaseColumnDouble    (request,77,t.s_SARmax);
-      DatabaseColumnInteger   (request,78,t.m_SARperiod);
-      DatabaseColumnDouble    (request,79,t.m_SARstep);
-      DatabaseColumnDouble    (request,80,t.m_SARmax);
-      DatabaseColumnInteger   (request,81,t.l_SARperiod);
-      DatabaseColumnDouble    (request,82,t.l_SARstep);
-      DatabaseColumnDouble    (request,83,t.l_SARmax);
-      DatabaseColumnInteger   (request,84,t.s_ICHperiod);
-      DatabaseColumnInteger   (request,85,t.s_tenkan_sen);
-      DatabaseColumnInteger   (request,86,t.s_kijun_sen);
-      DatabaseColumnInteger   (request,87,t.s_senkou_span_b);
-      DatabaseColumnInteger   (request,88,t.m_ICHperiod);
-      DatabaseColumnInteger   (request,89,t.m_tenkan_sen);
-      DatabaseColumnInteger   (request,90,t.m_kijun_sen);
-      DatabaseColumnInteger   (request,91,t.m_senkou_span_b);
-      DatabaseColumnInteger   (request,92,t.l_ICHperiod);
-      DatabaseColumnInteger   (request,93,t.l_tenkan_sen);
-      DatabaseColumnInteger   (request,94,t.l_kijun_sen);
-      DatabaseColumnInteger   (request,95,t.l_senkou_span_b);
-      DatabaseColumnInteger   (request,96,t.s_RVIperiod);
-      DatabaseColumnInteger   (request,97,t.s_RVIma);
-      DatabaseColumnInteger   (request,98,t.m_RVIperiod);
-      DatabaseColumnInteger   (request,99,t.m_RVIma);
-      DatabaseColumnInteger   (request,100,t.l_RVIperiod);
-      DatabaseColumnInteger   (request,101,t.l_RVIma);
-      DatabaseColumnInteger   (request,102,t.s_STOCperiod);
-      DatabaseColumnInteger   (request,103,t.s_kPeriod);
-      DatabaseColumnInteger   (request,104,t.s_dPeriod);
-      DatabaseColumnInteger   (request,105,t.s_slowing);
-      DatabaseColumnInteger   (request,106,t.s_STOCmamethod);
-      DatabaseColumnInteger   (request,107,t.s_STOCpa);
-      DatabaseColumnInteger   (request,108,t.m_STOCperiod);
-      DatabaseColumnInteger   (request,109,t.m_kPeriod);
-      DatabaseColumnInteger   (request,110,t.m_dPeriod);
-      DatabaseColumnInteger   (request,111,t.m_slowing);
-      DatabaseColumnInteger   (request,112,t.m_STOCmamethod);
-      DatabaseColumnInteger   (request,113,t.m_STOCpa);
-      DatabaseColumnInteger   (request,114,t.l_STOCperiod);
-      DatabaseColumnInteger   (request,115,t.l_kPeriod);
-      DatabaseColumnInteger   (request,116,t.l_dPeriod);
-      DatabaseColumnInteger   (request,117,t.l_slowing);
-      DatabaseColumnInteger   (request,118,t.l_STOCmamethod);
-      DatabaseColumnInteger   (request,119,t.l_STOCpa);
-      DatabaseColumnInteger   (request,130,t.s_OSMAperiod);
-      DatabaseColumnInteger   (request,121,t.s_OSMAfastEMA);
-      DatabaseColumnInteger   (request,122,t.s_OSMAslowEMA);
-      DatabaseColumnInteger   (request,123,t.s_OSMAsignalPeriod);
-      DatabaseColumnInteger   (request,124,t.s_OSMApa);
-      DatabaseColumnInteger   (request,125,t.m_OSMAperiod);
-      DatabaseColumnInteger   (request,126,t.m_OSMAfastEMA);
-      DatabaseColumnInteger   (request,127,t.m_OSMAslowEMA);
-      DatabaseColumnInteger   (request,128,t.m_OSMAsignalPeriod);
-      DatabaseColumnInteger   (request,129,t.m_OSMApa);
-      DatabaseColumnInteger   (request,130,t.l_OSMAperiod);
-      DatabaseColumnInteger   (request,131,t.l_OSMAfastEMA);
-      DatabaseColumnInteger   (request,132,t.l_OSMAslowEMA);
-      DatabaseColumnInteger   (request,133,t.l_OSMAsignalPeriod);
-      DatabaseColumnInteger   (request,134,t.l_OSMApa);
-      DatabaseColumnInteger   (request,135,t.s_MACDDperiod);
-      DatabaseColumnInteger   (request,136,t.s_MACDDfastEMA);
-      DatabaseColumnInteger   (request,137,t.s_MACDDslowEMA);
-      DatabaseColumnInteger   (request,138,t.s_MACDDsignalPeriod);
-      DatabaseColumnInteger   (request,139,t.m_MACDDperiod);
-      DatabaseColumnInteger   (request,140,t.m_MACDDfastEMA);
-      DatabaseColumnInteger   (request,141,t.m_MACDDslowEMA);
-      DatabaseColumnInteger   (request,142,t.m_MACDDsignalPeriod);
-      DatabaseColumnInteger   (request,143,t.l_MACDDperiod);
-      DatabaseColumnInteger   (request,144,t.l_MACDDfastEMA);
-      DatabaseColumnInteger   (request,145,t.l_MACDDslowEMA);
-      DatabaseColumnInteger   (request,146,t.l_MACDDsignalPeriod);
-      DatabaseColumnInteger   (request,147,t.s_MACDBULLperiod);
-      DatabaseColumnInteger   (request,148,t.s_MACDBULLfastEMA);
-      DatabaseColumnInteger   (request,149,t.s_MACDBULLslowEMA);
-      DatabaseColumnInteger   (request,150,t.s_MACDBULLsignalPeriod);
-      DatabaseColumnInteger   (request,151,t.m_MACDBULLperiod);
-      DatabaseColumnInteger   (request,152,t.m_MACDBULLfastEMA);
-      DatabaseColumnInteger   (request,153,t.m_MACDBULLslowEMA);
-      DatabaseColumnInteger   (request,154,t.m_MACDBULLsignalPeriod);
-      DatabaseColumnInteger   (request,155,t.l_MACDBULLperiod);
-      DatabaseColumnInteger   (request,156,t.l_MACDBULLfastEMA);
-      DatabaseColumnInteger   (request,157,t.l_MACDBULLslowEMA);
-      DatabaseColumnInteger   (request,158,t.l_MACDBULLsignalPeriod);
-      DatabaseColumnInteger   (request,159,t.s_MACDBEARperiod);
-      DatabaseColumnInteger   (request,160,t.s_MACDBEARfastEMA);
-      DatabaseColumnInteger   (request,161,t.s_MACDBEARslowEMA);
-      DatabaseColumnInteger   (request,162,t.s_MACDBEARsignalPeriod);
-      DatabaseColumnInteger   (request,163,t.m_MACDBEARperiod);
-      DatabaseColumnInteger   (request,164,t.m_MACDBEARfastEMA);
-      DatabaseColumnInteger   (request,165,t.m_MACDBEARslowEMA);
-      DatabaseColumnInteger   (request,166,t.m_MACDBEARsignalPeriod);
-      DatabaseColumnInteger   (request,167,t.l_MACDBEARperiod);
-      DatabaseColumnInteger   (request,168,t.l_MACDBEARfastEMA);
-      DatabaseColumnInteger   (request,169,t.l_MACDBEARslowEMA);
-      DatabaseColumnInteger   (request,170,t.l_MACDBEARsignalPeriod);
-      //DatabaseColumnInteger   (request,171,useADX);
-      //DatabaseColumnInteger   (request,172,useRSI);
-      //DatabaseColumnInteger   (request,173,useMFI);
-      //DatabaseColumnInteger   (request,174,useSAR);
-      //DatabaseColumnInteger   (request,175,useICH);
-      //DatabaseColumnInteger   (request,176,useRVI);
-      //DatabaseColumnInteger   (request,177,useSTOC);
-      //DatabaseColumnInteger   (request,178,useOSMA);
-      //DatabaseColumnInteger   (request,179,useMACD);
-      //DatabaseColumnInteger   (request,180,useMACDBULLDIV);
-      //DatabaseColumnInteger   (request,181,useMACDBEARDIV);
-
-      #ifdef _DEBUG_TECHNICAL_PARAMETERS
-         ss=StringFormat("copyValuesFromDataBase -> s_ADXperiod:%d m_ADXperiod:%d l_ADXperiod:%d",t.s_ADXperiod,t.m_ADXperiod, t.l_ADXperiod);
-         writeLog
-         printf(ss);
-      #endif 
-      
    }
+   return request;
+
+}
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+void EATechnicalParameters::copyValuesFromDatabase() {
+
+   int request;
+
+     // ----------------------------------------------------------------
+   request=copyValuesFromDatabase("ADX");
+      DatabaseColumnInteger   (request,0,adx.strategyNumber);
+      DatabaseColumnInteger   (request,1,adx.typeRefernce);
+      DatabaseColumnInteger   (request,2,adx.useADX);
+      DatabaseColumnInteger   (request,3,adx.s_ADXperiod);
+      DatabaseColumnInteger   (request,4,adx.s_ADXma);
+      DatabaseColumnInteger   (request,5,adx.m_ADXperiod);
+      DatabaseColumnInteger   (request,6,adx.m_ADXma);
+      DatabaseColumnInteger   (request,7,adx.l_ADXperiod);
+      DatabaseColumnInteger   (request,8,adx.l_ADXma);
+   
+
+  // ----------------------------------------------------------------
+   request=copyValuesFromDatabase("RSI");
+      DatabaseColumnInteger   (request,0,rsi.strategyNumber);
+      DatabaseColumnInteger   (request,1,rsi.typeRefernce);
+      DatabaseColumnInteger   (request,2,rsi.useRSI);
+      DatabaseColumnInteger   (request,3,rsi.s_RSIperiod);
+      DatabaseColumnInteger   (request,4,rsi.s_RSIma);
+      DatabaseColumnInteger   (request,5,rsi.s_RSIap);
+      DatabaseColumnInteger   (request,6,rsi.m_RSIperiod);
+      DatabaseColumnInteger   (request,7,rsi.m_RSIma);
+      DatabaseColumnInteger   (request,8,rsi.s_RSIap);
+      DatabaseColumnInteger   (request,9,rsi.l_RSIperiod);
+      DatabaseColumnInteger   (request,10,rsi.l_RSIma);
+      DatabaseColumnInteger   (request,11,rsi.l_RSIap);
+   
+
+   // ----------------------------------------------------------------
+   request=copyValuesFromDatabase("MFI");
+      DatabaseColumnInteger   (request,0,mfi.strategyNumber);
+      DatabaseColumnInteger   (request,1,mfi.typeRefernce);
+      DatabaseColumnInteger   (request,2,mfi.useMFI);
+      DatabaseColumnInteger   (request,3,mfi.s_MFIperiod);
+      DatabaseColumnInteger   (request,4,mfi.s_MFIma);
+      DatabaseColumnInteger   (request,5,mfi.m_MFIperiod);
+      DatabaseColumnInteger   (request,6,mfi.m_MFIma);
+      DatabaseColumnInteger   (request,7,mfi.l_MFIperiod);
+      DatabaseColumnInteger   (request,8,mfi.l_MFIma);
+   
+
+   // ----------------------------------------------------------------
+   request=copyValuesFromDatabase("SAR");
+      DatabaseColumnInteger   (request,0,sar.strategyNumber);
+      DatabaseColumnInteger   (request,1,sar.typeRefernce);
+      DatabaseColumnInteger   (request,2,sar.useSAR);
+      DatabaseColumnInteger   (request,3,sar.s_SARperiod);
+      DatabaseColumnDouble    (request,4,sar.s_SARstep);
+      DatabaseColumnDouble    (request,5,sar.s_SARmax);
+      DatabaseColumnInteger   (request,6,sar.m_SARperiod);
+      DatabaseColumnDouble    (request,7,sar.m_SARstep);
+      DatabaseColumnDouble    (request,8,sar.m_SARmax);
+      DatabaseColumnInteger   (request,9,sar.l_SARperiod);
+      DatabaseColumnDouble    (request,10,sar.l_SARstep);
+      DatabaseColumnDouble    (request,11,sar.l_SARmax);
+   
+
+   // ----------------------------------------------------------------
+   request=copyValuesFromDatabase("ICH");
+      DatabaseColumnInteger   (request,0,ich.strategyNumber);
+      DatabaseColumnInteger   (request,1,ich.typeRefernce);
+      DatabaseColumnInteger   (request,2,ich.useICH);
+      DatabaseColumnInteger   (request,3,ich.s_ICHperiod);
+      DatabaseColumnInteger   (request,4,ich.s_tenkan_sen);
+      DatabaseColumnInteger   (request,5,ich.s_kijun_sen);
+      DatabaseColumnInteger   (request,6,ich.s_senkou_span_b);
+      DatabaseColumnInteger   (request,7,ich.m_ICHperiod);
+      DatabaseColumnInteger   (request,8,ich.m_tenkan_sen);
+      DatabaseColumnInteger   (request,9,ich.m_kijun_sen);
+      DatabaseColumnInteger   (request,10,ich.m_senkou_span_b);
+      DatabaseColumnInteger   (request,11,ich.l_ICHperiod);
+      DatabaseColumnInteger   (request,12,ich.l_tenkan_sen);
+      DatabaseColumnInteger   (request,13,ich.l_kijun_sen);
+      DatabaseColumnInteger   (request,14,ich.l_senkou_span_b);
+   
+
+   // ----------------------------------------------------------------
+   request=copyValuesFromDatabase("RVI");
+      DatabaseColumnInteger   (request,0,rvi.strategyNumber);
+      DatabaseColumnInteger   (request,1,rvi.typeRefernce);
+      DatabaseColumnInteger   (request,2,rvi.useRVI);
+      DatabaseColumnInteger   (request,3,rvi.s_RVIperiod);
+      DatabaseColumnInteger   (request,4,rvi.s_RVIma);
+      DatabaseColumnInteger   (request,5,rvi.m_RVIperiod);
+      DatabaseColumnInteger   (request,6,rvi.m_RVIma);
+      DatabaseColumnInteger   (request,7,rvi.l_RVIperiod);
+      DatabaseColumnInteger   (request,8,rvi.l_RVIma);
+   
+
+   // ----------------------------------------------------------------
+   request=copyValuesFromDatabase("STOC");
+      DatabaseColumnInteger   (request,0,stoc.strategyNumber);
+      DatabaseColumnInteger   (request,1,stoc.typeRefernce);
+      DatabaseColumnInteger   (request,2,stoc.useSTOC);
+      DatabaseColumnInteger   (request,3,stoc.s_STOCperiod);
+      DatabaseColumnInteger   (request,4,stoc.s_kPeriod);
+      DatabaseColumnInteger   (request,5,stoc.s_dPeriod);
+      DatabaseColumnInteger   (request,6,stoc.s_slowing);
+      DatabaseColumnInteger   (request,7,stoc.s_STOCmamethod);
+      DatabaseColumnInteger   (request,8,stoc.s_STOCpa);
+      DatabaseColumnInteger   (request,9,stoc.m_STOCperiod);
+      DatabaseColumnInteger   (request,10,stoc.m_kPeriod);
+      DatabaseColumnInteger   (request,11,stoc.m_dPeriod);
+      DatabaseColumnInteger   (request,12,stoc.m_slowing);
+      DatabaseColumnInteger   (request,13,stoc.m_STOCmamethod);
+      DatabaseColumnInteger   (request,14,stoc.m_STOCpa);
+      DatabaseColumnInteger   (request,15,stoc.l_STOCperiod);
+      DatabaseColumnInteger   (request,16,stoc.l_kPeriod);
+      DatabaseColumnInteger   (request,17,stoc.l_dPeriod);
+      DatabaseColumnInteger   (request,18,stoc.l_slowing);
+      DatabaseColumnInteger   (request,19,stoc.l_STOCmamethod);
+      DatabaseColumnInteger   (request,20,stoc.l_STOCpa);
+   
+
+   // ----------------------------------------------------------------
+   request=copyValuesFromDatabase("OSMA");
+      DatabaseColumnInteger   (request,0,osma.strategyNumber);
+      DatabaseColumnInteger   (request,1,osma.typeRefernce);
+      DatabaseColumnInteger   (request,2,osma.useOSMA);
+      DatabaseColumnInteger   (request,3,osma.s_OSMAperiod);
+      DatabaseColumnInteger   (request,4,osma.s_OSMAfastEMA);
+      DatabaseColumnInteger   (request,5,osma.s_OSMAslowEMA);
+      DatabaseColumnInteger   (request,6,osma.s_OSMAsignalPeriod);
+      DatabaseColumnInteger   (request,7,osma.s_OSMApa);
+      DatabaseColumnInteger   (request,8,osma.m_OSMAperiod);
+      DatabaseColumnInteger   (request,9,osma.m_OSMAfastEMA);
+      DatabaseColumnInteger   (request,10,osma.m_OSMAslowEMA);
+      DatabaseColumnInteger   (request,11,osma.m_OSMAsignalPeriod);
+      DatabaseColumnInteger   (request,12,osma.m_OSMApa);
+      DatabaseColumnInteger   (request,13,osma.l_OSMAperiod);
+      DatabaseColumnInteger   (request,14,osma.l_OSMAfastEMA);
+      DatabaseColumnInteger   (request,15,osma.l_OSMAslowEMA);
+      DatabaseColumnInteger   (request,16,osma.l_OSMAsignalPeriod);
+      DatabaseColumnInteger   (request,17,osma.l_OSMApa);
+   
+
+   // ----------------------------------------------------------------
+   request=copyValuesFromDatabase("MACD");
+      DatabaseColumnInteger   (request,0,macd.strategyNumber);
+      DatabaseColumnInteger   (request,1,macd.typeRefernce);
+      DatabaseColumnInteger   (request,2,macd.useMACD);
+      DatabaseColumnInteger   (request,3,macd.s_MACDDperiod);
+      DatabaseColumnInteger   (request,4,macd.s_MACDDfastEMA);
+      DatabaseColumnInteger   (request,5,macd.s_MACDDslowEMA);
+      DatabaseColumnInteger   (request,6,macd.s_MACDDsignalPeriod);
+      DatabaseColumnInteger   (request,7,macd.m_MACDDperiod);
+      DatabaseColumnInteger   (request,8,macd.m_MACDDfastEMA);
+      DatabaseColumnInteger   (request,9,macd.m_MACDDslowEMA);
+      DatabaseColumnInteger   (request,10,macd.m_MACDDsignalPeriod);
+      DatabaseColumnInteger   (request,11,macd.l_MACDDperiod);
+      DatabaseColumnInteger   (request,12,macd.l_MACDDfastEMA);
+      DatabaseColumnInteger   (request,13,macd.l_MACDDslowEMA);
+      DatabaseColumnInteger   (request,14,macd.l_MACDDsignalPeriod);
+   
+
+   // ----------------------------------------------------------------
+   request=copyValuesFromDatabase("MACDBULL");
+      DatabaseColumnInteger   (request,0,macdbull.strategyNumber);
+      DatabaseColumnInteger   (request,1,macdbull.typeRefernce);
+      DatabaseColumnInteger   (request,2,macdbull.useMACDBULL);
+      DatabaseColumnInteger   (request,3,macdbull.s_MACDBULLperiod);
+      DatabaseColumnInteger   (request,4,macdbull.s_MACDBULLfastEMA);
+      DatabaseColumnInteger   (request,5,macdbull.s_MACDBULLslowEMA);
+      DatabaseColumnInteger   (request,6,macdbull.s_MACDBULLsignalPeriod);
+      DatabaseColumnInteger   (request,7,macdbull.m_MACDBULLperiod);
+      DatabaseColumnInteger   (request,8,macdbull.m_MACDBULLfastEMA);
+      DatabaseColumnInteger   (request,9,macdbull.m_MACDBULLslowEMA);
+      DatabaseColumnInteger   (request,10,macdbull.m_MACDBULLsignalPeriod);
+      DatabaseColumnInteger   (request,11,macdbull.l_MACDBULLperiod);
+      DatabaseColumnInteger   (request,12,macdbull.l_MACDBULLfastEMA);
+      DatabaseColumnInteger   (request,13,macdbull.l_MACDBULLslowEMA);
+      DatabaseColumnInteger   (request,14,macdbull.l_MACDBULLsignalPeriod);
+   
+
+   // ----------------------------------------------------------------
+   request=copyValuesFromDatabase("MACDBEAR");
+      DatabaseColumnInteger   (request,0,macdbear.strategyNumber);
+      DatabaseColumnInteger   (request,1,macdbear.typeRefernce);
+      DatabaseColumnInteger   (request,2,macdbear.useMACDBEAR);
+      DatabaseColumnInteger   (request,3,macdbear.s_MACDBEARperiod);
+      DatabaseColumnInteger   (request,4,macdbear.s_MACDBEARfastEMA);
+      DatabaseColumnInteger   (request,5,macdbear.s_MACDBEARslowEMA);
+      DatabaseColumnInteger   (request,6,macdbear.s_MACDBEARsignalPeriod);
+      DatabaseColumnInteger   (request,7,macdbear.m_MACDBEARperiod);
+      DatabaseColumnInteger   (request,8,macdbear.m_MACDBEARfastEMA);
+      DatabaseColumnInteger   (request,9,macdbear.m_MACDBEARslowEMA);
+      DatabaseColumnInteger   (request,10,macdbear.m_MACDBEARsignalPeriod);
+      DatabaseColumnInteger   (request,11,macdbear.l_MACDBEARperiod);
+      DatabaseColumnInteger   (request,12,macdbear.l_MACDBEARfastEMA);
+      DatabaseColumnInteger   (request,13,macdbear.l_MACDBEARslowEMA);
+      DatabaseColumnInteger   (request,14,macdbear.l_MACDBEARsignalPeriod);
+   
+
 }
 
 //+------------------------------------------------------------------+
@@ -395,152 +516,154 @@ void EATechnicalParameters::copyValuesFromInputs() {
 
    #ifdef _DEBUG_TECHNICAL_PARAMETERS
       ss="copyValuesFromInputs -> ....";
-      writeLog;
       printf(ss);
    #endif
 
-
-   t.useADX=iuseADX;
-   t.s_ADXperiod=is_ADXperiod;
-   t.s_ADXma=is_ADXma;
-   t.m_ADXperiod=im_ADXperiod;
-   t.m_ADXma=im_ADXma;
-   t.l_ADXperiod=il_ADXperiod;
-   t.l_ADXma=il_ADXma;
+   adx.useADX=iuseADX;
+   adx.s_ADXperiod=is_ADXperiod;
+   adx.s_ADXma=is_ADXma;
+   adx.m_ADXperiod=im_ADXperiod;
+   adx.m_ADXma=im_ADXma;
+   adx.l_ADXperiod=il_ADXperiod;
+   adx.l_ADXma=il_ADXma;
    
    #ifdef _DEBUG_TECHNICAL_PARAMETERS
       ss=StringFormat(" -> copyValuesFromInputs ->\n Short ADX Period:%s\n Short ADX MA:%d\n Medium ADX Period:%s\n Medium ADX MA:%d\n Long ADX Period:%s\n Long ADX MA:%d",
-         EnumToString(t.s_ADXperiod),t.s_ADXma,EnumToString(t.m_ADXperiod),t.m_ADXma,EnumToString(t.l_ADXperiod),t.l_ADXma);
+         EnumToString(adx.s_ADXperiod),adx.s_ADXma,EnumToString(adx.m_ADXperiod),adx.m_ADXma,EnumToString(adx.l_ADXperiod),adx.l_ADXma);
       writeLog;
       printf(ss);
    #endif
    
-   t.useRSI=iuseRSI;
-   t.s_RSIperiod=is_RSIperiod;
-   t.s_RSIma=is_RSIma;
-   t.s_RSIap=is_RSIap;
-   t.m_RSIperiod=im_RSIperiod;
-   t.m_RSIma=im_RSIma;
-   t.s_RSIap=is_RSIap;
-   t.l_RSIperiod=il_RSIperiod;
-   t.l_RSIma=il_RSIma;
-   t.l_RSIap=il_RSIap;
+   rsi.useRSI=iuseRSI;
+   rsi.s_RSIperiod=is_RSIperiod;
+   rsi.s_RSIma=is_RSIma;
+   rsi.s_RSIap=is_RSIap;
+   rsi.m_RSIperiod=im_RSIperiod;
+   rsi.m_RSIma=im_RSIma;
+   rsi.s_RSIap=is_RSIap;
+   rsi.l_RSIperiod=il_RSIperiod;
+   rsi.l_RSIma=il_RSIma;
+   rsi.l_RSIap=il_RSIap;
 
-   t.useMFI=iuseMFI;
-   t.s_MFIperiod=is_MFIperiod;
-   t.s_MFIma=is_MFIma;
-   t.m_MFIperiod=im_MFIperiod;
-   t.m_MFIma=im_MFIma;
-   t.l_MFIperiod=il_MFIperiod;
-   t.l_MFIma=il_MFIma;
+   mfi.useMFI=iuseMFI;
+   mfi.s_MFIperiod=is_MFIperiod;
+   mfi.s_MFIma=is_MFIma;
+   mfi.m_MFIperiod=im_MFIperiod;
+   mfi.m_MFIma=im_MFIma;
+   mfi.l_MFIperiod=il_MFIperiod;
+   mfi.l_MFIma=il_MFIma;
 
-   t.useSAR=iuseSAR;
-   t.s_SARperiod=is_SARperiod;
-   t.s_SARstep=is_SARstep;
-   t.s_SARmax=is_SARmax;
-   t.m_SARperiod=im_SARperiod;
-   t.m_SARstep=im_SARstep;
-   t.m_SARmax=im_SARmax;
-   t.l_SARperiod=il_SARperiod;
-   t.l_SARstep=il_SARstep;
-   t.l_SARmax=il_SARmax;
+   sar.useSAR=iuseSAR;
+   sar.s_SARperiod=is_SARperiod;
+   sar.s_SARstep=is_SARstep;
+   sar.s_SARmax=is_SARmax;
+   sar.m_SARperiod=im_SARperiod;
+   sar.m_SARstep=im_SARstep;
+   sar.m_SARmax=im_SARmax;
+   sar.l_SARperiod=il_SARperiod;
+   sar.l_SARstep=il_SARstep;
+   sar.l_SARmax=il_SARmax;
 
-   t.useICH=iuseICH;
-   t.s_ICHperiod=is_ICHperiod;
-   t.s_tenkan_sen=is_tenkan_sen;
-   t.s_kijun_sen=is_kijun_sen;
-   t.s_senkou_span_b=is_senkou_span_b;
-   t.m_ICHperiod=im_ICHperiod;
-   t.m_tenkan_sen=im_tenkan_sen;
-   t.m_kijun_sen=im_kijun_sen;
-   t.m_senkou_span_b=im_senkou_span_b;
-   t.l_ICHperiod=il_ICHperiod;
-   t.l_tenkan_sen=il_tenkan_sen;
-   t.l_kijun_sen=il_kijun_sen;
-   t.l_senkou_span_b=il_senkou_span_b;
+   ich.useICH=iuseICH;
+   ich.s_ICHperiod=is_ICHperiod;
+   ich.s_tenkan_sen=is_tenkan_sen;
+   ich.s_kijun_sen=is_kijun_sen;
+   ich.s_senkou_span_b=is_senkou_span_b;
+   ich.m_ICHperiod=im_ICHperiod;
+   ich.m_tenkan_sen=im_tenkan_sen;
+   ich.m_kijun_sen=im_kijun_sen;
+   ich.m_senkou_span_b=im_senkou_span_b;
+   ich.l_ICHperiod=il_ICHperiod;
+   ich.l_tenkan_sen=il_tenkan_sen;
+   ich.l_kijun_sen=il_kijun_sen;
+   ich.l_senkou_span_b=il_senkou_span_b;
 
-   t.useRVI=iuseRVI;
-   t.s_RVIperiod=is_RVIperiod;
-   t.s_RVIma=is_RVIma;
-   t.m_RVIperiod=im_RVIperiod;
-   t.m_RVIma=im_RVIma;
-   t.l_RVIperiod=il_RVIperiod;
-   t.l_RVIma=il_RVIma;
+   rvi.useRVI=iuseRVI;
+   rvi.s_RVIperiod=is_RVIperiod;
+   rvi.s_RVIma=is_RVIma;
+   rvi.m_RVIperiod=im_RVIperiod;
+   rvi.m_RVIma=im_RVIma;
+   rvi.l_RVIperiod=il_RVIperiod;
+   rvi.l_RVIma=il_RVIma;
 
-   t.useSTOC=iuseSTOC;
-   t.s_STOCperiod=is_STOCperiod;
-   t.s_kPeriod=is_kPeriod;
-   t.s_dPeriod=is_dPeriod;
-   t.s_slowing=is_slowing;
-   t.s_STOCmamethod=is_STOCmamethod;
-   t.s_STOCpa=is_STOCpa;
-   t.m_STOCperiod=im_STOCperiod;
-   t.m_kPeriod=im_kPeriod;
-   t.m_dPeriod=im_dPeriod;
-   t.m_slowing=im_slowing;
-   t.m_STOCmamethod=im_STOCmamethod;
-   t.m_STOCpa=im_STOCpa;
-   t.l_STOCperiod=il_STOCperiod;
-   t.l_kPeriod=il_kPeriod;
-   t.l_dPeriod=il_dPeriod;
-   t.l_slowing=il_slowing;
-   t.l_STOCmamethod=il_STOCmamethod;
-   t.l_STOCpa=il_STOCpa;
+   stoc.useSTOC=iuseSTOC;
+   stoc.s_STOCperiod=is_STOCperiod;
+   stoc.s_kPeriod=is_kPeriod;
+   stoc.s_dPeriod=is_dPeriod;
+   stoc.s_slowing=is_slowing;
+   stoc.s_STOCmamethod=is_STOCmamethod;
+   stoc.s_STOCpa=is_STOCpa;
+   stoc.m_STOCperiod=im_STOCperiod;
+   stoc.m_kPeriod=im_kPeriod;
+   stoc.m_dPeriod=im_dPeriod;
+   stoc.m_slowing=im_slowing;
+   stoc.m_STOCmamethod=im_STOCmamethod;
+   stoc.m_STOCpa=im_STOCpa;
+   stoc.l_STOCperiod=il_STOCperiod;
+   stoc.l_kPeriod=il_kPeriod;
+   stoc.l_dPeriod=il_dPeriod;
+   stoc.l_slowing=il_slowing;
+   stoc.l_STOCmamethod=il_STOCmamethod;
+   stoc.l_STOCpa=il_STOCpa;
 
-   t.useOSMA=iuseOSMA;
-   t.s_OSMAperiod=is_OSMAperiod;
-   t.s_OSMAfastEMA=is_OSMAfastEMA;
-   t.s_OSMAslowEMA=is_OSMAslowEMA;
-   t.s_OSMAsignalPeriod=is_OSMAsignalPeriod;
-   t.s_OSMApa=is_OSMApa;
-   t.m_OSMAperiod=im_OSMAperiod;
-   t.m_OSMAfastEMA=im_OSMAfastEMA;
-   t.m_OSMAslowEMA=im_OSMAslowEMA;
-   t.m_OSMAsignalPeriod=im_OSMAsignalPeriod;
-   t.m_OSMApa=im_OSMApa;
-   t.l_OSMAperiod=il_OSMAperiod;
-   t.l_OSMAfastEMA=il_OSMAfastEMA;
-   t.l_OSMAslowEMA=il_OSMAslowEMA;
-   t.l_OSMAsignalPeriod=il_OSMAsignalPeriod;
-   t.l_OSMApa=il_OSMApa;
+   osma.useOSMA=iuseOSMA;
+   osma.s_OSMAperiod=is_OSMAperiod;
+   osma.s_OSMAfastEMA=is_OSMAfastEMA;
+   osma.s_OSMAslowEMA=is_OSMAslowEMA;
+   osma.s_OSMAsignalPeriod=is_OSMAsignalPeriod;
+   osma.s_OSMApa=is_OSMApa;
+   osma.m_OSMAperiod=im_OSMAperiod;
+   osma.m_OSMAfastEMA=im_OSMAfastEMA;
+   osma.m_OSMAslowEMA=im_OSMAslowEMA;
+   osma.m_OSMAsignalPeriod=im_OSMAsignalPeriod;
+   osma.m_OSMApa=im_OSMApa;
+   osma.l_OSMAperiod=il_OSMAperiod;
+   osma.l_OSMAfastEMA=il_OSMAfastEMA;
+   osma.l_OSMAslowEMA=il_OSMAslowEMA;
+   osma.l_OSMAsignalPeriod=il_OSMAsignalPeriod;
+   osma.l_OSMApa=il_OSMApa;
 
-   t.useMACD=iuseMACD;
-   t.s_MACDDperiod=is_MACDDperiod;
-   t.s_MACDDfastEMA=is_MACDDfastEMA;
-   t.s_MACDDslowEMA=is_MACDDslowEMA;
-   t.s_MACDDsignalPeriod=is_MACDDsignalPeriod;
-   t.m_MACDDperiod=im_MACDDperiod;
-   t.m_MACDDfastEMA=im_MACDDfastEMA;
-   t.m_MACDDslowEMA=im_MACDDslowEMA;
-   t.m_MACDDsignalPeriod=im_MACDDsignalPeriod;
-   t.l_MACDDperiod=il_MACDDperiod;
-   t.l_MACDDfastEMA=il_MACDDfastEMA;
-   t.l_MACDDslowEMA=il_MACDDslowEMA;
-   t.l_MACDDsignalPeriod=il_MACDDsignalPeriod;
-   t.s_MACDBULLperiod=is_MACDBULLperiod;
-   t.s_MACDBULLfastEMA=is_MACDBULLfastEMA;
-   t.s_MACDBULLslowEMA=is_MACDBULLslowEMA;
-   t.s_MACDBULLsignalPeriod=is_MACDBULLsignalPeriod;
-   t.m_MACDBULLperiod=im_MACDBULLperiod;
-   t.m_MACDBULLfastEMA=im_MACDBULLfastEMA;
-   t.m_MACDBULLslowEMA=im_MACDBULLslowEMA;
-   t.m_MACDBULLsignalPeriod=im_MACDBULLsignalPeriod;
-   t.l_MACDBULLperiod=il_MACDBULLperiod;
-   t.l_MACDBULLfastEMA=il_MACDBULLfastEMA;
-   t.l_MACDBULLslowEMA=il_MACDBULLslowEMA;
-   t.l_MACDBULLsignalPeriod=il_MACDBULLsignalPeriod;
-   t.s_MACDBEARperiod=is_MACDBEARperiod;
-   t.s_MACDBEARfastEMA=is_MACDBEARfastEMA;
-   t.s_MACDBEARslowEMA=is_MACDBEARslowEMA;
-   t.s_MACDBEARsignalPeriod=is_MACDBEARsignalPeriod;
-   t.m_MACDBEARperiod=im_MACDBEARperiod;
-   t.m_MACDBEARfastEMA=im_MACDBEARfastEMA;
-   t.m_MACDBEARslowEMA=im_MACDBEARslowEMA;
-   t.m_MACDBEARsignalPeriod=im_MACDBEARsignalPeriod;
-   t.l_MACDBEARperiod=il_MACDBEARperiod;
-   t.l_MACDBEARfastEMA=il_MACDBEARfastEMA;
-   t.l_MACDBEARslowEMA=il_MACDBEARslowEMA;
-   t.l_MACDBEARsignalPeriod=il_MACDBEARsignalPeriod;
+   macduseMACD=iuseMACD;
+   macd.s_MACDDperiod=is_MACDDperiod;
+   macd.s_MACDDfastEMA=is_MACDDfastEMA;
+   macd.s_MACDDslowEMA=is_MACDDslowEMA;
+   macd.s_MACDDsignalPeriod=is_MACDDsignalPeriod;
+   macd.m_MACDDperiod=im_MACDDperiod;
+   macd.m_MACDDfastEMA=im_MACDDfastEMA;
+   macd.m_MACDDslowEMA=im_MACDDslowEMA;
+   macd.m_MACDDsignalPeriod=im_MACDDsignalPeriod;
+   macd.l_MACDDperiod=il_MACDDperiod;
+   macd.l_MACDDfastEMA=il_MACDDfastEMA;
+   macd.l_MACDDslowEMA=il_MACDDslowEMA;
+   macd.l_MACDDsignalPeriod=il_MACDDsignalPeriod;
+
+   macdbull.useMACDBULL=iuseMACDBULL;
+   macdbull.s_MACDBULLperiod=is_MACDBULLperiod;
+   macdbull.s_MACDBULLfastEMA=is_MACDBULLfastEMA;
+   macdbull.s_MACDBULLslowEMA=is_MACDBULLslowEMA;
+   macdbull.s_MACDBULLsignalPeriod=is_MACDBULLsignalPeriod;
+   macdbull.m_MACDBULLperiod=im_MACDBULLperiod;
+   macdbull.m_MACDBULLfastEMA=im_MACDBULLfastEMA;
+   macdbull.m_MACDBULLslowEMA=im_MACDBULLslowEMA;
+   macdbull.m_MACDBULLsignalPeriod=im_MACDBULLsignalPeriod;
+   macdbull.l_MACDBULLperiod=il_MACDBULLperiod;
+   macdbull.l_MACDBULLfastEMA=il_MACDBULLfastEMA;
+   macdbull.l_MACDBULLslowEMA=il_MACDBULLslowEMA;
+   macdbull.l_MACDBULLsignalPeriod=il_MACDBULLsignalPeriod;
+
+   macdbear.useMACDBEAR=iuseMACDBEAR;
+   macdbear.s_MACDBEARperiod=is_MACDBEARperiod;
+   macdbear.s_MACDBEARfastEMA=is_MACDBEARfastEMA;
+   macdbear.s_MACDBEARslowEMA=is_MACDBEARslowEMA;
+   macdbear.s_MACDBEARsignalPeriod=is_MACDBEARsignalPeriod;
+   macdbear.m_MACDBEARperiod=im_MACDBEARperiod;
+   macdbear.m_MACDBEARfastEMA=im_MACDBEARfastEMA;
+   macdbear.m_MACDBEARslowEMA=im_MACDBEARslowEMA;
+   macdbear.m_MACDBEARsignalPeriod=im_MACDBEARsignalPeriod;
+   macdbear.l_MACDBEARperiod=il_MACDBEARperiod;
+   macdbear.l_MACDBEARfastEMA=il_MACDBEARfastEMA;
+   macdbear.l_MACDBEARslowEMA=il_MACDBEARslowEMA;
+   macdbear.l_MACDBEARsignalPeriod=il_MACDBEARsignalPeriod;
 
    t.useZZ=iuseZZ;
    t.s_ZZperiod=is_ZZperiod;
@@ -554,11 +677,182 @@ void EATechnicalParameters::copyValuesFromInputs() {
       printf(ss);
    #endif
 
-   t.useMACDBULLDIV=iuseMACDBULLDIV;
-   t.useMACDBEARDIV=iuseMACDBEARDIV;
+}
+
+
+
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+bool EATechnicalParameters::copyValuesToDatabase(string tableName) {
+
+   string sql;
+   int cnt, request;
+
+   sql=StringFormat("SELECT COUNT() FROM %s WHERE strategyNumber=% AND typeReference=%d",tableName,usp.strategyNumber,_baseStrategyReference);
+   request=DatabasePrepare(_mainDBHandle1,sql); 
+   if (request==INVALID_HANDLE) {
+      ss=StringFormat(" -> copyValuesToDatabase copyValuesFromDatabase DB request failed %s %d %d with code:",tableName,usp.strategyNumber,_baseStrategyReference, GetLastError()); 
+      printf(ss);
+      ExpertRemove();
+   }
+
+   if (!DatabaseRead(request)) {
+      ss=StringFormat(" -> copyValuesToDatabase copyValuesFromDatabase DB request failed %s %d %d with code:",tableName,usp.strategyNumber,_baseStrategyReference, GetLastError()); 
+      printf(ss);
+      ExpertRemove();
+   } else {
+      DatabaseColumnInteger,0,cnt);
+   }
+}
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+void EATechnicalParameters::copyValuesToDatabase() {
+
+   string sql="UPDATE ADX SET useADX=%d,"
+      "s_ADXperiod=%d,s_ADXma=%d,"
+      "m_ADXperiod=%d,m_ADXma=%d,"
+      "l_ADXperiod=%d,l_ADXma=%d" 
+      "WHERE strategyNumber=%d AND typeReference=%d",
+
+   string sql="UPDATE RSI SET useRSI=%d,"
+      "s_RSIperiod=%d,s_RSIma=%d,s_RSIap=%d,"
+      "m_RSIperiod=%d,m_RSIma=%d,m_RSIap=%d,"
+      "l_RSIperiod=%d,l_RSIma=%d,l_RSIap=%d"
+      "WHERE strategyNumber=%d AND typeReference=%d",
+
+   string sql="UPDATE MFI SET useMFI=%d,"
+   "s_MFIperiod=%d,s_MFIma=%d,"
+   "m_MFIperiod=%d,m_MFIma=%d,"
+   "l_MFIperiod=%d,l_MFIma=%d" 
+   "WHERE strategyNumber=%d AND typeReference=%d",
+
+   string sql="UPDATE SAR SET useSAR=%d,"
+   "s_SARperiod=%d,s_SARstep=%0.2f,s_SARmax=%2.2f,"
+   "m_SARperiod=%d,m_SARstep=%0.2f,m_SARmax=%2.2f,"
+   "l_SARperiod=%d,l_SARstep=%0.2f,l_SARmax=%2.2f" 
+   "WHERE strategyNumber=%d AND typeReference=%d",
+
+   string sql="UPDATE ICH SET useICH=%d,"
+   "s_ICHperiod=%d,s_tenkan_sen=%d,s_kijun_sen=%d,s_senkou_span_b=%d,"
+   "m_ICHperiod=%d,m_tenkan_sen=%d,m_kijun_sen=%d,m_senkou_span_b=%d,"
+   "l_ICHperiod=%d,l_tenkan_sen=%d,l_kijun_sen=%d,l_senkou_span_b=%d"
+   "WHERE strategyNumber=%d AND typeReference=%d",
+
+   string sql="UPDATE RVI SET useRVI=%d,"
+   "s_RVIperiod,s_RVIma,"
+   "m_RVIperiod,m_RVIma,"
+   "_RVIperiod,l_RVIma "
+   "WHERE strategyNumber=%d AND typeReference=%d",
+
+   string sql="UPDATE STOC SET useSTOC=%d,"
+   "s_STOCperiod=%d,s_kPeriod=%d,s_dPeriod=%d,s_slowing=%d,s_STOCmamethod=%d,s_STOCpa=%d,"
+   "m_STOCperiod=%d,m_kPeriod=%d,m_dPeriod=%d,m_slowing=%d,m_STOCmamethod=%d,m_STOCpa=%d,"
+   "l_STOCperiod=%d,l_kPeriod=%d,l_dPeriod=%d,l_slowing=%d,l_STOCmamethod=%d,l_STOCpa=%d"
+   "WHERE strategyNumber=%d AND typeReference=%d",
+
+   string sql="UPDATE OSMA SET useOSMA=%d,"
+   "s_OSMAperiod=%d,s_OSMAfastEMA=%d,s_OSMAslowEMA=%d,s_OSMAsignalPeriod=%d,s_OSMApa=%d," 
+   "m_OSMAperiod=%d,m_OSMAfastEMA=%d,m_OSMAslowEMA=%d,m_OSMAsignalPeriod=%d,m_OSMApa=%d,"
+   "l_OSMAperiod=%d,l_OSMAfastEMA=%d,l_OSMAslowEMA=%d,l_OSMAsignalPeriod=%d,l_OSMApa=%d"
+   "WHERE strategyNumber=%d AND typeReference=%d",
+
+
+   string sql="UPDATE MACD SET useMACD=%d,"
+   "s_MACDDperiod=%d,s_MACDDfastEMA=%d,s_MACDDslowEMA=%d,s_MACDDsignalPeriod=%d,"
+   "m_MACDDperiod=%d,m_MACDDfastEMA=%d,m_MACDDslowEMA=%d,m_MACDDsignalPeriod=%d,"
+   "l_MACDDperiod=%d,l_MACDDfastEMA=%d,l_MACDDslowEMA=%d,l_MACDDsignalPeriod=%d"
+   "WHERE strategyNumber=%d AND typeReference=%d",
+
+   string sql="UPDATE MACDBULL SET useMACDBULL=%d"
+   "s_MACDBULLperiod=%d,s_MACDBULLfastEMA=%d,s_MACDBULLslowEMA=%d,s_MACDBULLsignalPeriod=%d,"
+   "m_MACDBULLperiod=%d,m_MACDBULLfastEMA=%d,m_MACDBULLslowEMA=%d,m_MACDBULLsignalPeriod=%d,"
+   "l_MACDBULLperiod=%d,l_MACDBULLfastEMA=%d,l_MACDBULLslowEMA=%d,l_MACDBULLsignalPeriod=%d"
+   "WHERE strategyNumber=%d AND typeReference=%d",
+
+
+   string sql="UPDATE MACDBEAR SET useMACDBEAR=%d,"
+   "s_MACDBEARperiod=%d,s_MACDBEARfastEMA=%d,s_MACDBEARslowEMA=%d,s_MACDBEARsignalPeriod=%d,"
+   "m_MACDBEARperiod=%d,m_MACDBEARfastEMA=%d,m_MACDBEARslowEMA=%d,m_MACDBEARsignalPeriod=%d,"
+   "l_MACDBEARperiod=%d,l_MACDBEARfastEMA=%d,l_MACDBEARslowEMA=%d,l_MACDBEARsignalPeriod=%d"
+   "WHERE strategyNumber=%d AND typeReference=%d",
+
+
+string request1a="INSERT INTO ADX ("
+         "strategyNumber,typeReference, useADX,"
+         "s_ADXperiod,s_ADXma,m_ADXperiod,m_ADXma,l_ADXperiod,l_ADXma"
+         ") VALUES (";
+
+         string request1a="INSERT INTO RSI ("
+         "strategyNumber,typeReference, useRSI,"
+         "s_RSIma,s_RSIap,m_RSIperiod,m_RSIma,m_RSIap,l_RSIperiod,l_RSIma,l_RSIap"
+         ") VALUES (";
+
+         string request1a="INSERT INTO MFI ("
+         "strategyNumber,typeReference, useMFI,"
+         "s_MFIperiod,s_MFIma,m_MFIperiod,m_MFIma,l_MFIperiod,l_MFIma"
+         ") VALUES (";
+
+         string request1a="INSERT INTO SAR ("
+         "strategyNumber,typeReference, useSAR,"
+         "s_SARperiod,s_SARstep,s_SARmax,m_SARperiod,m_SARstep,m_SARmax,l_SARperiod,l_SARstep,l_SARmax"
+         ") VALUES (";
+
+         string request1a="INSERT INTO RVI ("
+         "strategyNumber,typeReference, useRVI,"
+         "s_RVIperiod,s_RVIma,m_RVIperiod,m_RVIma,l_RVIperiod,l_RVIma"
+         ") VALUES (";
+
+         string request1a="INSERT INTO STOC ("
+         "strategyNumber,typeReference, useSTOC,"
+         "s_STOCperiod,s_kPeriod,s_dPeriod,s_slowing,s_STOCmamethod,s_STOCpa,"
+         "m_STOCperiod,m_kPeriod,m_dPeriod,m_slowing,m_STOCmamethod,m_STOCpa,"
+         "l_STOCperiod,l_kPeriod,l_dPeriod,l_slowing,l_STOCmamethod,l_STOCpa"
+         ") VALUES (";
+
+         string request1a="INSERT INTO OSMA ("
+         "strategyNumber,typeReference, useOSMA,"
+         "s_OSMAperiod,s_OSMAfastEMA,s_OSMAslowEMA,s_OSMAsignalPeriod,s_OSMApa,"
+         "m_OSMAperiod,m_OSMAfastEMA,m_OSMAslowEMA,m_OSMAsignalPeriod,m_OSMApa,"
+         "l_OSMAperiod,l_OSMAfastEMA,l_OSMAslowEMA,l_OSMAsignalPeriod,l_OSMApa"
+         ") VALUES (";
+
+         string request1a="INSERT INTO MACD ("
+         "strategyNumber,typeReference, useMACD,"
+         "s_MACDDperiod,s_MACDDfastEMA,s_MACDDslowEMA,s_MACDDsignalPeriod,"
+         "m_MACDDperiod,m_MACDDfastEMA,m_MACDDslowEMA,m_MACDDsignalPeriod,"
+         "l_MACDDperiod,l_MACDDfastEMA,l_MACDDslowEMA,l_MACDDsignalPeriod"
+         ") VALUES (";
+
+         string request1a="INSERT INTO MACDBULL ("
+         "s_MACDBULLperiod,s_MACDBULLfastEMA,s_MACDBULLslowEMA,s_MACDBULLsignalPeriod,"
+         "m_MACDBULLperiod,m_MACDBULLfastEMA,m_MACDBULLslowEMA,m_MACDBULLsignalPeriod,"
+         "l_MACDBULLperiod,l_MACDBULLfastEMA,l_MACDBULLslowEMA,l_MACDBULLsignalPeriod"
+         ") VALUES (";
+
+         string request1a="INSERT INTO MACDBEAR ("
+         "strategyNumber,typeReference, useMACDBEAR,"
+         "s_MACDBEARperiod,s_MACDBEARfastEMA,s_MACDBEARslowEMA,s_MACDBEARsignalPeriod,"
+         "m_MACDBEARperiod,m_MACDBEARfastEMA,m_MACDBEARslowEMA,m_MACDBEARsignalPeriod,"
+         "l_MACDBEARperiod,l_MACDBEARfastEMA,l_MACDBEARslowEMA,l_MACDBEARsignalPeriod"
+         ") VALUES (";
+
+
+
+}
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+void EATechnicalParameters::insertUpdateTable(string tableName, double &values[]) {
+
+   switch (tableName) {
+      case ADX: insertUpdateTable
+   }
 
 }
 
+}
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
@@ -566,7 +860,7 @@ void EATechnicalParameters::copyValuesToDatabase() {
 
 
 string request1a="INSERT INTO TECHPASSES ("
-         "strategyNumber,iterationNumber"
+         "strategyNumber,"
          "s_ADXperiod,s_ADXma,m_ADXperiod,m_ADXma,l_ADXperiod,l_ADXma,s_RSIperiod,s_RSIma,s_RSIap,m_RSIperiod,m_RSIma,m_RSIap,l_RSIperiod,l_RSIma,l_RSIap,s_MFIperiod,"
          "s_MFIma,m_MFIperiod,m_MFIma,l_MFIperiod,l_MFIma,s_SARperiod,s_SARstep,s_SARmax,m_SARperiod,m_SARstep,m_SARmax,l_SARperiod,l_SARstep,l_SARmax,s_ICHperiod,"
          "s_tenkan_sen,s_kijun_sen,s_senkou_span_b,m_ICHperiod,m_tenkan_sen,m_kijun_sen,m_senkou_span_b,l_ICHperiod,l_tenkan_sen,l_kijun_sen,l_senkou_span_b,s_RVIperiod,"

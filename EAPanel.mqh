@@ -299,7 +299,7 @@ void EAPanel::mainInfoPanel() {
          updateInfo2Label(11, "Martingale multiplier");  
          updateInfo2Value(11,IntegerToString(usp.multiMg));
          updateInfo2Label(12, "Martingale Number"); 
-         updateInfo2Value(12,StringFormat("%d",usp.dnnMartingaleNumber));
+         //updateInfo2Value(12,StringFormat("%d",usp.dnnMartingaleNumber));
 
    } else {
          updateInfo2Value(9,"No");

@@ -1,118 +1,85 @@
  CREATE TABLE TECHPASSES (
-   s_ADXperiod REAL ,
-   s_ADXma REAL ,
-   m_ADXperiod REAL ,
-   m_ADXma REAL ,
-   l_ADXperiod REAL ,
-   l_ADXma REAL ,
-   s_RSIperiod REAL ,
-   s_RSIma REAL ,
-   s_RSIap REAL ,
-   m_RSIperiod REAL ,
-   m_RSIma REAL ,
-   m_RSIap REAL ,
-   l_RSIperiod REAL ,
-   l_RSIma REAL ,
-   l_RSIap REAL ,
-   s_MFIperiod REAL ,
-   s_MFIma REAL ,
-   m_MFIperiod REAL ,
-   m_MFIma REAL ,
-   l_MFIperiod REAL ,
-   l_MFIma REAL ,
-   s_SARperiod REAL ,
-   s_SARstep REAL ,
-   s_SARmax REAL ,
-   m_SARperiod REAL ,
-   m_SARstep REAL ,
-   m_SARmax REAL ,
-   l_SARperiod REAL ,
-   l_SARstep REAL ,
-   l_SARmax REAL ,
-   s_ICHperiod REAL ,
-   s_tenkan_sen REAL ,
-   s_kijun_sen REAL ,
-   s_senkou_span_b REAL ,
-   m_ICHperiod REAL ,
-   m_tenkan_sen REAL ,
-   m_kijun_sen REAL ,
-   m_senkou_span_b REAL ,
-   l_ICHperiod REAL ,
-   l_tenkan_sen REAL ,
-   l_kijun_sen REAL ,
-   l_senkou_span_b REAL ,
-   s_RVIperiod REAL ,
-   s_RVIma REAL ,
-   m_RVIperiod REAL ,
-   m_RVIma REAL ,
-   l_RVIperiod REAL ,
-   l_RVIma REAL ,
-   s_STOCperiod REAL ,
-   s_kPeriod REAL ,
-   s_dPeriod REAL ,
-   s_slowing REAL ,
-   s_STOCmamethod REAL ,
-   s_STOCpa REAL ,
-   m_STOCperiod REAL ,
-   m_kPeriod REAL ,
-   m_dPeriod REAL ,
-   m_slowing REAL ,
-   m_STOCmamethod REAL ,
-   m_STOCpa REAL ,
-   l_STOCperiod REAL ,
-   l_kPeriod REAL ,
-   l_dPeriod REAL ,
-   l_slowing REAL ,
-   l_STOCmamethod REAL ,
-   l_STOCpa REAL ,
-   s_OSMAperiod REAL ,
-   s_OSMAfastEMA REAL ,
-   s_OSMAslowEMA REAL ,
-   s_OSMAsignalPeriod REAL ,
-   s_OSMApa REAL ,
-   m_OSMAperiod REAL ,
-   m_OSMAfastEMA REAL ,
-   m_OSMAslowEMA REAL ,
-   m_OSMAsignalPeriod REAL ,
-   m_OSMApa REAL ,
-   l_OSMAperiod REAL ,
-   l_OSMAfastEMA REAL ,
-   l_OSMAslowEMA REAL ,
-   l_OSMAsignalPeriod REAL ,
-   l_OSMApa REAL ,
-   s_MACDDperiod REAL ,
-   s_MACDDfastEMA REAL ,
-   s_MACDDslowEMA REAL ,
-   s_MACDDsignalPeriod REAL ,
-   m_MACDDperiod REAL ,
-   m_MACDDfastEMA REAL ,
-   m_MACDDslowEMA REAL ,
-   m_MACDDsignalPeriod REAL ,
-   l_MACDDperiod REAL ,
-   l_MACDDfastEMA REAL ,
-   l_MACDDslowEMA REAL ,
-   l_MACDDsignalPeriod REAL ,
-   s_MACDBULLperiod REAL ,
-   s_MACDBULLfastEMA REAL ,
-   s_MACDBULLslowEMA REAL ,
-   s_MACDBULLsignalPeriod REAL ,
-   m_MACDBULLperiod REAL ,
-   m_MACDBULLfastEMA REAL ,
-   m_MACDBULLslowEMA REAL ,
-   m_MACDBULLsignalPeriod REAL ,
-   l_MACDBULLperiod REAL ,
-   l_MACDBULLfastEMA REAL ,
-   l_MACDBULLslowEMA REAL ,
-   l_MACDBULLsignalPeriod REAL ,
-   s_MACDBEARperiod REAL ,
-   s_MACDBEARfastEMA REAL ,
-   s_MACDBEARslowEMA REAL ,
-   s_MACDBEARsignalPeriod REAL ,
-   m_MACDBEARperiod REAL ,
-   m_MACDBEARfastEMA REAL ,
-   m_MACDBEARslowEMA REAL ,
-   m_MACDBEARsignalPeriod REAL ,
-   l_MACDBEARperiod REAL ,
-   l_MACDBEARfastEMA REAL ,
-   l_MACDBEARslowEMA REAL ,
-   l_MACDBEARsignalPeriod REAL);
+  s_ADXperiod,
+  s_ADXma,
+  m_ADXperiod,
+  m_ADXma,
+  l_ADXperiod,
+  l_ADXma,
+
+  s_RSIperiod,s_RSIma,s_RSIap,m_RSIperiod,m_RSIma,m_RSIap,l_RSIperiod,
+
+
+  l_RSIma,l_RSIap,
+  s_MFIperiod,s_MFIma,m_MFIperiod,m_MFIma,l_MFIperiod,l_MFIma,
+
+
+  s_SARperiod,s_SARstep,s_SARmax,m_SARperiod,m_SARstep,m_SARmax,l_SARperiod,l_SARstep,l_SARmax,
+
+
+  s_ICHperiod,s_tenkan_sen,s_kijun_sen,s_senkou_span_b,m_ICHperiod,m_tenkan_sen,m_kijun_sen,m_senkou_span_b,l_ICHperiod,l_tenkan_sen,l_kijun_sen,l_senkou_span_b,
+
+
+  s_RVIperiod,s_RVIma,m_RVIperiod,m_RVIma,l_RVIperiod,l_RVIma,
+
+
+  s_STOCperiod,s_kPeriod,s_dPeriod,s_slowing,s_STOCmamethod,s_STOCpa,m_STOCperiod,m_kPeriod,m_dPeriod,
+  m_slowing,m_STOCmamethod,m_STOCpa,l_STOCperiod,l_kPeriod,l_dPeriod,l_slowing,l_STOCmamethod,l_STOCpa,
+
+
+  s_OSMAperiod,s_OSMAfastEMA,s_OSMAslowEMA,s_OSMAsignalPeriod,s_OSMApa,m_OSMAperiod,m_OSMAfastEMA,m_OSMAslowEMA,
+  m_OSMAsignalPeriod,m_OSMApa,l_OSMAperiod,l_OSMAfastEMA,l_OSMAslowEMA,l_OSMAsignalPeriod,l_OSMApa,
+
+
+  s_MACDDperiod,s_MACDDfastEMA,s_MACDDslowEMA,s_MACDDsignalPeriod,m_MACDDperiod,m_MACDDfastEMA,m_MACDDslowEMA,
+  m_MACDDsignalPeriod,l_MACDDperiod,l_MACDDfastEMA,l_MACDDslowEMA,l_MACDDsignalPeriod,
+
+
+  s_MACDBULLperiod,s_MACDBULLfastEMA,s_MACDBULLslowEMA,s_MACDBULLsignalPeriod,m_MACDBULLperiod,m_MACDBULLfastEMA,
+  m_MACDBULLslowEMA,m_MACDBULLsignalPeriod,l_MACDBULLperiod,l_MACDBULLfastEMA,l_MACDBULLslowEMA,l_MACDBULLsignalPeriod,
+
+
+  s_MACDBEARperiod,s_MACDBEARfastEMA,s_MACDBEARslowEMA,s_MACDBEARsignalPeriod,m_MACDBEARperiod,m_MACDBEARfastEMA,
+  m_MACDBEARslowEMA,m_MACDBEARsignalPeriod,l_MACDBEARperiod,l_MACDBEARfastEMA,l_MACDBEARslowEMA,l_MACDBEARsignalPeriod
+
+  v[0].v8[0], v[0].v8[1], v[0].v8[2], v[0].v8[3], v[0].v8[4]);
+
+  v[0].v8[0], v[0].v8[1], v[0].v8[2], v[0].v8[3], v[0].v8[4],v[0].v8[5], v[0].v8[6], v[0].v8[7], v[0].v8[8], v[0].v8[9],v[0].v8[10], v[0].v8[11],v[0].v8[12],v[0].v8[13], v[0].v8[14],v[0].v8[15],v[0].v8[16], v[0].v8[17]);
+
+      v[0].v0[0]=TesterStatistics(STAT_INITIAL_DEPOSIT);
+      v[0].v0[1]=TesterStatistics(STAT_WITHDRAWAL);
+      v[0].v0[2]=TesterStatistics(STAT_PROFIT);
+      v[0].v0[3]=TesterStatistics(STAT_GROSS_PROFIT);
+      v[0].v0[4]=TesterStatistics(STAT_GROSS_LOSS);
+      v[0].v0[5]=TesterStatistics(STAT_MAX_PROFITTRADE);
+      v[0].v0[6]=TesterStatistics(STAT_MAX_LOSSTRADE);
+      v[0].v0[7]=TesterStatistics(STAT_CONPROFITMAX);
+      v[0].v0[8]=TesterStatistics(STAT_CONPROFITMAX_TRADES);
+      v[0].v0[9]=TesterStatistics(STAT_MAX_CONWINS);
+      v[0].v0[10]=TesterStatistics(STAT_MAX_CONPROFIT_TRADES);
+      v[0].v0[11]=TesterStatistics(STAT_BALANCEMIN);
+      v[0].v0[12]=TesterStatistics(STAT_BALANCE_DD);
+      v[0].v0[13]=TesterStatistics(STAT_EQUITYDD_PERCENT);
+      v[0].v0[14]=TesterStatistics(STAT_EQUITY_DDREL_PERCENT);
+      v[0].v0[15]=TesterStatistics(STAT_EQUITY_DD_RELATIVE);
+      v[0].v0[16]=TesterStatistics(STAT_EXPECTED_PAYOFF);
+      v[0].v0[17]=TesterStatistics(STAT_RECOVERY_FACTOR);
+      v[0].v0[18]=TesterStatistics(STAT_SHARPE_RATIO);
+      v[0].v0[19]=TesterStatistics(STAT_MIN_MARGINLEVEL);
+      v[0].v0[20]=TesterStatistics(STAT_CUSTOM_ONTESTER);
+      v[0].v0[21]=TesterStatistics(STAT_DEALS);
+      v[0].v0[22]=TesterStatistics(STAT_TRADES);
+      v[0].v0[23]=TesterStatistics(STAT_PROFIT_TRADES);
+      v[0].v0[24]=TesterStatistics(STAT_LOSS_TRADES);
+      v[0].v0[25]=TesterStatistics(STAT_SHORT_TRADES);
+      v[0].v0[26]=TesterStatistics(STAT_LONG_TRADES);
+      v[0].v0[27]=TesterStatistics(STAT_PROFIT_SHORTTRADES);
+      v[0].v0[28]=TesterStatistics(STAT_PROFIT_LONGTRADES);
+      v[0].v0[29]=TesterStatistics(STAT_PROFITTRADES_AVGCON);
+      v[0].v0[30]=TesterStatistics(STAT_LOSSTRADES_AVGCON);
+
+
+            "statINITIALDEPOSIT,statWITHDRAWAL, statPROFIT, statGROSSPROFIT, statGROSSLOSS, statMAXPROFITTRADE, statMAXLOSSTRADE, statCONPROFITMAX, statCONPROFITMAXTRADES,"
+      "statMAXCONWINS, statMAXCONPROFITTRADES, statBALANCEMIN, statBALANCEDD, statEQUITYDDPERCENT, statEQUITYDDRELPERCENT, statEQUITYDDRELATIVE,"
+      "statEXPECTEDPAYOFF, statRECOVERYFACTOR, statSHARPERATIO, statMINMARGINLEVEL, statCUSTOMONTESTER, statDEALS,"
+      "statTRADES, statPROFITTRADES, statLOSSTRADES, statSHORTTRADES, statLONGTRADES, statPROFITSHORTTRADES, statPROFITLONGTRADES, statPROFITTRADESAVGCON, statLOSSTRADESAVGCON,"
+      "onTester, IDX INT)"

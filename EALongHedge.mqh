@@ -72,18 +72,20 @@ EALongHedge::EALongHedge() {
    #endif
    //---- 
    
+   /*
    if (usp.optimizationHedge) {
       copyValuesFromInputs();
    } else {
 
       // Normal non optimizing code goes here
    }
-
+   */
    totalLotSize=0;
    ACTIVE_HEDGE=_NO;
 
    //---
    
+   /*
    if (bool (usp.runMode&_RUN_STRATEGY_OPTIMIZATION)&&usp.optimizationHedge) {
       #ifdef _DEBUG_STRATGEY_PRICEACTION
          printf (" -> Using optimization inputs");
@@ -91,15 +93,16 @@ EALongHedge::EALongHedge() {
       //dnn=new EANeuralNetwork(usp.runMode);
       //usp.copyValuesFromInputs(); 
    } else {
-      /*
+      
       dnn=new EANeuralNetwork(usp.strategyNumber, usp.dnnLongNumber); // TESTING WITH LONG VALUES
 
       showPanel {
          mp.updateInfo2Label(29,StringFormat("DNN Hedge strategy#:%d start:%1.2f end:%1.2f",usp.dnnLongNumber,dnn.weight[0],dnn.weight[ArraySize(dnn.weight)-1])); 
          mp.updateInfo2Value(29,"");
       }
-      */
+      
    }
+   */
 
    //void              MACDSetParameters(ENUM_TIMEFRAMES period,int fastEMA, int slowEMA, int signalPeriod, int priceApplied);   
    //custom=new EAModuleCustom;

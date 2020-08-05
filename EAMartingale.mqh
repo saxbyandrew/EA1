@@ -51,11 +51,13 @@ public:
 EAMartingale::EAMartingale() {
 
 
+   /*
    if (usp.optimizationMartingale) {
       #ifdef _DEBUG_HEDGE
          ss=StringFormat(" -> Using optimization inputs");
          Print(ss);
       #endif 
+   
       
       //dnn=new EANeuralNetwork(_STRATEGY_OPTIMIZATION);
       //copyValuesFromInputs();    
@@ -67,6 +69,7 @@ EAMartingale::EAMartingale() {
          //Print(ss);
       //#endif 
    }
+   */
 
    //fileHandle=openCSVFile("mgSwapCosts");
 }

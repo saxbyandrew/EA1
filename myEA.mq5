@@ -16,6 +16,7 @@
 //#define _DEBUG_DATAFRAME
 //#define _DEBUG_LONG 
 //#define _DEBUG_STRATEGY_TIME
+//#define _DEBUG_OPTIMIZATION
 
 
 
@@ -47,7 +48,7 @@
 //+------------------------------------------------------------------+
 // GLOBALS
 //+------------------------------------------------------------------+
-
+double _x[100];
 unsigned                ACTIVE_HEDGE;
 unsigned                TRADING_CIRCUIT_BREAKER;
 CList                   longPositions, shortPositions, martingalePositions, longHedgePositions;
@@ -59,7 +60,6 @@ EAEnum                  _runMode;
 int                     _mainDBHandle, _txtHandle, _optimizeDBHandle;
 string                  _mainDBName="strategies.sqlite";
 string                  _optimizeDBName="optimization.sqlite";
-
 
 EARunOptimization       optimization;
 //+------------------------------------------------------------------+
@@ -149,6 +149,8 @@ int OnInit() {
             printf(ss);
         #endif 
     }
+
+
     
     TRADING_CIRCUIT_BREAKER=IS_UNLOCKED;          // Initially allow trading operations across all object
     ACTIVE_HEDGE=_NO;
@@ -248,7 +250,14 @@ void OnTesterDeinit() {
 double OnTester() {
 
 
+    double val=TesterStatistics(STAT_SHARPE_RATIO);
     printf ("================OnTester=================");
+    if (val>0.1) {
+        optimization.OnTester(val);
+    }
+
+    /*
+    if (val)
 
     double ret=0;  
     double balance_dd=TesterStatistics(STAT_BALANCE_DDREL_PERCENT);
@@ -256,7 +265,8 @@ double OnTester() {
     if(balance_dd!=0)
         ret=TesterStatistics(STAT_PROFIT)/balance_dd;
         optimization.OnTester(ret);
-    return(ret);
+    */
+    return(val);
 
     
 }

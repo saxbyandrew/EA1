@@ -89,7 +89,7 @@ EAStrategyParameters();
       int               inLossOpenLongHedge;
       int               closeAtEOD;      
       int               allowWeekendTrading;        // _YES OR _NO    
-      int               dnnBaseStrategyNumber;
+      int               baseStrategyReference;
       int               dnnMartingaleNumber;
       int               dnnLongNumber;
       int               dnnShortNumber;
@@ -193,7 +193,7 @@ void EAStrategyParameters::resetValues() {
       sb.dataFrameStartBar=1;
       sb.dataFrameSize=500;
       sb.dnnType=0;
-      sb.dnnBaseStrategyNumber=0;
+      sb.baseStrategyReference=0;
       sb.dnnMartingaleNumber=0;
       sb.dnnLongNumber=0;
       sb.dnnShortNumber=0;
@@ -253,7 +253,7 @@ void EAStrategyParameters::loadSQLStrategy() {
       DatabaseColumnInteger   (request,23,sb.inLossOpenLongHedge);
       DatabaseColumnInteger   (request,24,sb.closeAtEOD);
       DatabaseColumnInteger   (request,25,sb.allowWeekendTrading);
-      DatabaseColumnInteger   (request,26,sb.dnnBaseStrategyNumber);
+      DatabaseColumnInteger   (request,26,sb.baseStrategyReference);
       DatabaseColumnInteger   (request,27,sb.dnnMartingaleNumber);
       DatabaseColumnInteger   (request,28,sb.dnnLongNumber);
       DatabaseColumnInteger   (request,29,sb.dnnShortNumber);
@@ -327,6 +327,7 @@ void EAStrategyParameters::loadSQLStrategy() {
       sb.marketSessions[2]=_NO; 
    }  
 
+
    switch (sb.dnnType) {
       case 1:  sb.dnnType=_LONG;
       break;
@@ -336,9 +337,7 @@ void EAStrategyParameters::loadSQLStrategy() {
       break;
       case 8:  sb.dnnType=_MARTINGALE;
       break;
-   }
-
-   
+   } 
 
 }
 

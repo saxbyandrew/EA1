@@ -82,7 +82,7 @@ EAStrategy::EAStrategy() {
    }
 
    // 1/ Create the new Technincals object
-   tech=new EATechnicalParameters();
+   tech=new EATechnicalParameters(usp.baseStrategyReference); // Using the base ref as this is the main strategy
    if (CheckPointer(tech)==POINTER_INVALID) {
       ss="EAStrategy -> ERROR created technical object";
          #ifdef _DEBUG_STRATGEY
@@ -283,8 +283,10 @@ EAEnum EAStrategy::runOnBar() {
       Print(__FUNCTION__);
    #endif  
    
-   static bool reload=false;
+   static int cnt=0;
    EAEnum retValue;
+   
+   
 
    // Check if we are building a DataFrame either in strategy testing mode or specified via the DB
    if (MQLInfoInteger(MQL_OPTIMIZATION) || MQLInfoInteger(MQL_VISUAL_MODE) || MQLInfoInteger(MQL_TESTER)) {
@@ -305,7 +307,9 @@ EAEnum EAStrategy::runOnBar() {
             printf(ss);
          #endif 
          nn.trainNetwork(df);
-         reload=true;
+         _x[cnt]=cnt;
+         
+         FrameAdd(MQLInfoString(MQL_PROGRAM_NAME)+"_network", 2,cnt++, _x);
       }
    }
 

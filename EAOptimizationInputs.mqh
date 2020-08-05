@@ -15,7 +15,7 @@ input double ilongHLossamt=-500;
 input int idataFrameSize=500;
 input int ilookBackBars=1;
 
-input int iuseADX=1;
+sinput int iuseADX=1;
 input ENUM_TIMEFRAMES is_ADXperiod=PERIOD_CURRENT;
 input int is_ADXma=14;
 input ENUM_TIMEFRAMES im_ADXperiod=PERIOD_H1;
@@ -23,7 +23,7 @@ input int im_ADXma=14;
 input ENUM_TIMEFRAMES il_ADXperiod=PERIOD_H4;
 input int il_ADXma=14;
 
-input int iuseRSI=1;
+sinput int iuseRSI=1;
 input ENUM_TIMEFRAMES is_RSIperiod=PERIOD_CURRENT;
 input int is_RSIma=14;
 input ENUM_APPLIED_PRICE is_RSIap=PRICE_CLOSE;
@@ -36,7 +36,7 @@ input ENUM_TIMEFRAMES il_RSIperiod=PERIOD_H4;
 input int il_RSIma=14;
 input ENUM_APPLIED_PRICE il_RSIap=PRICE_CLOSE;
 
-input int iuseMFI;
+sinput int iuseMFI;
 input ENUM_TIMEFRAMES is_MFIperiod;
 input int is_MFIma;
 input ENUM_TIMEFRAMES im_MFIperiod;
@@ -44,7 +44,7 @@ input int im_MFIma;
 input ENUM_TIMEFRAMES il_MFIperiod;
 input int il_MFIma;
 
-input int iuseSAR;
+sinput int iuseSAR;
 input ENUM_TIMEFRAMES is_SARperiod;
 input double is_SARstep=0.02;
 input double is_SARmax=0.2;
@@ -55,7 +55,7 @@ input ENUM_TIMEFRAMES il_SARperiod;
 input double il_SARstep=0.02;
 input double il_SARmax=0.2;
 
-input int iuseICH;
+sinput int iuseICH;
 input ENUM_TIMEFRAMES is_ICHperiod;
 input int is_tenkan_sen;
 input int is_kijun_sen;
@@ -69,7 +69,7 @@ input int il_tenkan_sen;
 input int il_kijun_sen;
 input int il_senkou_span_b;
 
-input int iuseRVI;
+sinput int iuseRVI;
 input ENUM_TIMEFRAMES is_RVIperiod;
 input int is_RVIma;
 input ENUM_TIMEFRAMES im_RVIperiod;
@@ -77,7 +77,7 @@ input int im_RVIma;
 input ENUM_TIMEFRAMES il_RVIperiod;
 input int il_RVIma;
 
-input int iuseSTOC;
+sinput int iuseSTOC;
 input ENUM_TIMEFRAMES is_STOCperiod;
 input int is_kPeriod;
 input int is_dPeriod;
@@ -99,7 +99,7 @@ input int il_slowing;
 input ENUM_MA_METHOD il_STOCmamethod;
 input ENUM_STO_PRICE il_STOCpa;
 
-input int iuseOSMA;
+sinput int iuseOSMA;
 input ENUM_TIMEFRAMES is_OSMAperiod;
 input int is_OSMAfastEMA;
 input int is_OSMAslowEMA;
@@ -117,7 +117,7 @@ input int il_OSMAslowEMA;
 input int il_OSMAsignalPeriod;
 input int il_OSMApa;
 
-input int iuseMACD;
+sinput int iuseMACD;
 input ENUM_TIMEFRAMES is_MACDDperiod;
 input int is_MACDDfastEMA;
 input int is_MACDDslowEMA;
@@ -131,7 +131,7 @@ input int il_MACDDfastEMA;
 input int il_MACDDslowEMA;
 input int il_MACDDsignalPeriod;
 
-input int iuseMACDBULLDIV;
+sinput int iuseMACDBULL;
 input ENUM_TIMEFRAMES is_MACDBULLperiod;
 input int is_MACDBULLfastEMA;
 input int is_MACDBULLslowEMA;
@@ -145,7 +145,7 @@ input int il_MACDBULLfastEMA;
 input int il_MACDBULLslowEMA;
 input int il_MACDBULLsignalPeriod;
 
-input bool iuseMACDBEARDIV;
+sinput bool iuseMACDBEAR;
 input ENUM_TIMEFRAMES is_MACDBEARperiod;
 input int is_MACDBEARfastEMA;
 input int is_MACDBEARslowEMA;

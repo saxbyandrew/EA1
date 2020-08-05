@@ -7,7 +7,7 @@
 #property link      "https://www.mql5.com"
 #property version   "1.00"
 
-//#define _DEBUG_MAIN_LOOP
+#define _DEBUG_MAIN_LOOP
 
 #include <Trade\AccountInfo.mqh>
 
@@ -47,8 +47,7 @@ private:
    EAStrategy *s2;
    //EAStrategyCandleTest *s3;
 
-   
-
+   string ss;
 
 
 //=========
@@ -77,7 +76,6 @@ EAMain();
 EAMain::EAMain() {
 
    #ifdef _DEBUG_MAIN_LOOP 
-      string ss;
       ss="EAMain -> Object instantiated"; 
       writeLog
       printf(ss);
@@ -222,7 +220,6 @@ EAMain::~EAMain() {
 bool EAMain::checkMaxDailyOpenQty() {
 
    #ifdef _DEBUG_MAIN_LOOP 
-      string ss;
       ss="checkMaxDailyOpenQty -> ...."; 
       writeLog
       printf(ss);
@@ -293,7 +290,6 @@ void EAMain::runOnBar() {
 
 
    #ifdef _DEBUG_MAIN_LOOP 
-      string ss;
       ss="runOnBar -> ...."; 
       writeLog
       printf(ss);
@@ -386,12 +382,21 @@ void EAMain::runOnTick() {
 //+------------------------------------------------------------------+
 void EAMain::runOnDay() {
 
-   #ifdef _DEBUG_MAIN_LOOP 
-      string ss;
+   #ifdef _DEBUG_MAIN_LOOP      
       ss="runOnDay -> ...."; 
       writeLog
       printf(ss);
    #endif 
+
+   // Check if a reload of the strategy is in order based on a new optimization run
+   if (!MQLInfoInteger(MQL_OPTIMIZATION)) {
+      #ifdef _DEBUG_MAIN_LOOP 
+         ss="runOnDay -> ********** reloadStrategy ********** ";
+         printf(ss);
+      #endif
+      optimization.reloadStrategy();
+   }
+
 
    lp.execute(_RUN_ONDAY);
    sp.execute(_RUN_ONDAY);
