@@ -7,7 +7,7 @@
 #property link      "https://www.mql5.com"
 #property version   "1.00"
 
-//#define _DEBUG_TECHNICAL_PARAMETERS
+
 
 #include "EAEnum.mqh"
 #include "EAOptimizationInputs.mqh"
@@ -19,7 +19,7 @@ private:
 //=========
 
    string      ss;
-   int         _baseStrategyReference;
+   int         _baseReference;   
 
 
 //=========
@@ -28,19 +28,18 @@ protected:
    void        copyValuesFromInputs();
    void        copyValuesFromDatabase();
    int         copyValuesFromDatabase(string tableName);
+   void        copyValuesToDatabase(string tableName);
    void        copyValuesToDatabase();
    
 //=========
 public:
 //=========
-EATechnicalParameters(int baseStrategyReference);
+EATechnicalParameters(int baseReference);
 ~EATechnicalParameters();
-
-
 
    struct ADX {
       int strategyNumber;
-      int typeRefernce;
+      int typeReference;
       int useADX;
 
       ENUM_TIMEFRAMES s_ADXperiod;
@@ -53,7 +52,7 @@ EATechnicalParameters(int baseStrategyReference);
 
    struct RSI {
       int strategyNumber;
-      int typeRefernce;
+      int typeReference;
       int useRSI;
 
       ENUM_TIMEFRAMES s_RSIperiod;
@@ -71,7 +70,7 @@ EATechnicalParameters(int baseStrategyReference);
 
    struct MFI {
       int strategyNumber;
-      int typeRefernce;
+      int typeReference;
       int useMFI;
 
       ENUM_TIMEFRAMES s_MFIperiod;
@@ -84,7 +83,7 @@ EATechnicalParameters(int baseStrategyReference);
 
    struct SAR {
       int strategyNumber;
-      int typeRefernce;
+      int typeReference;
       int useSAR;
 
       ENUM_TIMEFRAMES s_SARperiod;
@@ -100,7 +99,7 @@ EATechnicalParameters(int baseStrategyReference);
 
    struct ICH {
       int strategyNumber;
-      int typeRefernce;
+      int typeReference;
       int useICH;
 
       ENUM_TIMEFRAMES s_ICHperiod;
@@ -119,7 +118,7 @@ EATechnicalParameters(int baseStrategyReference);
 
    struct RVI {
       int strategyNumber;
-      int idx;
+      int typeReference;
       int useRVI;
 
       ENUM_TIMEFRAMES s_RVIperiod;
@@ -132,7 +131,7 @@ EATechnicalParameters(int baseStrategyReference);
 
    struct STOC {
       int strategyNumber;
-      int typeRefernce;
+      int typeReference;
       int useSTOC;
 
       ENUM_TIMEFRAMES s_STOCperiod;
@@ -159,7 +158,7 @@ EATechnicalParameters(int baseStrategyReference);
 
    struct OSMA {
       int strategyNumber;
-      int typeRefernce;
+      int typeReference;
       int useOSMA;
 
       ENUM_TIMEFRAMES s_OSMAperiod;
@@ -182,7 +181,7 @@ EATechnicalParameters(int baseStrategyReference);
 
    struct MACD {
       int strategyNumber;
-      int idx;
+      int typeReference;
       int useMACD;
 
       ENUM_TIMEFRAMES s_MACDDperiod;
@@ -201,7 +200,7 @@ EATechnicalParameters(int baseStrategyReference);
 
    struct MACDBULL {
       int strategyNumber;
-      int typeRefernce;
+      int typeReference;
       int useMACDBULL;
 
       ENUM_TIMEFRAMES s_MACDBULLperiod;
@@ -220,7 +219,7 @@ EATechnicalParameters(int baseStrategyReference);
 
    struct MACDBEAR {
       int strategyNumber;
-      int typeRefernce;
+      int typeReference;
       int useMACDBEAR;
 
       ENUM_TIMEFRAMES s_MACDBEARperiod;
@@ -250,33 +249,32 @@ EATechnicalParameters(int baseStrategyReference);
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-EATechnicalParameters::EATechnicalParameters(int baseStrategyReference) {
+EATechnicalParameters::EATechnicalParameters(int baseReference) {
 
    #ifdef _DEBUG_TECHNICAL_PARAMETERS
       printf ("EATechnicalParameters ->  Object Created ....");
       writeLog
-      printf(ss);
+      pss
    #endif
 
-   _baseStrategyReference=baseStrategyReference;
+   _baseReference=baseReference;
    
    // Determine where we get the technicl values from based on if we are in normal running mode
    // on in strategy optimization mode
-   
    if (MQLInfoInteger(MQL_OPTIMIZATION)) {
       #ifdef _DEBUG_TECHNICAL_PARAMETERS
-            ss="EATechnicalParameters ->  copy input values MQL_OPTIMIZATION ....";
+         ss="EATechnicalParameters ->  copy input values MQL_OPTIMIZATION ....";
          writeLog
-         printf(ss);
+         pss
       #endif
-      copyValuesFromInputs();
+      copyValuesFromInputs();       // Get the inputs under optimization mode only
    } else {
       #ifdef _DEBUG_TECHNICAL_PARAMETERS
-            ss="EATechnicalParameters ->  copy DB values ....";
+         ss="EATechnicalParameters ->  copy DB values ....";
          writeLog
-         printf(ss);
+         pss
       #endif
-      copyValuesFromDatabase();
+      copyValuesFromDatabase();     // Get Technicals fro the DB
    }
 }
 //+------------------------------------------------------------------+
@@ -293,15 +291,22 @@ int EATechnicalParameters::copyValuesFromDatabase(string tableName) {
 
    #ifdef _DEBUG_TECHNICAL_PARAMETERS
       ss="copyValuesFromDatabase -> ....";
-      printf(ss);
+      pss
    #endif
 
-   string sql=StringFormat("SELECT * FROM %s where strategyNumber=%d AND typeReference=%d",tableName,usp.strategyNumber,_baseStrategyReference);
+   string sql=StringFormat("SELECT * FROM %s where strategyNumber=%d AND typeReference=%d",tableName,usp.strategyNumber,_baseReference);
    int request=DatabasePrepare(_mainDBHandle,sql);
    if (!DatabaseRead(request)) {
-      ss=StringFormat(" -> EATechnicalParameters copyValuesFromDatabase DB request failed %s %d %d with code:",tableName,usp.strategyNumber,_baseStrategyReference, GetLastError()); 
-      printf(ss);
+      ss=StringFormat(" -> EATechnicalParameters copyValuesFromDatabase DB request failed %s %d %d with code:%d",tableName,usp.strategyNumber,_baseReference, GetLastError()); 
+      pss
+      printf(sql);
       ExpertRemove();
+   } else {
+      #ifdef _DEBUG_TECHNICAL_PARAMETERS
+         ss="copyValuesFromDatabase -> SUCCESS ....";
+         pss
+         printf(sql);
+      #endif
    }
    return request;
 
@@ -316,7 +321,7 @@ void EATechnicalParameters::copyValuesFromDatabase() {
      // ----------------------------------------------------------------
    request=copyValuesFromDatabase("ADX");
       DatabaseColumnInteger   (request,0,adx.strategyNumber);
-      DatabaseColumnInteger   (request,1,adx.typeRefernce);
+      DatabaseColumnInteger   (request,1,adx.typeReference);
       DatabaseColumnInteger   (request,2,adx.useADX);
       DatabaseColumnInteger   (request,3,adx.s_ADXperiod);
       DatabaseColumnInteger   (request,4,adx.s_ADXma);
@@ -325,11 +330,17 @@ void EATechnicalParameters::copyValuesFromDatabase() {
       DatabaseColumnInteger   (request,7,adx.l_ADXperiod);
       DatabaseColumnInteger   (request,8,adx.l_ADXma);
    
+      #ifdef _DEBUG_TECHNICAL_PARAMETERS
+         ss=StringFormat(" -> copyValuesFromDatabase ->\n Short ADX Period:%s\n Short ADX MA:%d\n Medium ADX Period:%s\n Medium ADX MA:%d\n Long ADX Period:%s\n Long ADX MA:%d",
+         EnumToString(adx.s_ADXperiod),adx.s_ADXma,EnumToString(adx.m_ADXperiod),adx.m_ADXma,EnumToString(adx.l_ADXperiod),adx.l_ADXma);
+         writeLog;
+         pss
+      #endif
 
   // ----------------------------------------------------------------
    request=copyValuesFromDatabase("RSI");
       DatabaseColumnInteger   (request,0,rsi.strategyNumber);
-      DatabaseColumnInteger   (request,1,rsi.typeRefernce);
+      DatabaseColumnInteger   (request,1,rsi.typeReference);
       DatabaseColumnInteger   (request,2,rsi.useRSI);
       DatabaseColumnInteger   (request,3,rsi.s_RSIperiod);
       DatabaseColumnInteger   (request,4,rsi.s_RSIma);
@@ -345,7 +356,7 @@ void EATechnicalParameters::copyValuesFromDatabase() {
    // ----------------------------------------------------------------
    request=copyValuesFromDatabase("MFI");
       DatabaseColumnInteger   (request,0,mfi.strategyNumber);
-      DatabaseColumnInteger   (request,1,mfi.typeRefernce);
+      DatabaseColumnInteger   (request,1,mfi.typeReference);
       DatabaseColumnInteger   (request,2,mfi.useMFI);
       DatabaseColumnInteger   (request,3,mfi.s_MFIperiod);
       DatabaseColumnInteger   (request,4,mfi.s_MFIma);
@@ -358,7 +369,7 @@ void EATechnicalParameters::copyValuesFromDatabase() {
    // ----------------------------------------------------------------
    request=copyValuesFromDatabase("SAR");
       DatabaseColumnInteger   (request,0,sar.strategyNumber);
-      DatabaseColumnInteger   (request,1,sar.typeRefernce);
+      DatabaseColumnInteger   (request,1,sar.typeReference);
       DatabaseColumnInteger   (request,2,sar.useSAR);
       DatabaseColumnInteger   (request,3,sar.s_SARperiod);
       DatabaseColumnDouble    (request,4,sar.s_SARstep);
@@ -374,7 +385,7 @@ void EATechnicalParameters::copyValuesFromDatabase() {
    // ----------------------------------------------------------------
    request=copyValuesFromDatabase("ICH");
       DatabaseColumnInteger   (request,0,ich.strategyNumber);
-      DatabaseColumnInteger   (request,1,ich.typeRefernce);
+      DatabaseColumnInteger   (request,1,ich.typeReference);
       DatabaseColumnInteger   (request,2,ich.useICH);
       DatabaseColumnInteger   (request,3,ich.s_ICHperiod);
       DatabaseColumnInteger   (request,4,ich.s_tenkan_sen);
@@ -393,7 +404,7 @@ void EATechnicalParameters::copyValuesFromDatabase() {
    // ----------------------------------------------------------------
    request=copyValuesFromDatabase("RVI");
       DatabaseColumnInteger   (request,0,rvi.strategyNumber);
-      DatabaseColumnInteger   (request,1,rvi.typeRefernce);
+      DatabaseColumnInteger   (request,1,rvi.typeReference);
       DatabaseColumnInteger   (request,2,rvi.useRVI);
       DatabaseColumnInteger   (request,3,rvi.s_RVIperiod);
       DatabaseColumnInteger   (request,4,rvi.s_RVIma);
@@ -406,7 +417,7 @@ void EATechnicalParameters::copyValuesFromDatabase() {
    // ----------------------------------------------------------------
    request=copyValuesFromDatabase("STOC");
       DatabaseColumnInteger   (request,0,stoc.strategyNumber);
-      DatabaseColumnInteger   (request,1,stoc.typeRefernce);
+      DatabaseColumnInteger   (request,1,stoc.typeReference);
       DatabaseColumnInteger   (request,2,stoc.useSTOC);
       DatabaseColumnInteger   (request,3,stoc.s_STOCperiod);
       DatabaseColumnInteger   (request,4,stoc.s_kPeriod);
@@ -431,7 +442,7 @@ void EATechnicalParameters::copyValuesFromDatabase() {
    // ----------------------------------------------------------------
    request=copyValuesFromDatabase("OSMA");
       DatabaseColumnInteger   (request,0,osma.strategyNumber);
-      DatabaseColumnInteger   (request,1,osma.typeRefernce);
+      DatabaseColumnInteger   (request,1,osma.typeReference);
       DatabaseColumnInteger   (request,2,osma.useOSMA);
       DatabaseColumnInteger   (request,3,osma.s_OSMAperiod);
       DatabaseColumnInteger   (request,4,osma.s_OSMAfastEMA);
@@ -453,7 +464,7 @@ void EATechnicalParameters::copyValuesFromDatabase() {
    // ----------------------------------------------------------------
    request=copyValuesFromDatabase("MACD");
       DatabaseColumnInteger   (request,0,macd.strategyNumber);
-      DatabaseColumnInteger   (request,1,macd.typeRefernce);
+      DatabaseColumnInteger   (request,1,macd.typeReference);
       DatabaseColumnInteger   (request,2,macd.useMACD);
       DatabaseColumnInteger   (request,3,macd.s_MACDDperiod);
       DatabaseColumnInteger   (request,4,macd.s_MACDDfastEMA);
@@ -472,7 +483,7 @@ void EATechnicalParameters::copyValuesFromDatabase() {
    // ----------------------------------------------------------------
    request=copyValuesFromDatabase("MACDBULL");
       DatabaseColumnInteger   (request,0,macdbull.strategyNumber);
-      DatabaseColumnInteger   (request,1,macdbull.typeRefernce);
+      DatabaseColumnInteger   (request,1,macdbull.typeReference);
       DatabaseColumnInteger   (request,2,macdbull.useMACDBULL);
       DatabaseColumnInteger   (request,3,macdbull.s_MACDBULLperiod);
       DatabaseColumnInteger   (request,4,macdbull.s_MACDBULLfastEMA);
@@ -491,7 +502,7 @@ void EATechnicalParameters::copyValuesFromDatabase() {
    // ----------------------------------------------------------------
    request=copyValuesFromDatabase("MACDBEAR");
       DatabaseColumnInteger   (request,0,macdbear.strategyNumber);
-      DatabaseColumnInteger   (request,1,macdbear.typeRefernce);
+      DatabaseColumnInteger   (request,1,macdbear.typeReference);
       DatabaseColumnInteger   (request,2,macdbear.useMACDBEAR);
       DatabaseColumnInteger   (request,3,macdbear.s_MACDBEARperiod);
       DatabaseColumnInteger   (request,4,macdbear.s_MACDBEARfastEMA);
@@ -516,9 +527,10 @@ void EATechnicalParameters::copyValuesFromInputs() {
 
    #ifdef _DEBUG_TECHNICAL_PARAMETERS
       ss="copyValuesFromInputs -> ....";
-      printf(ss);
+      pss
    #endif
 
+   // ----------------------------------------------------------------
    adx.useADX=iuseADX;
    adx.s_ADXperiod=is_ADXperiod;
    adx.s_ADXma=is_ADXma;
@@ -531,9 +543,10 @@ void EATechnicalParameters::copyValuesFromInputs() {
       ss=StringFormat(" -> copyValuesFromInputs ->\n Short ADX Period:%s\n Short ADX MA:%d\n Medium ADX Period:%s\n Medium ADX MA:%d\n Long ADX Period:%s\n Long ADX MA:%d",
          EnumToString(adx.s_ADXperiod),adx.s_ADXma,EnumToString(adx.m_ADXperiod),adx.m_ADXma,EnumToString(adx.l_ADXperiod),adx.l_ADXma);
       writeLog;
-      printf(ss);
+      pss
    #endif
-   
+
+   // ----------------------------------------------------------------
    rsi.useRSI=iuseRSI;
    rsi.s_RSIperiod=is_RSIperiod;
    rsi.s_RSIma=is_RSIma;
@@ -545,6 +558,7 @@ void EATechnicalParameters::copyValuesFromInputs() {
    rsi.l_RSIma=il_RSIma;
    rsi.l_RSIap=il_RSIap;
 
+   // ----------------------------------------------------------------
    mfi.useMFI=iuseMFI;
    mfi.s_MFIperiod=is_MFIperiod;
    mfi.s_MFIma=is_MFIma;
@@ -553,6 +567,7 @@ void EATechnicalParameters::copyValuesFromInputs() {
    mfi.l_MFIperiod=il_MFIperiod;
    mfi.l_MFIma=il_MFIma;
 
+   // ----------------------------------------------------------------
    sar.useSAR=iuseSAR;
    sar.s_SARperiod=is_SARperiod;
    sar.s_SARstep=is_SARstep;
@@ -564,6 +579,7 @@ void EATechnicalParameters::copyValuesFromInputs() {
    sar.l_SARstep=il_SARstep;
    sar.l_SARmax=il_SARmax;
 
+   // ----------------------------------------------------------------
    ich.useICH=iuseICH;
    ich.s_ICHperiod=is_ICHperiod;
    ich.s_tenkan_sen=is_tenkan_sen;
@@ -578,6 +594,7 @@ void EATechnicalParameters::copyValuesFromInputs() {
    ich.l_kijun_sen=il_kijun_sen;
    ich.l_senkou_span_b=il_senkou_span_b;
 
+   // ----------------------------------------------------------------
    rvi.useRVI=iuseRVI;
    rvi.s_RVIperiod=is_RVIperiod;
    rvi.s_RVIma=is_RVIma;
@@ -586,6 +603,7 @@ void EATechnicalParameters::copyValuesFromInputs() {
    rvi.l_RVIperiod=il_RVIperiod;
    rvi.l_RVIma=il_RVIma;
 
+   // ----------------------------------------------------------------
    stoc.useSTOC=iuseSTOC;
    stoc.s_STOCperiod=is_STOCperiod;
    stoc.s_kPeriod=is_kPeriod;
@@ -606,6 +624,7 @@ void EATechnicalParameters::copyValuesFromInputs() {
    stoc.l_STOCmamethod=il_STOCmamethod;
    stoc.l_STOCpa=il_STOCpa;
 
+   // ----------------------------------------------------------------
    osma.useOSMA=iuseOSMA;
    osma.s_OSMAperiod=is_OSMAperiod;
    osma.s_OSMAfastEMA=is_OSMAfastEMA;
@@ -623,7 +642,8 @@ void EATechnicalParameters::copyValuesFromInputs() {
    osma.l_OSMAsignalPeriod=il_OSMAsignalPeriod;
    osma.l_OSMApa=il_OSMApa;
 
-   macduseMACD=iuseMACD;
+   // ----------------------------------------------------------------
+   macd.useMACD=iuseMACD;
    macd.s_MACDDperiod=is_MACDDperiod;
    macd.s_MACDDfastEMA=is_MACDDfastEMA;
    macd.s_MACDDslowEMA=is_MACDDslowEMA;
@@ -637,6 +657,7 @@ void EATechnicalParameters::copyValuesFromInputs() {
    macd.l_MACDDslowEMA=il_MACDDslowEMA;
    macd.l_MACDDsignalPeriod=il_MACDDsignalPeriod;
 
+   // ----------------------------------------------------------------
    macdbull.useMACDBULL=iuseMACDBULL;
    macdbull.s_MACDBULLperiod=is_MACDBULLperiod;
    macdbull.s_MACDBULLfastEMA=is_MACDBULLfastEMA;
@@ -651,6 +672,7 @@ void EATechnicalParameters::copyValuesFromInputs() {
    macdbull.l_MACDBULLslowEMA=il_MACDBULLslowEMA;
    macdbull.l_MACDBULLsignalPeriod=il_MACDBULLsignalPeriod;
 
+   // ----------------------------------------------------------------
    macdbear.useMACDBEAR=iuseMACDBEAR;
    macdbear.s_MACDBEARperiod=is_MACDBEARperiod;
    macdbear.s_MACDBEARfastEMA=is_MACDBEARfastEMA;
@@ -665,50 +687,52 @@ void EATechnicalParameters::copyValuesFromInputs() {
    macdbear.l_MACDBEARslowEMA=il_MACDBEARslowEMA;
    macdbear.l_MACDBEARsignalPeriod=il_MACDBEARsignalPeriod;
 
-   t.useZZ=iuseZZ;
-   t.s_ZZperiod=is_ZZperiod;
-   t.m_ZZperiod=im_ZZperiod;
-   t.l_ZZperiod=il_ZZperiod;
+   // ----------------------------------------------------------------
+   zz.useZZ=iuseZZ;
+   zz.s_ZZperiod=is_ZZperiod;
+   zz.m_ZZperiod=im_ZZperiod;
+   zz.l_ZZperiod=il_ZZperiod;
 
-   #ifdef _WRITELOG
+   #ifdef _DEBUG_TECHNICAL_PARAMETERS
       ss=StringFormat(" -> copyValuesFromInputs ->\n Short ZZ Period:%s\n Medium ZZ Period:%s\n Long ZZ Period:%s\n",
-         EnumToString(t.s_ZZperiod),EnumToString(t.m_ZZperiod),EnumToString(t.l_ZZperiod));
+         EnumToString(zz.s_ZZperiod),EnumToString(zz.m_ZZperiod),EnumToString(zz.l_ZZperiod));
       writeLog;
-      printf(ss);
+      pss
    #endif
 
 }
 
-
-
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-bool EATechnicalParameters::copyValuesToDatabase(string tableName) {
+void EATechnicalParameters::copyValuesToDatabase(string tableName) {
 
+/*
    string sql;
    int cnt, request;
 
-   sql=StringFormat("SELECT COUNT() FROM %s WHERE strategyNumber=% AND typeReference=%d",tableName,usp.strategyNumber,_baseStrategyReference);
+   sql=StringFormat("SELECT COUNT() FROM %s WHERE strategyNumber=% AND typeReference=%d",tableName,usp.strategyNumber,_baseReference);
    request=DatabasePrepare(_mainDBHandle1,sql); 
    if (request==INVALID_HANDLE) {
-      ss=StringFormat(" -> copyValuesToDatabase copyValuesFromDatabase DB request failed %s %d %d with code:",tableName,usp.strategyNumber,_baseStrategyReference, GetLastError()); 
-      printf(ss);
+      ss=StringFormat(" -> copyValuesToDatabase copyValuesFromDatabase DB request failed %s %d %d with code:",tableName,usp.strategyNumber,_baseReference, GetLastError()); 
+      pss
       ExpertRemove();
    }
 
    if (!DatabaseRead(request)) {
-      ss=StringFormat(" -> copyValuesToDatabase copyValuesFromDatabase DB request failed %s %d %d with code:",tableName,usp.strategyNumber,_baseStrategyReference, GetLastError()); 
-      printf(ss);
+      ss=StringFormat(" -> copyValuesToDatabase copyValuesFromDatabase DB request failed %s %d %d with code:",tableName,usp.strategyNumber,_baseReference, GetLastError()); 
+      pss
       ExpertRemove();
    } else {
       DatabaseColumnInteger,0,cnt);
    }
+   */
 }
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
 void EATechnicalParameters::copyValuesToDatabase() {
+/*
 
    string sql="UPDATE ADX SET useADX=%d,"
       "s_ADXperiod=%d,s_ADXma=%d,"
@@ -837,28 +861,27 @@ string request1a="INSERT INTO ADX ("
          "m_MACDBEARperiod,m_MACDBEARfastEMA,m_MACDBEARslowEMA,m_MACDBEARsignalPeriod,"
          "l_MACDBEARperiod,l_MACDBEARfastEMA,l_MACDBEARslowEMA,l_MACDBEARsignalPeriod"
          ") VALUES (";
-
+*/
 
 
 }
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-void EATechnicalParameters::insertUpdateTable(string tableName, double &values[]) {
-
+//void EATechnicalParameters::insertUpdateTable(string tableName, double &values[]) {
+/*
    switch (tableName) {
       case ADX: insertUpdateTable
    }
-
+*(/
 }
 
-}
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
 void EATechnicalParameters::copyValuesToDatabase() {
 
-
+/*
 string request1a="INSERT INTO TECHPASSES ("
          "strategyNumber,"
          "s_ADXperiod,s_ADXma,m_ADXperiod,m_ADXma,l_ADXperiod,l_ADXma,s_RSIperiod,s_RSIma,s_RSIap,m_RSIperiod,m_RSIma,m_RSIap,l_RSIperiod,l_RSIma,l_RSIap,s_MFIperiod,"
@@ -919,5 +942,7 @@ string request1a="INSERT INTO TECHPASSES ("
             printf(" -> Insert into PASSES succcess:%d",t.iterationNumber);
          #endif
       }
+      
 
 }
+*/

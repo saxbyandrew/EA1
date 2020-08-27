@@ -8,13 +8,12 @@
 #property version   "1.00"
 
 
-
 #include "EAEnum.mqh"
 #include <Math\Alglib\alglib.mqh>
 
-
 class EAInputsOutputs;
 class EATechnicalParameters;
+class EANeuralNetwork;
 
 class EADataFrame  {
 
@@ -33,40 +32,35 @@ protected:
 //=========
 public:
 //=========
-EADataFrame(EAInputsOutputs &io);
+EADataFrame(EAInputsOutputs &io, EANeuralNetwork &nn);
 ~EADataFrame();
 
    CMatrixDouble  dataFrame;
    int      barCnt;
    void     buildDataFrame(EAInputsOutputs &io);
+   void     buildDataFrame(EAInputsOutputs &io, EANeuralNetwork &nn, datetime fromDate);
 
 };
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-EADataFrame::EADataFrame(EAInputsOutputs &io) {
+EADataFrame::EADataFrame(EAInputsOutputs &io, EANeuralNetwork &nn) {
 
    #ifdef _DEBUG_DATAFRAME
       string ss;
       ss="EADataFrame -> Object Created ....";
       writeLog
-      printf(ss);
+      pss
    #endif 
 
-   int numInput, numOutput;
-   barCnt=usp.dataFrameSize; // Number of bars to grab and insert into the DF
+   // OPTIMIZATION MODE
+   // Check which mode we are executing in
+   if (MQLInfoInteger(MQL_OPTIMIZATION)) {         
+      dataFrame.Resize(n.dfSize,ArraySize(io.inputs)+ArraySize(io.outputs));                         
+      return;
+   } 
 
-   // Set the public properties
-   numInput=ArraySize(io.inputs);
-   numOutput=ArraySize(io.outputs);
 
-   // Initialize the new dataframe size
-   dataFrame.Resize(barCnt,numInput+numOutput);
-
-   #ifdef _DEBUG_DATAFRAME
-      ss=StringFormat("EADataFrame -> size is %d",dataFrame.Size());
-      printf(ss);
-   #endif  
 
 }
 //+------------------------------------------------------------------+
@@ -76,6 +70,7 @@ EADataFrame::~EADataFrame() {
 
 
 }
+
 
 //+------------------------------------------------------------------+
 //|                                                                  |
@@ -89,14 +84,14 @@ void EADataFrame::addDataFrameValues(double &inputs[], double& outputs[]) {
          ss=ss+":"+DoubleToString(inputs[i]);
       }
       writeLog
-      printf(ss);
+      pss
 
       ss="addDataFrameValues -> outputs ->";
       for (int i=0;i<ArraySize(outputs);i++) {
          ss=ss+":"+DoubleToString(outputs[i]);
       }
       writeLog
-      printf(ss);
+      pss
    #endif  
 
    //int csvHandle1;
@@ -124,7 +119,7 @@ void EADataFrame::addDataFrameValues(double &inputs[], double& outputs[]) {
    
    #ifdef _DEBUG_DATAFRAME
       writeLog
-      printf(ss);
+      pss
    #endif 
 
    rowCnt++;
@@ -138,11 +133,40 @@ void EADataFrame::buildDataFrame(EAInputsOutputs &io) {
       string ss;
       ss="buildDataFrame -> ....";
       writeLog
-      printf(ss);
+      pss
    #endif
    
    io.getInputs(1);
    io.getOutputs(1);
    addDataFrameValues(io.inputs,io.outputs);                   // Create a new dataframe row entry
    barCnt--;
+}
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+void EADataFrame::buildDataFrame(EAInputsOutputs &io, datetime fromDate) {
+
+   #ifdef _DEBUG_DATAFRAME  
+      string ss;
+      ss=StringFormat("buildDataFrame from date -> ....%s",TimeToString(fromDate,TIME_DATE));
+      writeLog
+      pss
+   #endif
+
+   // Get the bar number of the start date as set by the optimization run 
+   // then iterate to the end as set by dfSize
+   barCnt=startbarsetby optimization time
+   if (barCnt>0) { 
+      io.getInputs(barCnt);
+      io.getOutputs(barCnt);
+      addDataFrameValues(io.inputs,io.outputs);                   // Create a new dataframe row entry
+      barCnt--;
+         
+   }
+
+   // The DF is built now train it and save it as a disk file
+   nn.trainNetwork(df);
+
+   
+
 }

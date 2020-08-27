@@ -9,32 +9,59 @@
 
 #define  STATS_FRAME  1
 //#define _DEBUG_MYEA
-//#define  _DEBUG_NN_INPUTS_OUTPUTS
-//#define _DEBUG_DNN
-//#define  _DEBUG_STRATGEY
-//#define  _DEBUG_STRATGEY_TRIGGERS
+//#define _DEBUG_PANEL
+//#define _DEBUG_COMBOXBOX
+//#define _DEBUG_EDIT
+//#define _DEBUG_CPANEL   // Blank panel NOT infoPanel !
+//#define _DEBUG_TAB_CONTROL
+//#define _DEBUG_PARAMETERS
+#define _DEBUG_MAIN_LOOP
+//#define _DEBUG_STRATEGY_TIME
+//#define _DEBUG_TECHNICAL_PARAMETERS
+//#define _DEBUG_NN_INPUTS_OUTPUTS
+//#define _DEBUG_NN
+//#define _DEBUG_STRATEGY
+#define _DEBUG_STRATEGY_TRIGGERS
 //#define _DEBUG_DATAFRAME
 //#define _DEBUG_LONG 
-//#define _DEBUG_STRATEGY_TIME
+//#define _DEBUG_LABEL
+
+//#define _DEBUG_ADX_MODULE
+//#define _DEBUG_RVI_MODULE
+//#define _DEBUG_OSMA_MODULE
+//#define _DEBUG_STOC_MODULE
+//#define _DEBUG_MACD_DIVERGENCE
+//#define _DEBUG_MACDPLAT_BULLISH
+//#define _DEBUG_MACDPLAT_BEARISH
+//#define _DEBUG_MACD_MODULE
+//#define _DEBUG_RSI_MODULE
+//#define _DEBUG_MFI_MODULE
+//#define _DEBUG_SAR_MODULE
+//#define _DEBUG_IICHIMOKU_MODULE
+//#define _DEBUG_QMP_BULLISH
+//#define _DEBUG_QMP_BEARISH
+//#define _DEBUG_QQE
+//#define _DEBUG_ZIGZAG
+
 //#define _DEBUG_OPTIMIZATION
-
-
-
 
 #include <Object.mqh>
 #include <Arrays\List.mqh>
 
 
 //Shortcuts / macros
-//#define pb param
 
-#define usp  strategyParameters.sb    
+#define usp   strategyParameters.sb             // Base Strategy values - GLOBAL
+#define ustp  strategyParameters.tb             // Timing Strategy values - GLOBAL
 #define gmp  EAPosition *p=martingalePositions.GetNodeAtIndex(i)
 #define glp  EAPosition *p=longPositions.GetNodeAtIndex(i)
 #define gsp  EAPosition *p=shortPositions.GetNodeAtIndex(i)
 #define glhp EAPosition *p=longHedgePositions.GetNodeAtIndex(i)
 #define showPanel if (!MQLInfoInteger(MQL_OPTIMIZATION)) 
+#define ip infoPanel
 #define writeLog if (MQLInfoInteger(MQL_VISUAL_MODE) || MQLInfoInteger(MQL_TESTER)) {FileWrite(_txtHandle,ss); FileFlush(_txtHandle);}
+#define pss printf(ss);
+
 
 
 
@@ -43,18 +70,21 @@
 #include "EARunOptimization.mqh"
 #include "EAMain.mqh"
 #include "EAPanel.mqh"
+#include "EATabControlMenu.mqh"
 
 
 //+------------------------------------------------------------------+
 // GLOBALS
 //+------------------------------------------------------------------+
 double _x[100];
+bool                    ENABLE_EVENTS;
 unsigned                ACTIVE_HEDGE;
 unsigned                TRADING_CIRCUIT_BREAKER;
 CList                   longPositions, shortPositions, martingalePositions, longHedgePositions;
 
 EAMain                  *expertAdvisor; 
 EAPanel                 *infoPanel; 
+EATabControlMenu        *tabControlMenu;
 EAStrategyParameters    *strategyParameters; 
 EAEnum                  _runMode;
 int                     _mainDBHandle, _txtHandle, _optimizeDBHandle;
@@ -75,11 +105,13 @@ int OnInit() {
         string ss;
     #endif
 
+    ENABLE_EVENTS=false;
+
     MqlDateTime t;
     TimeToStruct(TimeCurrent(),t);
     string fn=StringFormat("%d%d%d%d%d%d%d%d.log",t.year,t.mon,t.day,t.hour,t.min,t.sec);
     _txtHandle=FileOpen(fn,FILE_COMMON|FILE_READ|FILE_WRITE|FILE_ANSI|FILE_TXT);  
-    
+
     EventSetTimer(60);
 
     // Open the database in the common terminal folder
@@ -88,14 +120,14 @@ int OnInit() {
         #ifdef _DEBUG_MYEA
             ss=StringFormat("OnInit ->  Failed to open Main DB with errorcode:%d",GetLastError());
             writeLog
-            printf(ss);
+            pss
         #endif
         ExpertRemove();
     } else {
         #ifdef _DEBUG_MYEA
             ss="OnInit -> Open Main DB success";
             writeLog
-            printf(ss);
+            pss
         #endif
     }
 
@@ -104,41 +136,48 @@ int OnInit() {
         #ifdef _DEBUG_MYEA
             ss="OnInit -> Error instantiating strategy parameters";
             writeLog;
-            printf(ss);
+            pss
         #endif 
         ExpertRemove();
     } else {
         #ifdef _DEBUG_MYEA
             ss="OnInit -> Success instantiating strategy parameters";
             writeLog;
-            printf(ss);
+            pss
         #endif 
     }
 
-
     showPanel {
-        infoPanel=new EAPanel;                                                                          
-        if (CheckPointer(infoPanel)==POINTER_INVALID) {
+        ip=new EAPanel;                                                                          
+        if (CheckPointer(ip)==POINTER_INVALID) {
             #ifdef _DEBUG_MYEA
                 ss="OnInit -> Error instantiating info panel";
-                printf(ss);
+                pss
             #endif  
             ExpertRemove();
         } else {
-            infoPanel.createPanel("Panel",0,10,10,800,650);
+            ip.Create(0,"Panel",0,10,10,700,900);
             #ifdef _DEBUG_MYEA
                 ss="OnInit -> Success instantiating info panel";
-                printf(ss);
+                pss
             #endif  
         } 
+        if (!ip.Run()) {
+            #ifdef _DEBUG_MYEA
+                ss="OnInit -> Error running info panel";
+                pss
+            #endif  
+            ExpertRemove();
+        }
+        
     }
-
+    
     expertAdvisor=new EAMain;                                  // Instantiate the EA                                           
     if (CheckPointer(expertAdvisor)==POINTER_INVALID) {
         #ifdef _DEBUG_MYEA
             ss="OnInit  -> Error instantiating main EA";
             writeLog
-            printf(ss);
+            pss
         #endif 
         ExpertRemove();
         
@@ -146,23 +185,25 @@ int OnInit() {
         #ifdef _DEBUG_MYEA
             ss="OnInit  -> Success instantiating main EA";
             writeLog
-            printf(ss);
+            pss
         #endif 
     }
 
-
-    
     TRADING_CIRCUIT_BREAKER=IS_UNLOCKED;          // Initially allow trading operations across all object
     ACTIVE_HEDGE=_NO;
+    ENABLE_EVENTS=true;
 
-    
     return(INIT_SUCCEEDED);
 }
+
 //+------------------------------------------------------------------+
 //| Expert deinitialization function                                 |
 //+------------------------------------------------------------------+
 void OnDeinit(const int reason) { 
-
+    
+    delete(expertAdvisor);
+    delete(strategyParameters);
+    //showPanel {infoPanel.Destroy(reason);}
     EventKillTimer();
 }
 //+------------------------------------------------------------------+
@@ -176,18 +217,18 @@ void OnTick() {
    // ON TICK!
    //=========
     expertAdvisor.runOnTick();
-    showPanel infoPanel.positionInfoUpdate();
+    showPanel ip.positionInfoUpdate();
 
    //=========
    // ON BAR ! 
    //========= 
     if(lastBar!=iTime(NULL,PERIOD_CURRENT,0)) {
         lastBar=iTime(NULL,PERIOD_CURRENT,0);
-        #ifdef _DEBUG_MYEA
-            Print(__FUNCTION__," _-> In OnTick fire OnBar");
-        #endif 
+        //#ifdef _DEBUG_MYEA
+            //Print(__FUNCTION__," _-> In OnTick fire OnBar");
+        //#endif 
         expertAdvisor.runOnBar(); 
-        showPanel infoPanel.accountInfoUpdate();  
+        showPanel ip.accountInfoUpdate();  
     }
 
    //========
@@ -226,11 +267,33 @@ void OnTimer() {
     //ea.runOnTimer();
 }
 
+//+------------------------------------------------------------------+
+//| Expert chart event function                                      |
+//+------------------------------------------------------------------+
+void OnChartEvent(const int id,         // event ID  
+                  const long& lparam,   // event parameter of the long type
+                  const double& dparam, // event parameter of the double type
+                  const string& sparam) // event parameter of the string type
 
+{
+
+    if (MQLInfoInteger(MQL_OPTIMIZATION)) return;
+
+    if (!ENABLE_EVENTS) return;
+
+    if(id==CHARTEVENT_KEYDOWN) {
+        //printf("Key Pressed");
+    }
+    
+    ip.ChartEvent(id,lparam,dparam,sparam);
+
+}
 //+------------------------------------------------------------------+
 //| TesterInit function                                              |
 //+------------------------------------------------------------------+
 int OnTesterInit() {
+
+    printf("OnTesterInit --> %s",TimeToString(iTime(_Symbol,PERIOD_CURRENT,1000)));
 
     return(optimization.OnTesterInit());
 
@@ -244,17 +307,21 @@ void OnTesterDeinit() {
 
 }
 
+
+
 //+------------------------------------------------------------------+
 //| Tester function                                                  |
 //+------------------------------------------------------------------+
 double OnTester() {
 
-
+/*
     double val=TesterStatistics(STAT_SHARPE_RATIO);
     printf ("================OnTester=================");
-    if (val>0.1) {
+    if (val>0.01) {
         optimization.OnTester(val);
     }
+*/
+optimization.OnTester(1);
 
     /*
     if (val)
@@ -266,7 +333,7 @@ double OnTester() {
         ret=TesterStatistics(STAT_PROFIT)/balance_dd;
         optimization.OnTester(ret);
     */
-    return(val);
+    return(1);
 
     
 }

@@ -87,7 +87,7 @@ EALongHedge::EALongHedge() {
    
    /*
    if (bool (usp.runMode&_RUN_STRATEGY_OPTIMIZATION)&&usp.optimizationHedge) {
-      #ifdef _DEBUG_STRATGEY_PRICEACTION
+      #ifdef _DEBUG_STRATEGY_PRICEACTION
          printf (" -> Using optimization inputs");
       #endif 
       //dnn=new EANeuralNetwork(usp.runMode);
@@ -292,7 +292,7 @@ void EALongHedge::checkAccountPnL() {
       //----
    }
 
-   if (PnL<usp.maxLongHedgeLoss) {
+   if (PnL<usp.longHLossamt) {
       #ifdef _DEBUG_LONGHEDGE 
          ss=StringFormat(" -> xxxxxxxxxxxxxxxxx Total hedge PnL:%g",PnL);
          Print (ss);

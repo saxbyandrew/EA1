@@ -52,7 +52,7 @@ EALong::EALong() {
         string ss;
         printf ("EALong ->  Object Created ....");
         writeLog
-        printf(ss);
+        pss
     #endif
 
 
@@ -74,7 +74,7 @@ void EALong::updateOnInterval(EAEnum interval) {
         string ss;
         printf ("updateOnInterval -> ....");
         writeLog
-        printf(ss);
+        pss
     #endif
 
     
@@ -85,7 +85,7 @@ void EALong::updateOnInterval(EAEnum interval) {
             #ifdef _DEBUG_LONG
                 ss=StringFormat("ONBAR and ONTICK -> %d,%g",p.ticket,p.currentPnL);
                 writeLog
-                printf(ss);
+                pss
             #endif 
         }
     }
@@ -99,7 +99,7 @@ void EALong::updateOnInterval(EAEnum interval) {
             #ifdef _DEBUG_LONG
                 ss=StringFormat("ONDAY -> %d,%d,%g",p.ticket,p.daysOpen,p.swapCosts);
                 writeLog
-                printf(ss);
+                pss
             #endif 
         }      
     }
@@ -113,7 +113,7 @@ void EALong::closeOnFixedTiming() {
         string ss;
         printf ("closeOnFixedTiming -> ....");
         writeLog
-        printf(ss);
+        pss
     #endif
 
 
@@ -136,7 +136,7 @@ void EALong::closeOnFixedTiming() {
                 #ifdef _DEBUG_LONG 
                     ss="closeOnFixedTiming -> Long Close EOD"; 
                     writeLog
-                    printf(ss);
+                    pss
                 #endif
                 //----
                 closeSQLPosition(p);
@@ -144,7 +144,7 @@ void EALong::closeOnFixedTiming() {
                     #ifdef _DEBUG_LONG 
                         ss="closeOnFixedTiming -> Long Close at EOD removed from CList"; 
                         writeLog
-                        printf(ss);
+                        pss
                     #endif                      
                 }
             } 
@@ -160,7 +160,7 @@ void EALong::closeOnStealthProfit() {
         string ss;
         printf ("closeOnStealthProfit -> ....");
         writeLog
-        printf(ss);
+        pss
     #endif
 
     MqlTick last_tick;
@@ -181,14 +181,14 @@ void EALong::closeOnStealthProfit() {
                     #ifdef _DEBUG_LONG 
                         ss="closeOnStealthProfit -> Long Close in profit"; 
                         writeLog
-                        printf(ss);
+                        pss
                     #endif
                         closeSQLPosition(p);
                     if (longPositions.Delete(i)) {
                         #ifdef _DEBUG_LONG 
                             ss="closeOnStealthProfit -> Long Close in profit object removed from CList"; 
                             writeLog
-                            printf(ss);
+                            pss
                         #endif 
                         return;                      
                     }
@@ -207,7 +207,7 @@ void EALong::closeOnStealthLoss() {
         string ss;
         printf ("closeOnStealthLoss -> ....");
         writeLog
-        printf(ss);
+        pss
     #endif
 
     MqlTick last_tick;
@@ -243,14 +243,14 @@ void EALong::closeOnStealthLoss() {
                         #ifdef _DEBUG_LONG 
                             ss="closeOnStealthLoss -> Long Close in loss"; 
                             writeLog
-                            printf(ss);
+                            pss
                         #endif
                         closeSQLPosition(p);
                         if (longPositions.Delete(i)) {
                             #ifdef _DEBUG_LONG 
                                 ss="closeOnStealthLoss -> Long Close in profit object removed from CList";
                                 writeLog
-                                printf(ss); 
+                                pss 
                             #endif
                             return;                       
                         }   
@@ -278,15 +278,15 @@ bool EALong::newPosition() {
 
 
         if (longPositions.Total()>=usp.maxLong) {
-            //showPanel mp.updateInfo2Value(16,StringFormat("%d Maximum Reached",param.maxPositionsLong));
+            showPanel ip.updateInfo2Value(16,StringFormat("%d Maximum Reached",usp.maxLong));
             #ifdef _DEBUG_LONG
                 ss="newPosition -> Max number of LONG reached";
                 writeLog
-                printf(ss);
+                pss
             #endif 
             return false;
         } else {
-            //showPanel mp.updateInfo2Value(16,param.maxPositionsLong);
+            showPanel ip.updateInfo2Value(16,usp.maxLong);
         }                    
 
         // Build a new position object based on defaults
@@ -305,11 +305,11 @@ bool EALong::newPosition() {
                 #ifdef _DEBUG_LONG
                     ss="newPosition -> New position opened and added to long positions list"; 
                     writeLog
-                    printf(ss);
+                    pss
                     ss=StringFormat("strategyNumber:%d lotSize:%.2f status:%s entryPrice:%.2f fixedProfitTargetLevel:%.2f fixedLossTargetLevel:%.2f",
                     p.strategyNumber,p.lotSize,EnumToString(p.status),p.entryPrice,p.fixedProfitTargetLevel,p.fixedLossTargetLevel);
                     writeLog
-                    printf(ss);
+                    pss
                 #endif 
                 return true;
             }            
@@ -317,7 +317,7 @@ bool EALong::newPosition() {
             #ifdef _DEBUG_LONG
                 Print("newPosition -> New position opened failed"); 
                 writeLog
-                printf(ss);
+                pss
             #endif 
         }
     
@@ -333,7 +333,7 @@ bool EALong::execute(EAEnum action) {
         string ss;
         printf ("execute -> ....");
         writeLog
-        printf(ss);
+        pss
     #endif
 
     bool retValue=false;
@@ -342,7 +342,7 @@ bool EALong::execute(EAEnum action) {
         #ifdef _DEBUG_LONG
             ss="execute -> In L Hedge is active ....";
             writeLog
-            printf(ss);
+            pss
         #endif   
         return retValue;
     }

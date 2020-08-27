@@ -7,125 +7,546 @@
 #property link      "https://www.mql5.com"
 #property version   "1.00"
 
-//#define _DEBUG_PANEL
+#define INDENT_LEFT                         (20)      // indent from left (with allowance for border width)
+#define INDENT_TOP                          (100)      // indent from top (with allowance for border width)
+#define CONTROL_HEIGHT                      (30)      // size by Y coordinate
+
 
 #include <Controls\Dialog.mqh>
-#include <Controls\Panel.mqh>
-#include <Controls\Label.mqh>
-#include <Controls\Button.mqh>
 #include <Trade\AccountInfo.mqh>
 
-
-
+#include "EATabControl.mqh"
+#include "EAComboBox.mqh"
+#include "EAEdit.mqh"
+#include "EALabel.mqh"
+#include "EACPanel.mqh"
+#include "EACButton.mqh"
+#include "EAScreenObject.mqh"
 
 
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-class EAPanel : public CAppDialog {
+class EAPanel : public CAppDialog  {
 
 //=========
 private:
 //=========
+
+   string ss;
    CAccountInfo   AccountInfo;
 
-   int   _x1, _y1, _x2, _y2;     // absolute window sise
-   int   gridX, gridY;           // Absolute starting xy in LHS
-   int   gridXSize, gridYSize;   // Size of the XY cell  
-   int   _positionListYOffset;
-   int   _totalPositionListSize;
-
-   void  createPositionLabel(EAPosition &p, int idx);
-   void  clearPositionLabel();
-
-
+/*
    struct Pinfo {
       CWndObj           *labelObject;  // Text Information
       CWndObj           *valueObject;  // Changing value information
       string            label;
       int               status;
       datetime          event;
-
-
-
-
-
-
-
-
       Pinfo() : labelObject(NULL), valueObject(NULL), label(NULL), status(_NOTSET), event(NULL) {};  
    };
+   */
 
-//=========
+   void              createInfo1Controls(string tableGroup);
+   void              createInfo2Controls(string tableGroup);
+   //Pinfo             tabPage1[35];           // Labels and controls on Tab Page 1
+   //Pinfo             info1[35];         // Labels and Values
+   //Pinfo             info2[35];
+
+   int               _positionListYOffset;
+   int               _totalPositionListSize;
+   void              createPositionLabel(EAPosition &p, int idx);
+   void              clearPositionLabel();
+
+
+
 protected:
-//=========
 
+   CArrayObj            *screenObjects;
+   EATabControl         *tabControl[10];
+   EAEdit               *edit[50];
+   EAComboBox           *comboBox[50];
+   EACPanel             *panels[10];
+   EACButton            *buttons[10];
 
-   void              showInfo1();
-   void              showInfo2();
-   Pinfo             info1[35];         // Labels and Values
-   Pinfo             info2[35];
-
-   void              createObject(int index, int type, color clr);  
-
-   CButton           *refreshButton;   // Button to reload strategy from SQL DB
-   CPanel            *panel;
-   CLabel            *label;
-
-   void CreateButtonClosePositions(void);
+   void                 hideControls(string screenName);
+   void                 showControls(string screenName);
+   //void                 showHideControls(string screenName);
+   void                 createTabControls(string tableGroup);
+   void                 createComboControls(string tableGroup);
+   void                 createEditControls(string tableGroup);
+   void                 createButtonControls();
 
 //=========
 public:
 //=========
-   void              createPanel(string name,int subWindow,int x1,int y1,int x2, int y2);
+
+   virtual bool      Create(const long chart,const string name,const int subwin,const int x1,const int y1,const int x2,const int y2);
+   virtual bool      OnEvent(const int id,const long &lparam,const double &dparam,const string &sparam);
+
+   void              updateInfo(int row, int col, string val);
+   void              updateInfo1Label(int row, string val) {updateInfo(row,1,val);};
+   void              updateInfo2Label(int row, string val) {updateInfo(row,2,val);};
+   void              updateInfo1Value(int row, string val) {updateInfo(row,3,val);};
+   void              updateInfo2Value(int row, string val) {updateInfo(row,4,val);};
+
+   //void              updateInfo1Label(int index, string val) {info1[index].labelObject.Text(val);};  
+   //void              updateInfo1Value(int index, string val) {info1[index].valueObject.Text(val);};  
+   //void              updateInfo2Label(int index, string val) {info2[index].labelObject.Text(val);};  
+   //void              updateInfo2Value(int index, string val) {info2[index].valueObject.Text(val);};
+   
+   //void              setInfo1LabelColor(int index, color clr) {info1[index].labelObject.Color(clr);};
+   //void              setInfo1ValueColor(int index, color clr) {info1[index].valueObject.Color(clr);};
+   //void              setInfo2LabelColor(int index, color clr) {info2[index].labelObject.Color(clr);};
+   //void              setInfo2ValueColor(int index, color clr) {info2[index].valueObject.Color(clr);};
+
    void              showPanelDetails();
    void              mainInfoPanel();
    void              positionInfoUpdate();
    void              accountInfoUpdate();
    
-   void              updateInfo1Label(int index, string val) {info1[index].labelObject.Text(val);};  
-   void              updateInfo1Value(int index, string val) {info1[index].valueObject.Text(val);};  
-   void              updateInfo2Label(int index, string val) {info2[index].labelObject.Text(val);};  
-   void              updateInfo2Value(int index, string val) {info2[index].valueObject.Text(val);};
-   
-   void              setInfo1LabelColor(int index, color clr) {info1[index].labelObject.Color(clr);};
-   void              setInfo1ValueColor(int index, color clr) {info1[index].valueObject.Color(clr);};
-   void              setInfo2LabelColor(int index, color clr) {info2[index].labelObject.Color(clr);};
-   void              setInfo2ValueColor(int index, color clr) {info2[index].valueObject.Color(clr);};
-
-   
-   //int               objs[4];
-
 EAPanel();
 ~EAPanel();
-
-
 };
+
 
 //+------------------------------------------------------------------+
 //| Event Handling                                                   |
 //+------------------------------------------------------------------+
-//EVENT_MAP_BEGIN(MQPanels)
+bool EAPanel::OnEvent(const int id,const long &lparam,const double &dparam,const string &sparam) {
 
-//EVENT_MAP_END(CAppDialog)
+   // Call the base class event handler
+   CAppDialog::OnEvent(id,lparam,dparam,sparam);
+
+
+   #ifdef _DEBUG_PANEL
+      //printf("OnEvent --> last object clicked%s id:%d",sparam,id);
+   #endif
+
+   if (StringFind(sparam,"tab",0)!=-1) {
+      for (int i=0;i<ArraySize(tabControl);i++) {
+         if (tabControl[i]!=NULL) {
+            if (tabControl[i].OnEvent(id,lparam,dparam,sparam)&&sparam=="tab1") {
+               printf("TAB1 %s pressed",sparam);
+               hideControls("GROUP1");
+               hideControls("GROUP2");
+               showControls("STRATEGY");
+               showControls("TIMING");
+               }
+            if (tabControl[i].OnEvent(id,lparam,dparam,sparam)&&sparam=="tab2") {
+               printf("TAB2 %s pressed",sparam);
+               hideControls("STRATEGY");
+               hideControls("TIMING");
+               showControls("GROUP1");
+               showControls("GROUP2");
+
+               }
+               if (tabControl[i].OnEvent(id,lparam,dparam,sparam)&&sparam=="tab3") {
+               printf("TAB3 %s pressed",sparam);
+               //showEditControls();
+            }
+            if (tabControl[i].OnEvent(id,lparam,dparam,sparam)&&sparam=="tab4") {
+               printf("TAB4 %s pressed",sparam);
+               //showInfo1Controls();
+            }
+         }
+      }
+      return true;
+   }
+
+/*
+   for (int i=0;i<ArraySize(comboBox);i++) {
+      if (comboBox[i]!=NULL) comboBox[i].OnEvent(id,lparam,dparam,sparam);
+      #ifdef _DEBUG_PANEL
+         printf("OnEvent --> comboboxes %d sparam:%s",i,sparam);
+      #endif
+   }
+
+   if (id==CHARTEVENT_OBJECT_ENDEDIT) {
+      for (int i=0;i<ArraySize(edit);i++) {
+         if (edit[i]!=NULL) edit[i].OnEvent(id,lparam,dparam,sparam);
+         #ifdef _DEBUG_PANEL
+            printf("OnEvent --> edit %d sparam:%s",i,sparam);
+         #endif
+      }
+   }
+*/
+   return true;
+
+}
+//EVENT_MAP_BEGIN(EAPanel)
+//ON_EVENT(ON_CHANGE,combobox1,combobox1.onChange)
+//ON_EVENT(ON_CHANGE,combobox2,combobox2.onChange)
+//EVENT_MAP_END(EAPanel)
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+EAPanel::EAPanel() {
+
+   #ifdef _DEBUG_PANEL
+      printf("EAPanel -->  default constructor");
+   #endif
+
+   screenObjects=new CArrayObj;
+   if (CheckPointer(screenObjects)==POINTER_INVALID) {
+         ss="EAPanel -> Error creating CArray";
+         pss
+      ExpertRemove();
+   } else {
+      #ifdef EAPanel
+         ss="EAPanel -> Success screenObjects CArray";
+         pss
+      #endif 
+   }
+
+
+}
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+EAPanel::~EAPanel() {
+
+}
+
+//+------------------------------------------------------------------+
+//| Create                                                           |
+//+------------------------------------------------------------------+
+void EAPanel::updateInfo(int row, int col, string val) {
+
+   // Co1 1 and 3 = label object
+   // Col 2 and 4 = value object
+   string filter;
+
+   if (col==1||col==3) filter="GROUP1";
+   if (col==2||col==4) filter="GROUP2";
+
+   for (int i=0;i<screenObjects.Total();i++) {
+      EAScreenObject *s=screenObjects.At(i);
+      if (s.rowNumber=row && s.screenName==filter) {
+         // did this to cast the object type
+         CLabel *l=s.labelObject;
+         l.Text(val); 
+         s.labelObject=l;
+         return;
+      }
+      if (s.rowNumber=row && s.screenName==filter) {
+                  // did this to cast the object type
+         CLabel *l=s.valueObject;
+         l.Text(val); 
+         s.valueObject=l;
+         return;
+         return;
+      }
+   }
+   
+}
+//+------------------------------------------------------------------+
+//| Create                                                           |
+//+------------------------------------------------------------------+
+void EAPanel::createButtonControls() {
+
+   #ifdef _DEBUG_PANEL
+      printf("EAPanel createButtonControls -->");
+   #endif
+
+   static int i=0;
+   string sqlFieldName;
+
+   string sql="SELECT sqlFieldName FROM METADATA WHERE controlType='CBUTTON'";
+   int request=DatabasePrepare(_mainDBHandle,sql); 
+   if (request==INVALID_HANDLE) {
+      printf(" -> createButtonControls: request failed with code %d", GetLastError());
+      printf("%s",sql);
+      ExpertRemove();
+   }
+
+   #ifdef _DEBUG_PANEL
+      printf("createButtonControls --> %s",sql);
+   #endif
+
+   while (DatabaseRead(request)) {
+      DatabaseColumnText(request,0,sqlFieldName);  
+      //printf("CreateComboBoxes --> %s",sqlFieldName);
+
+      buttons[i]=new EACButton(sqlFieldName);
+      if (CheckPointer(buttons[i])==POINTER_INVALID) {
+         printf("ERROR creating edit");
+      } else {
+         Add(buttons[i]);
+      }
+      i++;
+   }
+
+}
+
+/*
+//+------------------------------------------------------------------+
+//|                                                          |
+//+------------------------------------------------------------------+
+void EAPanel::showHideControls(string screenName) {
+
+   static bool sFlag=true;
+
+   #ifdef _DEBUG_PANEL
+      printf("showHideControls ---> pressed for%s",screenName);
+   #endif
+
+   for (int i=0;i<screenObjects.Total();i++) {
+      EAScreenObject *s=screenObjects.At(i);
+      if (s.screenName==screenName) {
+         if (s.isVisible) {
+            s.labelObject.Hide();
+            s.valueObject.Hide();
+            s.valueObject.Disable();
+            s.isVisible=false;
+         } else {
+            s.labelObject.Show();
+            s.valueObject.Show();
+            s.valueObject.Enable();
+            s.isVisible=true;
+         }
+      }
+   }
+
+}
+*/
+//+------------------------------------------------------------------+
+//|                                                          |
+//+------------------------------------------------------------------+
+void EAPanel::showControls(string screenName) {
+
+   static bool sFlag=true;
+
+   #ifdef _DEBUG_PANEL
+      printf("showControls ---> pressed for%s",screenName);
+   #endif
+
+   for (int i=0;i<screenObjects.Total();i++) {
+      EAScreenObject *s=screenObjects.At(i);
+      if (s.screenName==screenName) {
+         s.labelObject.Show();
+         s.valueObject.Show();
+         s.valueObject.Enable();
+         s.isVisible=true;
+      }
+   }
+}
+//+------------------------------------------------------------------+
+//|                                                          |
+//+------------------------------------------------------------------+
+void EAPanel::hideControls(string screenName) {
+
+   static bool sFlag=true;
+
+   #ifdef _DEBUG_PANEL
+      printf("hideControls ---> pressed for%s",screenName);
+   #endif
+
+   for (int i=0;i<screenObjects.Total();i++) {
+      EAScreenObject *s=screenObjects.At(i);
+      if (s.screenName==screenName) {
+         s.labelObject.Hide();
+         s.valueObject.Hide();
+         s.valueObject.Disable();
+         s.isVisible=false;
+      }
+   }
+}
+//+------------------------------------------------------------------+
+//| Create                                                           |
+//+------------------------------------------------------------------+
+void EAPanel::createEditControls(string tableGroup) {
+
+   #ifdef _DEBUG_PANEL
+      printf("EAPanel createEditControls -->");
+   #endif
+
+   static int i=0;
+   string sqlFieldName;
+
+   string sql=StringFormat("SELECT sqlFieldName FROM METADATA WHERE controlType='CEDIT' AND tableGroup='%s'",tableGroup);
+   int request=DatabasePrepare(_mainDBHandle,sql); 
+   if (request==INVALID_HANDLE) {
+      printf(" -> createEditControls: request failed with code %d", GetLastError());
+      printf("%s",sql);
+      ExpertRemove();
+   }
+
+   #ifdef _DEBUG_PANEL
+      printf("EAPanel --> %s",sql);
+   #endif
+
+   while (DatabaseRead(request)) {
+      DatabaseColumnText(request,0,sqlFieldName);  
+      //printf("CreateComboBoxes --> %s",sqlFieldName);
+
+
+      EALabel *l=new EALabel(sqlFieldName);
+      if (CheckPointer(l)==POINTER_INVALID) {
+         printf("ERROR creating edit");
+      } else {
+         //combox1.Create(0,"combox1",0,combox1.x1,combox1.y1,combox1.x2,combox1.y2);
+         //printf("SUCCESS creating Label adding to CAppDialog");
+         Add(l);
+      }
+
+      edit[i]=new EAEdit(sqlFieldName);
+      if (CheckPointer(edit[i])==POINTER_INVALID) {
+         printf("ERROR creating edit");
+      } else {
+         //combox1.Create(0,"combox1",0,combox1.x1,combox1.y1,combox1.x2,combox1.y2);
+         //printf("SUCCESS creating combox1 adding to CAppDialog");
+         Add(edit[i]);
+      }
+
+      // Save this label/ control pair
+      EAScreenObject *s=new EAScreenObject;
+      if (CheckPointer(s)==POINTER_INVALID) {
+         printf(" -> creatEditControls ERROR creating EAScreenInfo object");
+         return;
+      } else {
+         s.sqlFieldName=sqlFieldName;
+         s.screenName=tableGroup;
+         s.labelObject=l;
+         s.valueObject=edit[i];
+         s.isVisible=false;
+         screenObjects.Add(s);  
+         s.labelObject.Hide();
+         s.valueObject.Hide();
+         s.valueObject.Disable();
+      }
+      i++; 
+
+   }
+
+}
 
 
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-void EAPanel::createPanel(string name,int subWindow,int x1,int y1,int x2,int y2) {
+void EAPanel::createInfo1Controls(string tableGroup) {
 
+      string labelName;
+      int   cellHeight=18;
+      int   cellWidth=200;
+      int   x1, y1, x2, y2;
 
-   if(!CAppDialog::Create(0,name,subWindow,x1,y1,x2,y2)) {
-      ExpertRemove();
-   }
+      CLabel *lObject, *vObject;
+      string labels[35]={"-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-"};
+      string values[35]={"-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-"};
 
-   showInfo1();
-   showInfo2();
+      for (int i=0;i<ArraySize(labels);i++) {
 
+         lObject=new CLabel;     
+         lObject.Text(labels[i]);    
+         lObject.Color(clrBlack);
+         lObject.FontSize(8);
 
+         vObject=new CLabel;
+         vObject.Text(values[i]);
+         vObject.Color(clrGreen);
+         vObject.FontSize(8);
+
+         // XY Placement Name
+         labelName=StringFormat("L1%d",i);
+         x1=ClientAreaLeft();
+         y1=INDENT_TOP+(cellHeight*i);
+         x2=ClientAreaLeft()+cellWidth;
+         y2=INDENT_TOP+cellHeight+(cellHeight*i);
+
+         lObject.Create(0,labelName,0,x1,y1,x2,y2);
+
+         // XY Placement Values
+         labelName=StringFormat("_V1%d",i);
+         x1=ClientAreaLeft()+cellWidth;
+         y1=INDENT_TOP+(cellHeight*i);
+         x2=ClientAreaLeft()+(cellWidth*2);
+         y2=INDENT_TOP+cellHeight+(cellHeight*i);
+
+         vObject.Create(0,labelName,0,x1,y1,x2,y2);
+
+         // Save this label/ control pair
+         EAScreenObject *s=new EAScreenObject;
+         if (CheckPointer(s)==POINTER_INVALID) {
+            printf(" -> createComboControls ERROR creating EAScreenInfo object");
+            return;
+         } else {
+            s.rowNumber=i;
+            s.sqlFieldName="GROUP1";
+            s.screenName=tableGroup;
+            s.labelObject=lObject;
+            s.valueObject=vObject;
+            s.isVisible=false;
+            screenObjects.Add(s);  
+            s.labelObject.Hide();
+            s.valueObject.Hide();
+         }
+      }
 }
 
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+void EAPanel::createInfo2Controls(string tableGroup) {
+
+      string labelName;
+      int   cellHeight=18;
+      int   cellWidth=160;
+      int   x1, y1, x2, y2;
+
+      CLabel *lObject, *vObject;
+      string labels[35]={"-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-"};
+      string values[35]={"-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-"};
+
+      for (int i=0;i<ArraySize(labels);i++) {
+
+         lObject=new CLabel;     
+         lObject.Text(labels[i]);    
+         lObject.Color(clrBlack);
+         lObject.FontSize(8);
+
+         vObject=new CLabel;
+         vObject.Text(values[i]);
+         vObject.Color(clrGreen);
+         vObject.FontSize(8);
+
+         // XY Placement Name
+         labelName=StringFormat("_L2%d",i);
+         x1=ClientAreaLeft()+(cellWidth*2);
+         y1=INDENT_TOP+(cellHeight*i);
+         x2=ClientAreaLeft()+(cellWidth*3);
+         y2=INDENT_TOP+cellHeight+(cellHeight*i);
+
+         lObject.Create(0,labelName,0,x1,y1,x2,y2);
+
+         // XY Placement Values
+         labelName=StringFormat("_V2%d",i);
+         x1=ClientAreaLeft()+(cellWidth*3);
+         y1=INDENT_TOP+(cellHeight*i);
+         x2=ClientAreaLeft()+(cellWidth*4);
+         y2=INDENT_TOP+cellHeight+(cellHeight*i);
+
+         vObject.Create(0,labelName,0,x1,y1,x2,y2);
+
+         // Save this label/ control pair
+         EAScreenObject *s=new EAScreenObject;
+         if (CheckPointer(s)==POINTER_INVALID) {
+            printf(" -> createComboControls ERROR creating EAScreenInfo object");
+            return;
+         } else {
+            s.rowNumber=i;
+            s.sqlFieldName="GROUP2";
+            s.screenName=tableGroup;
+            s.labelObject=lObject;
+            s.valueObject=vObject;
+            s.isVisible=false;
+            screenObjects.Add(s);  
+            s.labelObject.Hide();
+            s.valueObject.Hide();
+         }
+      }
+}
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
@@ -139,33 +560,20 @@ void EAPanel::showPanelDetails() {
 
    // change color once
    updateInfo2Value(18,"");
-   setInfo2LabelColor(18,clrRed);
-   setInfo2ValueColor(18,clrRed);
+   //setInfo2LabelColor(18,clrRed);
+   //setInfo2ValueColor(18,clrRed);
 
 }
-//+------------------------------------------------------------------+
-//|                                                                  |
-//+------------------------------------------------------------------+
-EAPanel::EAPanel() {
-
-
-}
-
-//+------------------------------------------------------------------+
-//|                                                                  |
-//+------------------------------------------------------------------+
-EAPanel::~EAPanel() {
-}
-
-
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
 void EAPanel::mainInfoPanel() {
 
-   
 
-   #ifdef _DEBUG_MAIN_LOOP Print(__FUNCTION__); string ss; #endif 
+   #ifdef _DEBUG_PANEL 
+      Print(__FUNCTION__); 
+      string ss; 
+   #endif 
 
    updateInfo1Label(0, "Strategy Number");  
    updateInfo1Value(0,IntegerToString(usp.strategyNumber));
@@ -173,37 +581,37 @@ void EAPanel::mainInfoPanel() {
    updateInfo1Label(1, "Trading Time");  
    
 
-   if (usp.sessionTradingTime==_ANYTIME) {
+   if (ustp.sessionTradingTime=="Any Time") {
       updateInfo1Value(1,"Any Time");
    }
 
-   if (usp.sessionTradingTime==_FIXED_TIME) {
-      updateInfo1Value(1,"Fixed Times");
+   if (ustp.sessionTradingTime=="Fixed Time") {
+      updateInfo1Value(1,"Fixed Time");
 
       updateInfo1Label(2, "Trading Start");  
-      updateInfo1Value(2,usp.tradingStart);
+      updateInfo1Value(2,ustp.tradingStart);
       updateInfo1Label(3, "Trading End");  
-      updateInfo1Value(3,usp.tradingEnd);
+      updateInfo1Value(3,ustp.tradingEnd);
    }
 
-   if (usp.sessionTradingTime==_SESSION_TIME) {
-      updateInfo1Value(1,"Session Times");
+   if (ustp.sessionTradingTime=="Session Time") {
+      updateInfo1Value(1,"Session Time");
       updateInfo1Label(2, "Trading Start");  
-      updateInfo1Value(2,usp.tradingStart);
+      updateInfo1Value(2,ustp.tradingStart);
       updateInfo1Label(3, "Trading End");  
-      updateInfo1Value(3,usp.tradingEnd);
+      updateInfo1Value(3,ustp.tradingEnd);
 
-      if (usp.marketOpenDelay!=0) {
+      if (ustp.marketOpenDelay!=0) {
          updateInfo1Label(4, "Market Open Delay");  
-         updateInfo1Value(4,IntegerToString(usp.marketOpenDelay));
+         updateInfo1Value(4,IntegerToString(ustp.marketOpenDelay));
       } else {
          updateInfo1Label(4, "Market Open Delay");  
          updateInfo1Value(4, "No Delay");
       }
 
-      if (usp.marketCloseDelay!=0) {
+      if (ustp.marketCloseDelay!=0) {
          updateInfo1Label(5, "Market Close Delay");  
-         updateInfo1Value(5,IntegerToString(usp.marketCloseDelay));
+         updateInfo1Value(5,IntegerToString(ustp.marketCloseDelay));
       } else {
          updateInfo1Label(5, "Market Close Delay");  
          updateInfo1Value(5, "No Delay");
@@ -212,7 +620,7 @@ void EAPanel::mainInfoPanel() {
 
 
    updateInfo1Label(6, "Weekend Trading");
-   if (usp.allowWeekendTrading) {
+   if (ustp.allowWeekendTrading) {
          updateInfo1Value(6,"Yes");
    } else {
          updateInfo1Value(6,"No");
@@ -280,7 +688,7 @@ void EAPanel::mainInfoPanel() {
    if (usp.inLossOpenLongHedge) {
          updateInfo2Value(6,"Yes");
          updateInfo2Label(7, "Hedge Loss Amt");  
-         updateInfo2Value(7,StringFormat("$%5.2f",usp.maxLongHedgeLoss));
+         updateInfo2Value(7,StringFormat("$%5.2f",usp.longHLossamt));
          updateInfo2Label(8, "Hedge Number"); 
          //pdateInfo2Value(8,StringFormat("%d",usp.dnnHedgeNumber));
    } else {
@@ -297,7 +705,7 @@ void EAPanel::mainInfoPanel() {
          updateInfo2Label(10, "Martingale Positions");  
          updateInfo2Value(10,IntegerToString(usp.maxMg));
          updateInfo2Label(11, "Martingale multiplier");  
-         updateInfo2Value(11,IntegerToString(usp.multiMg));
+         updateInfo2Value(11,IntegerToString(usp.mgMultiplier));
          updateInfo2Label(12, "Martingale Number"); 
          //updateInfo2Value(12,StringFormat("%d",usp.dnnMartingaleNumber));
 
@@ -339,7 +747,6 @@ void EAPanel::mainInfoPanel() {
 
 }
 
-
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
@@ -358,7 +765,6 @@ void EAPanel::accountInfoUpdate() {
       updateInfo2Value(18,"");
 
 }
-
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
@@ -404,8 +810,8 @@ void EAPanel::positionInfoUpdate() {
    int idx=_positionListYOffset;   //LHS Panel Y starting pos
       //----
    #ifdef _DEBUG_PANEL 
-      Print (__FUNCTION__); 
-      string ss;
+      //Print (__FUNCTION__); 
+      //string ss;
    #endif  
   //----
 
@@ -437,115 +843,159 @@ void EAPanel::positionInfoUpdate() {
    }
 
 }
-
 //+------------------------------------------------------------------+
-//|                                                                  |
+//| Create                                                           |
 //+------------------------------------------------------------------+
-void EAPanel::showInfo1() {
+void EAPanel::createComboControls(string tableGroup) {
 
-      string labelName;
-      int   cellHeight=18;
-      int   cellWidth=200;
-      int   x1, y1, x2, y2;
+   #ifdef _DEBUG_PANEL
+      printf("EAPanel createComboControls -->");
+   #endif
 
-      CLabel *lObject, *vObject;
-      string labels[35]={"-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-"};
-      string values[35]={"-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-"};
+   static int i=0;
+   string sqlFieldName;
 
-      for (int i=0;i<ArraySize(labels);i++) {
 
-         lObject=new CLabel;     
-         lObject.Text(labels[i]);    
-         lObject.Color(clrBlack);
-         lObject.FontSize(8);
+   string sql=StringFormat("SELECT sqlFieldName FROM METADATA WHERE controlType='CCOMBOBOX' AND tableGroup='%s'",tableGroup);
+   int request=DatabasePrepare(_mainDBHandle,sql); 
+   if (request==INVALID_HANDLE) {
+      printf(" -> CreateComboBoxes: request failed with code %d", GetLastError());
+      printf("%s",sql);
+      ExpertRemove();
+   }
 
-         vObject=new CLabel;
-         vObject.Text(values[i]);
-         vObject.Color(clrGreen);
-         vObject.FontSize(8);
+   #ifdef _DEBUG_PANEL
+      printf("EAPanel --> %s",sql);
+   #endif
 
-         info1[i].labelObject=lObject;
-         info1[i].valueObject=vObject;
-         Add(info1[i].labelObject);
-         Add(info1[i].valueObject);
+   while (DatabaseRead(request)) {
+      DatabaseColumnText(request,0,sqlFieldName);  
+      //printf("CreateComboBoxes --> %s",sqlFieldName);
 
-         info1[i].label=labels[i];
 
-         // XY Placement Name
-         labelName=StringFormat("L%d",i);
-         x1=ClientAreaLeft();
-         y1=ClientAreaTop()+(cellHeight*i);
-         x2=ClientAreaLeft()+cellWidth;
-         y2=(ClientAreaTop()+cellHeight)+(cellHeight*i);
-
-         info1[i].labelObject.Create(0,labelName,0,x1,y1,x2,y2);
-
-         // XY Placement Values
-         labelName=StringFormat("V%d",i);
-         x1=ClientAreaLeft()+cellWidth;
-         y1=ClientAreaTop()+(cellHeight*i);
-         x2=ClientAreaLeft()+(cellWidth*2);
-         y2=(ClientAreaTop()+cellHeight)+(cellHeight*i);
-
-         info1[i].valueObject.Create(0,labelName,0,x1,y1,x2,y2);
+      EALabel *l=new EALabel(sqlFieldName);
+      if (CheckPointer(l)==POINTER_INVALID) {
+         printf("ERROR creating combox");
+      } else {
+         Add(l);
       }
 
-}
-
-//+------------------------------------------------------------------+
-//|                                                                  |
-//+------------------------------------------------------------------+
-void EAPanel::showInfo2() {
-
-      string labelName;
-      int   cellHeight=18;
-      int   cellWidth=160;
-      int   x1, y1, x2, y2;
-
-      CLabel *lObject, *vObject;
-      string labels[35]={"-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-"};
-      string values[35]={"-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-"};
-
-      for (int i=0;i<ArraySize(labels);i++) {
-
-         lObject=new CLabel;     
-         lObject.Text(labels[i]);    
-         lObject.Color(clrBlack);
-         lObject.FontSize(8);
-
-         vObject=new CLabel;
-         vObject.Text(values[i]);
-         vObject.Color(clrGreen);
-         vObject.FontSize(8);
-
-         info2[i].labelObject=lObject;
-         info2[i].valueObject=vObject;
-         Add(info2[i].labelObject);
-         Add(info2[i].valueObject);
-
-         info2[i].label=labels[i];
-
-         // XY Placement Name
-         labelName=StringFormat("P%d",i);
-         x1=ClientAreaLeft()+(cellWidth*2);
-         y1=ClientAreaTop()+(cellHeight*i);
-         x2=ClientAreaLeft()+(cellWidth*3);
-         y2=(ClientAreaTop()+cellHeight)+(cellHeight*i);
-
-         info2[i].labelObject.Create(0,labelName,0,x1,y1,x2,y2);
-
-         // XY Placement Values
-         labelName=StringFormat("A%d",i);
-         x1=ClientAreaLeft()+(cellWidth*3);
-         y1=ClientAreaTop()+(cellHeight*i);
-         x2=ClientAreaLeft()+(cellWidth*4);
-         y2=(ClientAreaTop()+cellHeight)+(cellHeight*i);
-
-         info2[i].valueObject.Create(0,labelName,0,x1,y1,x2,y2);
+      comboBox[i]=new EAComboBox(sqlFieldName);
+      if (CheckPointer(comboBox[i])==POINTER_INVALID) {
+         printf("ERROR creating combox");
+      } else {
+         //combox1.Create(0,"combox1",0,combox1.x1,combox1.y1,combox1.x2,combox1.y2);
+         //printf("SUCCESS creating combox1 adding to CAppDialog");
+         Add(comboBox[i]);
       }
 
-    // change colors
+      // Save this label/ control pair
+      EAScreenObject *s=new EAScreenObject;
+      if (CheckPointer(s)==POINTER_INVALID) {
+         printf(" -> createComboControls ERROR creating EAScreenInfo object");
+         return;
+      } else {
+         s.sqlFieldName=sqlFieldName;
+         s.screenName=tableGroup;
+         s.labelObject=l;
+         s.valueObject=comboBox[i];
+         s.isVisible=false;
+         screenObjects.Add(s);  
+         s.labelObject.Hide();
+         s.valueObject.Hide();
+         s.valueObject.Disable();
+      }
+      i++;
 
+   }
 
 }
+//+------------------------------------------------------------------+
+//| Create                                                           |
+//+------------------------------------------------------------------+
+void EAPanel::createTabControls(string tableGroup) {
 
+   #ifdef _DEBUG_PANEL
+      printf("EAPanel createTabControls -->");
+   #endif
+
+   static int i=0;
+   string sqlFieldName;
+
+   string sql=StringFormat("SELECT sqlFieldName FROM METADATA WHERE controlType='TAB' AND tableGroup='%s' ORDER BY displayColumn",tableGroup);
+   int request=DatabasePrepare(_mainDBHandle,sql); 
+   if (request==INVALID_HANDLE) {
+      printf(" -> createTabControls: request failed with code %d", GetLastError());
+      printf("%s",sql);
+      ExpertRemove();
+   }
+
+   #ifdef _DEBUG_PANEL
+      printf("EAPanel --> %s",sql);
+   #endif
+
+   while (DatabaseRead(request)) {
+      DatabaseColumnText(request,0,sqlFieldName);  
+ 
+      tabControl[i]=new EATabControl(sqlFieldName);
+      if (CheckPointer(tabControl[i])==POINTER_INVALID) {
+         printf("ERROR creating createTabControls");
+      } else {
+
+         Add(tabControl[i]);
+      }
+
+      i++;
+   }
+}
+//+------------------------------------------------------------------+
+//| Create                                                           |
+//+------------------------------------------------------------------+
+bool EAPanel::Create(const long chart,const string name,const int subwin,const int x1,const int y1,const int x2,const int y2) {
+
+   if(!CAppDialog::Create(chart,name,subwin,x1,y1,x2,y2))
+      return(false);
+   
+   #ifdef _DEBUG_PANEL
+      printf("EAPanel Create -->");
+   #endif
+
+   ENABLE_EVENTS=false;
+
+   //createButtonControls();
+   
+   createTabControls("TAB");
+   createComboControls("STRATEGY");
+   createEditControls("STRATEGY");
+   createComboControls("TIMING");
+   createEditControls("TIMING");
+   createInfo1Controls("GROUP1");
+   createInfo2Controls("GROUP2");
+
+   EAScreenObject *s;
+   for (int i=0;i<screenObjects.Total();i++) {
+   
+      s=screenObjects.At(i);
+      printf("->%s",s.sqlFieldName);
+   }
+   //createComboControls("ADX");
+   
+   //createComboControls("RSI");
+   //createComboControls("ICH");
+   
+   //createComboControls("STOC");
+   //createComboControls("RVI");
+   //createComboControls("MFI");
+
+   
+   //createComboControls("OSMA");
+   //createComboControls("SAR");
+   
+   //createComboControls("MACD");
+   //createComboControls("MACDBULL");
+   //createComboControls("MACDBEAR");
+   
+   ENABLE_EVENTS=true;
+
+   return(true);
+}

@@ -189,7 +189,7 @@ bool EAPositionBase::accountInfoChecks() {
     string s[4];
     string ss;
 
-
+/*
     showPanel {
 
         if (AccountInfo.TradeAllowed()==false) {
@@ -240,7 +240,7 @@ bool EAPositionBase::accountInfoChecks() {
         if (SymbolInfo.IsSynchronized()==false) return false;
         if (SymbolInfo.Spread()>usp.maxSpread) return false;
     }
-
+*/
 
     return true;
 }

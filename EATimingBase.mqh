@@ -25,7 +25,6 @@ private:
 protected:
 //=========
 
-  EAEnum  marketSessions[4];
 
   struct SessionTimes {
       MqlDateTime       start;                            // trading session time slot
@@ -60,10 +59,9 @@ EATimingBase::EATimingBase() {
   #ifdef _DEBUG_STRATEGY_TIME
       ss="EATimingBase ->  Object Created ....";
       writeLog;
-      printf(ss);
+      pss
   #endif
 
-  
 
 }
 //+------------------------------------------------------------------+
@@ -113,7 +111,7 @@ void EATimingBase::getMarketSessionTimes() {
       #ifdef _WRITELOG
         ss=StringFormat(" -> Get session details once a day Today is:%s",TimeToString(TimeCurrent()));
         writeLog;
-        printf(ss);
+        pss
       #endif 
       
       // Get and store the current days session times
@@ -132,16 +130,16 @@ void EATimingBase::getMarketSessionTimes() {
         #ifdef _DEBUG_STRATEGY_TIME
             ss=StringFormat(" -> Index:%d Start:%s End:%s",l,TimeToString(sessionStart, TIME_MINUTES),TimeToString(sessionEnd,TIME_MINUTES));
             writeLog;
-            printf(ss);
+            pss
         #endif 
         ++l;      
       }
 
-      if (usp.sessionTradingTime==_SESSION_TIME) {  
+      if (ustp.sessionTradingTime=="Session Time") {  
         sessionStart=sessionTimes(_FS_START);
         sessionEnd=sessionTimes(_LS_END);
-        usp.tradingStart=StringFormat("%s %s",TimeToString(sessionStart,TIME_DATE),TimeToString(sessionStart,TIME_MINUTES));
-        usp.tradingEnd=StringFormat("%s %s",TimeToString(sessionEnd,TIME_DATE),TimeToString(sessionEnd,TIME_MINUTES));
+        ustp.tradingStart=StringFormat("%s %s",TimeToString(sessionStart,TIME_DATE),TimeToString(sessionStart,TIME_MINUTES));
+        ustp.tradingEnd=StringFormat("%s %s",TimeToString(sessionEnd,TIME_DATE),TimeToString(sessionEnd,TIME_MINUTES));
       }
   }
 }
@@ -163,11 +161,11 @@ datetime EATimingBase::sessionTimes(EAEnum action) {
   switch (action) { 
 
       case _CLOSE_AT_EOD:                                               // Strategy is requesting a EOD CLOSE  
-        if (usp.sessionTradingTime=="ANYTIME") 
+        if (ustp.sessionTradingTime=="Any Time") 
           closeDateTime=sessionTimes(_LS_END);                          // Use end of last session
-        if (usp.sessionTradingTime=="FIXED_TIME") 
-          closeDateTime=StringToTime(usp.tradingEnd);    // Use stategies end time 
-        if (usp.sessionTradingTime=="SESSION_TIME")  
+        if (ustp.sessionTradingTime=="Fixed Time") 
+          closeDateTime=StringToTime(ustp.tradingEnd);                  // Use stategies end time 
+        if (ustp.sessionTradingTime=="Session Time")  
           closeDateTime=sessionTimes(_LS_END);                          // Use end of session                                                      
          // Also check for delayed close/hold over requested from strategy
         if (usp.maxDailyHold>0) {                        
@@ -178,46 +176,46 @@ datetime EATimingBase::sessionTimes(EAEnum action) {
       break;
 
       case _FS_START:  // Get the start date/time of the first active session
-        for (i=0;i<ArraySize(marketSessions);i++) {
-            if (marketSessions[i]==_YES) {
+        for (i=0;i<ArraySize(ustp.marketSessions);i++) {
+            if (ustp.marketSessions[i]==_YES) {
               #ifdef _DEBUG_STRATEGY_TIME
-                  Print(" -> _FS_START:",(StructToTime(ast[i].start)+usp.marketOpenDelay*60));
-                  Print(" -> With marketOpenDelay in secounds:",usp.marketOpenDelay*60);
+                  Print(" -> _FS_START:",(StructToTime(ast[i].start)+ustp.marketOpenDelay*60));
+                  Print(" -> With marketOpenDelay in secounds:",ustp.marketOpenDelay*60);
               #endif 
-              return (StructToTime(ast[i].start)+usp.marketOpenDelay*60);
+              return (StructToTime(ast[i].start)+ustp.marketOpenDelay*60);
             }
         }
         break;
       case _FS_END:  // Get the end date/time of the first active session
-        for (i=0;i<ArraySize(marketSessions);i++) {
-            if (marketSessions[i]=="YES") {
+        for (i=0;i<ArraySize(ustp.marketSessions);i++) {
+            if (ustp.marketSessions[i]==_YES) {
               #ifdef _DEBUG_STRATEGY_TIME
-                  Print(" -> _FS_END:",(StructToTime(ast[i].end)+usp.marketOpenDelay*60));
-                  Print(" -> With usp.marketOpenDelay in secounds:",usp.marketOpenDelay*60);
+                  Print(" -> _FS_END:",(StructToTime(ast[i].end)+ustp.marketOpenDelay*60));
+                  Print(" -> With usp.marketOpenDelay in secounds:",ustp.marketOpenDelay*60);
               #endif 
-              return (StructToTime(ast[i].end)+usp.marketCloseDelay*60);
+              return (StructToTime(ast[i].end)+ustp.marketCloseDelay*60);
             }
         }
         break;   
       case _LS_START:  // start of Last date/time session of the day for the last active session
-        for (i=ArraySize(marketSessions)-1;i>=0;i--) {
-            if (marketSessions[i]=="YES") {
+        for (i=ArraySize(ustp.marketSessions)-1;i>=0;i--) {
+            if (ustp.marketSessions[i]==_YES) {
               #ifdef _DEBUG_STRATEGY_TIME
-                  Print(" -> _LS_START:",(StructToTime(ast[i].start)+usp.marketOpenDelay*60));
-                  Print(" -> With marketOpenDelay in secounds:",usp.marketOpenDelay*60);
+                  Print(" -> _LS_START:",(StructToTime(ast[i].start)+ustp.marketOpenDelay*60));
+                  Print(" -> With marketOpenDelay in secounds:",ustp.marketOpenDelay*60);
               #endif 
-              return (StructToTime(ast[i].start)+usp.marketOpenDelay*60);
+              return (StructToTime(ast[i].start)+ustp.marketOpenDelay*60);
             }
         }
       break; 
       case _LS_END:  // end of Last date/time session of the day for the last active session
-        for (i=ArraySize(marketSessions)-1;i>=0;i--) {
-            if (marketSessions[i]=="YES") {
+        for (i=ArraySize(ustp.marketSessions)-1;i>=0;i--) {
+            if (ustp.marketSessions[i]==_YES) {
               #ifdef _DEBUG_STRATEGY_TIME
-                  Print(" -> _LS_END:",(StructToTime(ast[i].end)+usp.marketOpenDelay*60));
-                  Print(" -> With marketOpenDelayin secounds :",usp.marketOpenDelay*60);
+                  Print(" -> _LS_END:",(StructToTime(ast[i].end)+ustp.marketOpenDelay*60));
+                  Print(" -> With marketOpenDelayin secounds :",ustp.marketOpenDelay*60);
               #endif 
-              return (StructToTime(ast[i].end)+usp.marketCloseDelay*60);
+              return (StructToTime(ast[i].end)+ustp.marketCloseDelay*60);
             }
         }
       break;  
@@ -237,27 +235,27 @@ bool EATimingBase::sessionTimes() {
   TimeCurrent(current); 
   
     // No time or session restrictions apply
-  if (usp.sessionTradingTime==_ANYTIME) {  
+  if (ustp.sessionTradingTime=="Any Time") {  
       #ifdef _DEBUG_STRATEGY_TIME
         Print(" -> Trading allowed at any time");
       #endif           
       return true;   
   }
    // Can we trade weekends
-  if (usp.allowWeekendTrading&&(current.day_of_week==0||current.day_of_week==6)) {
+  if (ustp.allowWeekendTrading&&(current.day_of_week==0||current.day_of_week==6)) {
       #ifdef _DEBUG_STRATEGY_TIME
         Print(" -> NO Weekend trading");
       #endif
       return false; // Its the weekend      
   }   
    // Get allowable trading times
-  if (usp.sessionTradingTime==_FIXED_TIME) {
+  if (ustp.sessionTradingTime=="Fixed Time") {
       #ifdef _DEBUG_STRATEGY_TIME
-        string ss=StringFormat(" -> Current Time:%s trading allowed %s to %s ",TimeToString(TimeCurrent()),usp.tradingStart,usp.tradingEnd);
+        string ss=StringFormat(" -> Current Time:%s trading allowed %s to %s ",TimeToString(TimeCurrent()),ustp.tradingStart,ustp.tradingEnd);
         Print(ss) ;
       #endif
       // Fixed time 
-      if (TimeCurrent()>StringToTime(usp.tradingStart)&&TimeCurrent()<StringToTime(usp.tradingEnd)) {
+      if (TimeCurrent()>StringToTime(ustp.tradingStart)&&TimeCurrent()<StringToTime(ustp.tradingEnd)) {
         #ifdef _DEBUG_STRATEGY_TIME
             Print(" -> FIXED_TIME trading ALLOWED ");
         #endif
@@ -269,7 +267,7 @@ bool EATimingBase::sessionTimes() {
         return false; 
       }  
   }
-  if (usp.sessionTradingTime==_SESSION_TIME) {  
+  if (ustp.sessionTradingTime==_SESSION_TIME) {  
     
       // Check curent time against Strategy start and end times based on session +/- offsets
       if (TimeCurrent()>sessionTimes(_FS_START)&&TimeCurrent()<sessionTimes(_LS_END)) {     
@@ -278,8 +276,8 @@ bool EATimingBase::sessionTimes() {
             string ss=StringFormat(" SESSION_TIME   Current Time:%s -- _FS_START %s -- _LS_END %s",TimeToString(TimeCurrent()), TimeToString(sessionTimes(_FS_START)), TimeToString(sessionTimes(_LS_END)));
             PrintFormat(ss);
         #endif 
-        usp.tradingStart=TimeToString(sessionTimes(_FS_START),TIME_DATE);
-        usp.tradingEnd=TimeToString(sessionTimes(_LS_END),TIME_DATE);
+        ustp.tradingStart=TimeToString(sessionTimes(_FS_START),TIME_DATE);
+        ustp.tradingEnd=TimeToString(sessionTimes(_LS_END),TIME_DATE);
         return true;
       } else {
         #ifdef _DEBUG_STRATEGY_TIME

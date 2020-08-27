@@ -4,34 +4,34 @@
       n.fileName=networkFileName();
       // Update DB
       sql=StringFormat("UPDATE NNETWORKS SET fileName=%s WHERE strategyNumber=%d AND dnnNumber=%d",n.fileName,net.StrategyNumber,n.dnnNumber);
-      #ifdef _DEBUG_DNN
+      #ifdef _DEBUG_NN
          Print(" -> ",sql);
       #endif
 
       request=DatabasePrepare(_mainDBHandle,sql); 
       if (request==INVALID_HANDLE) {
-         #ifdef _DEBUG_DNN
+         #ifdef _DEBUG_NN
             printf(" -> DB read failed with code %d",GetLastError());
          #endif
       }
       if (!DatabaseExecute(_mainDBHandle,sql)) {
-         #ifdef _DEBUG_DNN
+         #ifdef _DEBUG_NN
             printf(" -> DB read failed with code %d",GetLastError());
          #endif
       }
    } else {
       if (fileHandle=FileOpen("fn",FILE_WRITE|FILE_BIN|FILE_ANSI|FILE_COMMON)) {
          if (!nnArray.Load(fileHandle)) {
-            #ifdef _DEBUG_DNN
+            #ifdef _DEBUG_NN
                printf( " -> SUCCESS loaded file:%s",fn);
             #endif
          } else {
-            #ifdef _DEBUG_DNN
+            #ifdef _DEBUG_NN
                printf( " -> ERROR loading file:%s -> %d",fn, GetLastError());
             #endif
          }
       } else {
-         #ifdef _DEBUG_DNN
+         #ifdef _DEBUG_NN
             printf( " -> ERROR file:%s is missing -> %d",fn, GetLastError());
          #endif
       }
@@ -56,7 +56,7 @@ string EANeuralNetwork::networkFileName() {
 
    string fn=StringFormat("%d%d%d%d%d%d%d%d.bin",t.year,t.mon,t.day,t.hour,t.min,t.sec);
 
-   #ifdef _DEBUG_DNN
+   #ifdef _DEBUG_NN
       printf( " -> New file name:%s",fn);
    #endif
    return (fn);
@@ -74,7 +74,7 @@ EANeuralNetwork::saveNetworkToDisk() {
    // If the file exists then remove it first before saving the new version
    if (FileIsExist(fn,FILE_COMMON)) {
       if (FileDelete(fn,FILE_COMMON)) {
-         #ifdef _DEBUG_DNN
+         #ifdef _DEBUG_NN
             printf( " -> DELETING existing file:%s",fn);
          #endif
       };
@@ -83,16 +83,16 @@ EANeuralNetwork::saveNetworkToDisk() {
    // Now create it
    if (fileHandle=FileOpen("fn",FILE_WRITE|FILE_BIN|FILE_ANSI|FILE_COMMON)) {
       if (!nnArray.Save(fileHandle)) {
-         #ifdef _DEBUG_DNN
+         #ifdef _DEBUG_NN
             printf( " -> SUCCESS created file:%s",fn);
          #endif
       } else {
-         #ifdef _DEBUG_DNN
+         #ifdef _DEBUG_NN
             printf( " -> ERROR saving file:%s -> %d",fn, GetLastError());
          #endif
       }
    } else {
-      #ifdef _DEBUG_DNN
+      #ifdef _DEBUG_NN
          printf( " ->  ERROR creating file:%s-> %d",fn, GetLastError());
       #endif
    }; 
@@ -113,21 +113,21 @@ EANeuralNetwork::loadNetworkFromDisk() {
    if (FileIsExist(fn,FILE_COMMON)) {
       if (fileHandle=FileOpen("fn",FILE_READ|FILE_BIN|FILE_ANSI|FILE_COMMON)) {
          if (!nnArray.Load(fileHandle)) {
-            #ifdef _DEBUG_DNN
+            #ifdef _DEBUG_NN
                printf( " -> SUCCESS loaded file:%s",fn);
             #endif
          } else {
-            #ifdef _DEBUG_DNN
+            #ifdef _DEBUG_NN
                printf( " -> ERROR loading file:%s -> %d",fn, GetLastError());
             #endif
          }
       } else {
-         #ifdef _DEBUG_DNN
+         #ifdef _DEBUG_NN
             printf( " -> ERROR opening handle for file:%s -> %d",fn, GetLastError());
          #endif
       }
    } else {
-      #ifdef _DEBUG_DNN
+      #ifdef _DEBUG_NN
          printf( " -> ERROR file:%s is missing -> %d",fn, GetLastError());
       #endif
    }
@@ -137,9 +137,9 @@ EANeuralNetwork::loadNetworkFromDisk() {
 }
 */
 
- #ifdef _DEBUG_DNN
+ #ifdef _DEBUG_NN
       ss=StringFormat(" -> Saved network with:%d elements",nnArray.Total());
-      printf(ss);
+      pss
    #endif 
 
    // Save network to Database
@@ -148,7 +148,7 @@ EANeuralNetwork::loadNetworkFromDisk() {
 
    int request=DatabasePrepare(_mainDBHandle, "INSERT INTO NETWORKS (strategyNumber,nn) VALUES (?1,?2);");
    if (request==INVALID_HANDLE) {
-      #ifdef _DEBUG_DNN
+      #ifdef _DEBUG_NN
          printf(" -> DB DatabasePrepare request failed with code ", GetLastError());
       #endif
    }
@@ -164,21 +164,21 @@ EANeuralNetwork::loadNetworkFromDisk() {
    printf("-------------------");
 
    if (!DatabaseBind(request,0,usp.strategyNumber)) {
-      #ifdef _DEBUG_DNN
+      #ifdef _DEBUG_NN
          printf(" -> DB DatabaseBind request failed with code ", GetLastError());
       #endif
    } else {
-      #ifdef _DEBUG_DNN
+      #ifdef _DEBUG_NN
          printf(" -> DB DatabaseBindArray request success %d",usp.strategyNumber);
       #endif
    }
 
    if (!DatabaseBindArray(request,1,nn)) {
-      #ifdef _DEBUG_DNN
+      #ifdef _DEBUG_NN
          printf(" -> DB DatabaseBindArray request failed with code ", GetLastError());
       #endif
    } else {
-      #ifdef _DEBUG_DNN
+      #ifdef _DEBUG_NN
          printf(" -> DB DatabaseBindArray request success");
       #endif
    }

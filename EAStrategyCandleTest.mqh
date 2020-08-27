@@ -8,7 +8,7 @@
 #property version   "1.00"
 
 
-#define  _DEBUG_STRATGEY_CANDLETEST  
+#define  _DEBUG_STRATEGY_CANDLETEST  
 //#define _OPTIMIZE_DNN_PRICEACTION
 
 #include "EAEnum.mqh"
@@ -68,14 +68,14 @@ EAStrategyCandleTest();
 //+------------------------------------------------------------------+
 EAStrategyCandleTest::EAStrategyCandleTest() {
 
-   #ifdef _DEBUG_STRATGEY_CANDLETEST  
+   #ifdef _DEBUG_STRATEGY_CANDLETEST  
       Print(__FUNCTION__);
       string ss;
    #endif 
 
    
    if (bool (pb.runMode&_RUN_STRATEGY_OPTIMIZATION)&&pb.optimizationLong) {
-      #ifdef _DEBUG_STRATGEY_CANDLETEST  
+      #ifdef _DEBUG_STRATEGY_CANDLETEST  
          printf (" -> Using optimization inputs");
       #endif 
       dnn=new EANeuralNetwork(pb.runMode);
@@ -120,7 +120,7 @@ EAStrategyCandleTest::~EAStrategyCandleTest() {
 //+------------------------------------------------------------------+
 void EAStrategyCandleTest::updateOnTick(void) {
 
-   #ifdef _DEBUG_STRATGEY_CANDLETEST  
+   #ifdef _DEBUG_STRATEGY_CANDLETEST  
       Print(__FUNCTION__);
    #endif  
    
@@ -131,7 +131,7 @@ void EAStrategyCandleTest::updateOnTick(void) {
 //+------------------------------------------------------------------+
 EAEnum EAStrategyCandleTest::waitOnTriggers() {
 
-   #ifdef _DEBUG_STRATGEY_CANDLETEST    
+   #ifdef _DEBUG_STRATEGY_CANDLETEST    
       Print(__FUNCTION__);
    #endif 
 
@@ -158,14 +158,14 @@ EAEnum EAStrategyCandleTest::waitOnTriggers() {
    }
    
 
-   #ifdef _DEBUG_STRATGEY_CANDLETEST     
+   #ifdef _DEBUG_STRATEGY_CANDLETEST     
       if (bool (pb.dnnType&_LONG)) printf("Allow LONG");
       if (bool (pb.dnnType&_SHORT)) printf("Allow SHORT");
    #endif 
 
    // LONG         
    if (bool (pb.dnnType&_LONG)&&outputs[0]>0.6) {    
-      #ifdef _DEBUG_STRATGEY_CANDLETEST                                                                 
+      #ifdef _DEBUG_STRATEGY_CANDLETEST                                                                 
          Print(__FUNCTION__," -> ANN returned Long trigger");
       #endif 
       
@@ -175,7 +175,7 @@ EAEnum EAStrategyCandleTest::waitOnTriggers() {
    
    // SHORT  
    if (bool (pb.dnnType&_SHORT)&&outputs[1]>0.6) {    
-      #ifdef _DEBUG_STRATGEY_CANDLETEST                                                                 
+      #ifdef _DEBUG_STRATEGY_CANDLETEST                                                                 
          Print(__FUNCTION__," -> ANN returned Short trigger");
       #endif 
       
@@ -205,7 +205,7 @@ EAEnum EAStrategyCandleTest::waitOnTriggers() {
 //+------------------------------------------------------------------+
 EAEnum EAStrategyCandleTest::runOnBar() {
 
-   #ifdef _DEBUG_STRATGEY_CANDLETEST  
+   #ifdef _DEBUG_STRATEGY_CANDLETEST  
       Print(__FUNCTION__);
    #endif  
    

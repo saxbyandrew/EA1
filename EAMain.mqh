@@ -7,12 +7,10 @@
 #property link      "https://www.mql5.com"
 #property version   "1.00"
 
-#define _DEBUG_MAIN_LOOP
 
 #include <Trade\AccountInfo.mqh>
 
 #include "EAEnum.mqh"
-
 #include "EAMartingale.mqh"
 #include "EALongHedge.mqh"
 //#include "EALongHedge.mqh"
@@ -55,7 +53,7 @@ protected:
 //=========
 
    bool                 checkMaxDailyOpenQty();
-   void                 infoPanel();
+   //void                 infoPanel();
 
 
 //=========
@@ -78,7 +76,7 @@ EAMain::EAMain() {
    #ifdef _DEBUG_MAIN_LOOP 
       ss="EAMain -> Object instantiated"; 
       writeLog
-      printf(ss);
+      pss
    #endif 
 
    // Create the position object types allowed
@@ -88,14 +86,14 @@ EAMain::EAMain() {
          #ifdef _DEBUG_MAIN_LOOP
             ss="EAMain -> ERROR creating object EALong";
             writeLog
-            printf(ss);
+            pss
             ExpertRemove();
          #endif
       } else {
          #ifdef _DEBUG_MAIN_LOOP
             ss="EAMain -> SUCCESS creating object EALong";
             writeLog
-            printf(ss);
+            pss
          #endif
       }
    //}
@@ -106,7 +104,7 @@ EAMain::EAMain() {
          #ifdef _DEBUG_MAIN_LOOP
             ss="EAMain -> ERROR creating object EAShort";
             writeLog
-            printf(ss);
+            pss
             ExpertRemove();
          #endif
          ExpertRemove();
@@ -114,7 +112,7 @@ EAMain::EAMain() {
                   #ifdef _DEBUG_MAIN_LOOP
             ss="EAMain -> SUCCESS creating object EAShort";
             writeLog
-            printf(ss);
+            pss
          #endif
 
       }
@@ -125,7 +123,7 @@ EAMain::EAMain() {
       #ifdef _DEBUG_MAIN_LOOP
          ss="EAMain -> ERROR creating object EALongHedge";
          writeLog
-         printf(ss);
+         pss
          ExpertRemove();
       #endif
       ExpertRemove();
@@ -133,7 +131,7 @@ EAMain::EAMain() {
       #ifdef _DEBUG_MAIN_LOOP
          ss="EAMain -> SUCCESS creating object EALongHedge";
          writeLog
-         printf(ss);
+         pss
       #endif
 
    }
@@ -144,7 +142,7 @@ EAMain::EAMain() {
          #ifdef _DEBUG_MAIN_LOOP
             ss="EAMain -> ERROR creating object EAMartingale";
             writeLog
-            printf(ss);
+            pss
             ExpertRemove();
          #endif
          ExpertRemove();
@@ -152,7 +150,7 @@ EAMain::EAMain() {
          #ifdef _DEBUG_MAIN_LOOP
             ss="EAMain -> SUCCESS creating object EAMartingale";
             writeLog
-            printf(ss);
+            pss
          #endif
 
       }
@@ -222,21 +220,21 @@ bool EAMain::checkMaxDailyOpenQty() {
    #ifdef _DEBUG_MAIN_LOOP 
       ss="checkMaxDailyOpenQty -> ...."; 
       writeLog
-      printf(ss);
+      pss
    #endif 
 
    MqlDateTime start, end;   
    int sNumber, cnt=0;
    string s;
 
-   //showPanel infoPanel.updateInfo1Label(9, "Max Positions/Day");  
+   showPanel ip.updateInfo1Label(9, "Max Positions/Day");  
    if (usp.maxDaily<=0) {
       #ifdef _DEBUG_MAIN_LOOP 
          ss="checkMaxDailyOpenQty -> No max number of daily positions specfied";
          writeLog
-         printf(ss);
+         pss
       #endif    
-      //showPanel infoPanel.updateInfo1Value(9,"No Maximum");
+      showPanel ip.updateInfo1Value(9,"No Maximum");
       return true;           // No max daily qty
    }
 
@@ -248,9 +246,9 @@ bool EAMain::checkMaxDailyOpenQty() {
    #ifdef _DEBUG_MAIN_LOOP 
       ss=StringFormat("checkMaxDailyOpenQty -> Max number of daily positions specfied:",usp.maxDaily);
                writeLog
-         printf(ss);
+         pss
    #endif  
-   //showPanel infoPanel.updateInfo1Value(9,IntegerToString(usp.maxDaily));
+   showPanel ip.updateInfo1Value(9,IntegerToString(usp.maxDaily));
    // Get todays order history    
    if (HistorySelect(StructToTime(start), StructToTime(end))) {   
       for (int i=0;i<HistoryDealsTotal();i++) {         
@@ -259,23 +257,23 @@ bool EAMain::checkMaxDailyOpenQty() {
          #ifdef _DEBUG_MAIN_LOOP
             ss=StringFormat("checkMaxDailyOpenQty -> Number today %d %d %d",HistoryDealsTotal(),sNumber, HistoryDealGetTicket(i));
             writeLog
-            printf(ss);
+            pss
          #endif
          if (cnt>=usp.maxDaily) {
             #ifdef _DEBUG_MAIN_LOOP
                ss=StringFormat("checkMaxDailyOpenQty => %d Max Reached",cnt);
                writeLog
-               printf(ss);
+               pss
             #endif
-            //showPanel infoPanel.updateInfo1Value(9,s);
+            showPanel ip.updateInfo1Value(9,s);
             return false;  
          }  else {
             #ifdef _DEBUG_MAIN_LOOP
                ss=StringFormat("checkMaxDailyOpenQty -> %d/%d",cnt,usp.maxDaily);
                writeLog
-               printf(ss);
+               pss
             #endif
-            //showPanel usp.updateInfo1Value(9,s);
+            showPanel ip.updateInfo1Value(9,s);
          }                 
       }
    }
@@ -292,22 +290,22 @@ void EAMain::runOnBar() {
    #ifdef _DEBUG_MAIN_LOOP 
       ss="runOnBar -> ...."; 
       writeLog
-      printf(ss);
+      pss
    #endif 
 
    #ifdef _DEBUG_MAIN_LOOP
       ss="runOnBar -> Back from strategy execution ONBAR with trade action:";
          writeLog
-         printf(ss);
+         pss
       if (TRADING_CIRCUIT_BREAKER&IS_LOCKED) {
          ss="Trading prevented lock is ON";
          writeLog
-         printf(ss);
+         pss
       }
       if (TRADING_CIRCUIT_BREAKER&IS_UNLOCKED) {
-         ss="Trading allowed lock is OFF";
+         ss="Trading is allowed the lock is OFF";
          writeLog
-         printf(ss);
+         pss
       }
    #endif
 
@@ -316,20 +314,22 @@ void EAMain::runOnBar() {
    //pb.checkSQLDatabase();
 
    // Main price action strategy 
+
    if (activeStrategy.runOnBar()==_OPEN_LONG) {
+
       if (checkMaxDailyOpenQty()&&bool (TRADING_CIRCUIT_BREAKER&IS_UNLOCKED)) {
          TRADING_CIRCUIT_BREAKER=IS_LOCKED;
          if (lp.execute(_OPEN_LONG)) {
             #ifdef _DEBUG_MAIN_LOOP
                ss="runOnBar -> New long opened";
                writeLog
-               printf(ss);
+               pss
             #endif  
          } else {
             #ifdef _DEBUG_MAIN_LOOP
                ss="runOnBar -> New long could not be opened";
                writeLog
-               printf(ss);
+               pss
             #endif                
          }
          TRADING_CIRCUIT_BREAKER=IS_UNLOCKED;               // Enable trading subsystem 
@@ -343,13 +343,13 @@ void EAMain::runOnBar() {
             #ifdef _DEBUG_MAIN_LOOP_ONBAR
                ss="runOnBar -> New short opened";
                writeLog
-               printf(ss);
+               pss
             #endif  
          } else {
             #ifdef _DEBUG_MAIN_LOOP_ONBAR
                ss="runOnBar -> New short could not be opened";
                writeLog
-               printf(ss);
+               pss
             #endif                
          }
          TRADING_CIRCUIT_BREAKER=IS_UNLOCKED;               // Enable trading subsystem 
@@ -385,14 +385,14 @@ void EAMain::runOnDay() {
    #ifdef _DEBUG_MAIN_LOOP      
       ss="runOnDay -> ...."; 
       writeLog
-      printf(ss);
+      pss
    #endif 
 
    // Check if a reload of the strategy is in order based on a new optimization run
    if (!MQLInfoInteger(MQL_OPTIMIZATION)) {
       #ifdef _DEBUG_MAIN_LOOP 
          ss="runOnDay -> ********** reloadStrategy ********** ";
-         printf(ss);
+         pss
       #endif
       optimization.reloadStrategy();
    }
@@ -413,7 +413,7 @@ void EAMain::runOnTimer() {
       string ss;
       ss="runOnTimer -> ...."; 
       writeLog
-      printf(ss);
+      pss
    #endif
 
    activeStrategy.runOnTimer();

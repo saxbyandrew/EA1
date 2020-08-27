@@ -260,9 +260,9 @@ bool EAMartingale::newPosition(EAPosition *pp) {
          p.status=_MARTINGALE;
 
          // update this new MG based on the entry positions values
-         p.lotSize=pp.lotSize*usp.multiMg;           // New lot Size
-         p.fixedProfitTargetLevel=p.entryPrice+(usp.fptl*usp.multiMg);
-         p.fixedLossTargetLevel=p.entryPrice+(usp.flts*usp.multiMg);
+         p.lotSize=pp.lotSize*usp.mgMultiplier;           // New lot Size
+         p.fixedProfitTargetLevel=p.entryPrice+(usp.fptl*usp.mgMultiplier);
+         p.fixedLossTargetLevel=p.entryPrice+(usp.flts*usp.mgMultiplier);
          pp.status=_MARTINGALE;                                                  // Re status the position that causes this 
 
 

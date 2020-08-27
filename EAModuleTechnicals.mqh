@@ -7,22 +7,7 @@
 #property link      "https://www.mql5.com"
 #property version   "1.00"
 
-//#define _DEBUG_ADX_MODULE
-//#define _DEBUG_RVI_MODULE
-//#define _DEBUG_OSMA_MODULE
-//#define _DEBUG_STOC_MODULE
-//#define _DEBUG_MACD_DIVERGENCE
-//#define _DEBUG_MACDPLAT_BULLISH
-//#define _DEBUG_MACDPLAT_BEARISH
-//#define _DEBUG_MACD_MODULE
-//#define _DEBUG_RSI_MODULE
-//#define _DEBUG_MFI_MODULE
-//#define _DEBUG_SAR_MODULE
-//#define _DEBUG_IICHIMOKU_MODULE
-//#define _DEBUG_QMP_BULLISH
-//#define _DEBUG_QMP_BEARISH
-//#define _DEBUG_QQE
-//#define _DEBUG_ZIGZAG
+
 
 #include "EAEnum.mqh"
 #include <Indicators\Oscilators.mqh>
@@ -90,7 +75,7 @@ public:
     void                MACDGetValueDifference(bool &aboveZero, double &val, int idx);
 
     void                RSISetParameters(ENUM_TIMEFRAMES period);
-    void                RSISetParameters(ENUM_TIMEFRAMES period,int maperiod, int priceApplied);              
+    void                RSISetParameters(ENUM_TIMEFRAMES period, int maperiod, int priceApplied);              
     double              RSINormalizedValue(int lookBack);             
     double              RSIGetValue(int lookBack);    
 
@@ -157,7 +142,7 @@ public:
 //+------------------------------------------------------------------+
 EAModuleTechnicals::EAModuleTechnicals() {
 
-    lookBackBuffersSize=1000;
+    lookBackBuffersSize=2000;
 
 
 }
@@ -180,9 +165,21 @@ double EAModuleTechnicals::ADXNormalizedValue(int lookBack, int buffer) {
 
     double min=0.1, max=99, result=0;
 
-    adx.Refresh(-1);
+    if (lookBack>1) {
+        if (adx.GetData(1,50)==EMPTY_VALUE) {
+            printf("ADX --> getting a EMPTY VALUE 1");  
+        }
+    } else {
+        adx.Refresh(-1);
+    }
 
     // Sanity check 
+    #ifdef _DEBUG_ADX_MODULE
+        if (adx.Main(lookBack)==EMPTY_VALUE) {
+            printf("BarsCalculated:%d",BarsCalculated());
+            printf("ADX --> getting a EMPTY VALUE 2");
+        }
+    #endif
     if (adx.Main(lookBack)==EMPTY_VALUE) return 0;
 
     switch (buffer) {
@@ -234,11 +231,20 @@ void EAModuleTechnicals::ADXSetParameters(ENUM_TIMEFRAMES period, int maperiod) 
     #ifdef _DEBUG_ADX_MODULE
         Print(__FUNCTION__);
         printf("Creating ADX with period:%s and maPeriod:%d",EnumToString(period),maperiod);
+        printf("BarsCalculated:%d",adx.BarsCalculated());
     #endif  
 
     if (!adx.Create(_Symbol,period,maperiod)) {
-        //ExpertRemove();
+        #ifdef _DEBUG_ADX_MODULE
+            printf("ADXSetParameters -> ERROR");
+            ExpertRemove();
+        #endif
     } 
+
+    adx.Refresh(OBJ_ALL_PERIODS);
+    printf("ADXSetParameters BarsCalculated:%d",adx.BarsCalculated());
+    printf("ADXSetParameters STATUS:%s",adx.Status());
+    adx.BufferResize(2000);
 } 
 
 
@@ -1555,16 +1561,17 @@ EAEnum EAModuleTechnicals::ZIGZAGValue(int pos) {
     static double ZIGZAGBuffer2[];
     static double ZIGZAGBuffer3[];
 
-    ArraySetAsSeries(ZIGZAGBuffer0,true);
-    ArraySetAsSeries(ZIGZAGBuffer1,true);
-    ArraySetAsSeries(ZIGZAGBuffer2,true);
-    ArraySetAsSeries(ZIGZAGBuffer3,true);
+    if (!ArraySetAsSeries(ZIGZAGBuffer0,true)) printf("Error1");
+    if (!ArraySetAsSeries(ZIGZAGBuffer1,true)) printf("Error2");;
+    if (!ArraySetAsSeries(ZIGZAGBuffer2,true)) printf("Error3");;
+    if (!ArraySetAsSeries(ZIGZAGBuffer3,true)) printf("Error4");;
 
-    CopyBuffer(ZIGZAGHandle,0,0,lookBackBuffersSize,ZIGZAGBuffer0);
-    CopyBuffer(ZIGZAGHandle,1,0,lookBackBuffersSize,ZIGZAGBuffer1);
-    CopyBuffer(ZIGZAGHandle,2,0,lookBackBuffersSize,ZIGZAGBuffer2);
-    CopyBuffer(ZIGZAGHandle,3,0,lookBackBuffersSize,ZIGZAGBuffer3);
+    if (CopyBuffer(ZIGZAGHandle,0,0,lookBackBuffersSize,ZIGZAGBuffer0)==-1) printf("Error5");
+    if (CopyBuffer(ZIGZAGHandle,1,0,lookBackBuffersSize,ZIGZAGBuffer1)==-1) printf("Error6");
+    if (CopyBuffer(ZIGZAGHandle,2,0,lookBackBuffersSize,ZIGZAGBuffer2)==-1) printf("Error7");
+    if (CopyBuffer(ZIGZAGHandle,3,0,lookBackBuffersSize,ZIGZAGBuffer3)==-1) printf("Error8");
 
+    printf("SIZE:%d",ArraySize(ZIGZAGBuffer2));
 /*
     if (ZIGZAGBuffer0[pos]>0) {
         direction=_DOWN;

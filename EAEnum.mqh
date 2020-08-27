@@ -1,5 +1,5 @@
 
-enum EAEnum    {_NO_ACTION=0, 
+enum EAEnum    {_NO_ACTION=-1, 
 _NOTSET=-1, 
 _SET=1, 
 IS_LOCKED=2,

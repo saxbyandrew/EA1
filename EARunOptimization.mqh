@@ -9,7 +9,7 @@
 
 
 //#define  STATS_FRAME  1
-#define _DEBUG_OPTIMIZATION
+
 
 #include "EAEnum.mqh"
 //#include "EADataFrame.mqh"
@@ -29,14 +29,14 @@ private:
    //EADataFrame             *df;      // The dataframe object
    //EANeuralNetwork         *nn;      // The network 
    
-   string            ss;
+   string   ss;
 
    int               _dnnNumber;
    int               _dnnType;
    
    struct results {
-      double v0[32];
-      double v1[12];
+      double v0[32];    // Metrics Profit loss etc
+      double v1[12];    // Strategy
       double v2[7];
       double v3[10];
       double v4[7];
@@ -45,9 +45,9 @@ private:
       double v7[7];
       double v8[19];
       double v9[16];
-      double v10[13];
-      double v11[13];
-      double v12[13];
+      double v10[13];   // MACD
+      double v11[13];   // MACDBULL
+      double v12[13];   // MACDBEAR
    };
    results v[1];
 
@@ -63,6 +63,7 @@ protected:
 
    void        dropSQLOptimizationTables();
    void        createSQLOptimizationTables();
+   void        createSQLOptimizationTables(string sql);
 
 
 //=========
@@ -114,34 +115,27 @@ int EARunOptimization::OnTesterInit(void) {
    */
 
 
-      string ss="OnTesterInit -> ....";
-      printf(ss);
-
-
    //--- create or open the database in the common terminal folder
    _optimizeDBHandle=DatabaseOpen(_optimizeDBName, DATABASE_OPEN_READWRITE | DATABASE_OPEN_COMMON| DATABASE_OPEN_CREATE);
    if (_optimizeDBHandle==INVALID_HANDLE) {
       printf("OnTesterInit -> Optimization DB open failed with code %d",GetLastError());
       ExpertRemove();
    } else {
-
       ss="OnTesterInit -> Optimization DB open success";
-
+      pss
    }
 
    // ----------------------------------------------------------------
-
 
    string sql="DROP TABLE PASSES;DROP TABLE STRATEGY;"
    "DROP TABLE ADX;DROP TABLE MFI;DROP TABLE ICH;DROP TABLE SAR;DROP TABLE STOC;DROP TABLE OSMA;DROP TABLE RSI;DROP TABLE MACD;"
    "DROP TABLE RVI;DROP TABLE MACDBULL;DROP TABLE MACDBEAR;";
    if(!DatabaseExecute(_optimizeDBHandle,sql)) {
       ss=StringFormat("OnTesterInit -> Failed to drop table PASSES with code %d", GetLastError());
-      printf(ss);
+      pss
    } else {
-      
       ss="OnTesterInit -> Dropping all table success ";
-      printf(ss);
+      pss
    }
 
    createSQLOptimizationTables();
@@ -152,14 +146,30 @@ int EARunOptimization::OnTesterInit(void) {
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
+void EARunOptimization::createSQLOptimizationTables(string sql) {
+
+   if (!DatabaseExecute(_optimizeDBHandle, sql)) {
+      ss=StringFormat("createSQLOptimizationTables -> create table failed with code %d", GetLastError());
+      pss
+      printf(sql);
+      ExpertRemove();
+   } else {
+      #ifdef _DEBUG_OPTIMIZATION
+         ss="createSQLOptimizationTables -> Create table success";
+         pss
+      #endif
+   }
+
+}
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
 void EARunOptimization::createSQLOptimizationTables() {
 
    string ss="createSQLOptimizationTables -> ....";
-   printf(ss);
+   pss
    
    string sql;
-   
-
    // ----------------------------------------------------------------
    sql =   "CREATE TABLE PASSES ("
       "reloadStrategy INT,"
@@ -196,16 +206,8 @@ void EARunOptimization::createSQLOptimizationTables() {
       "onTester REAL,"
       "IDX INT)";
 
-   if (!DatabaseExecute(_optimizeDBHandle, sql)) {
-      ss=StringFormat("createSQLOptimizationTables -> create table PASSES failed with code %d", GetLastError());
-      printf(ss);
-      ExpertRemove();
-   } else {
-      #ifdef _DEBUG_OPTIMIZATION
-         ss="createSQLOptimizationTables -> Create table PASSES success";
-         printf(ss);
-      #endif
-   }
+      createSQLOptimizationTables(sql);
+
     // ----------------------------------------------------------------
    sql =   "CREATE TABLE STRATEGY ("
       "lotSize             REAL," 
@@ -221,16 +223,8 @@ void EARunOptimization::createSQLOptimizationTables() {
       "mgmulti             REAL,"
       "longHLossamt        REAL, IDX INT)";
 
-   if (!DatabaseExecute(_optimizeDBHandle, sql)) {
-      ss=StringFormat("createSQLOptimizationTables -> create table STRATEGY failed with code %d", GetLastError());
-      printf(ss);
-      ExpertRemove();
-   } else {
-      #ifdef _DEBUG_OPTIMIZATION
-         ss="createSQLOptimizationTables -> Create table STRATEGY success";
-         printf(ss);
-      #endif
-   }
+      createSQLOptimizationTables(sql);
+
    // ----------------------------------------------------------------
    sql =   "CREATE TABLE ADX ("
       "useADX  INT,"
@@ -241,16 +235,8 @@ void EARunOptimization::createSQLOptimizationTables() {
       "l_ADXperiod REAL,"
       "l_ADXma REAL, IDX INT)";
 
-   if (!DatabaseExecute(_optimizeDBHandle, sql)) {
-      ss=StringFormat("createSQLOptimizationTables -> create table ADX failed with code %d", GetLastError());
-      printf(ss);
-      ExpertRemove();
-   } else {
-      #ifdef _DEBUG_OPTIMIZATION
-         ss="createSQLOptimizationTables -> Create table ADX success";
-         printf(ss);
-      #endif
-   }
+      createSQLOptimizationTables(sql);
+
    // ----------------------------------------------------------------
    sql =   "CREATE TABLE RSI ("
       "useRSI  INT,"
@@ -264,16 +250,8 @@ void EARunOptimization::createSQLOptimizationTables() {
       "l_RSIma REAL,"
       "l_RSIap REAL, IDX INT)";
 
-   if (!DatabaseExecute(_optimizeDBHandle, sql)) {
-      ss=StringFormat("createSQLOptimizationTables -> create table RSI failed with code %d", GetLastError());
-      printf(ss);
-      ExpertRemove();
-   } else {
-      #ifdef _DEBUG_OPTIMIZATION
-         ss="createSQLOptimizationTables -> Create table RSI success";
-         printf(ss);
-      #endif
-   }
+      createSQLOptimizationTables(sql);
+
    // ----------------------------------------------------------------
    sql =   "CREATE TABLE MFI ("
       "useMFI  INT,"
@@ -284,16 +262,8 @@ void EARunOptimization::createSQLOptimizationTables() {
       "l_MFIperiod REAL,"
       "l_MFIma REAL, IDX INT)";
 
-   if (!DatabaseExecute(_optimizeDBHandle, sql)) {
-      ss=StringFormat("createSQLOptimizationTables -> create table MFI failed with code %d", GetLastError());
-      printf(ss);
-      ExpertRemove();
-   } else {
-      #ifdef _DEBUG_OPTIMIZATION
-         ss="createSQLOptimizationTables -> Create table MFI success";
-         printf(ss);
-      #endif
-   }
+      createSQLOptimizationTables(sql);
+
    // ----------------------------------------------------------------
    sql =   "CREATE TABLE SAR ("
       "useSAR  INT,"
@@ -307,16 +277,8 @@ void EARunOptimization::createSQLOptimizationTables() {
       "l_SARstep REAL,"
       "l_SARmax REAL, IDX INT)";
 
-   if (!DatabaseExecute(_optimizeDBHandle, sql)) {
-      ss=StringFormat("createSQLOptimizationTables -> create table SAR failed with code %d", GetLastError());
-      printf(ss);
-      ExpertRemove();
-   } else {
-      #ifdef _DEBUG_OPTIMIZATION
-         ss="createSQLOptimizationTables -> Create table SAR success";
-         printf(ss);
-      #endif
-   }
+      createSQLOptimizationTables(sql);
+
    // ----------------------------------------------------------------
    sql =   "CREATE TABLE ICH ("
       "useICH  INT,"
@@ -333,16 +295,8 @@ void EARunOptimization::createSQLOptimizationTables() {
       "l_kijun_sen REAL,"
       "l_senkou_span_b REAL, IDX INT)";
 
-   if (!DatabaseExecute(_optimizeDBHandle, sql)) {
-      ss=StringFormat("createSQLOptimizationTables -> create table ICH failed with code %d", GetLastError());
-      printf(ss);
-      ExpertRemove();
-   } else {
-      #ifdef _DEBUG_OPTIMIZATION
-         ss="createSQLOptimizationTables -> Create table ICH success";
-         printf(ss);
-      #endif
-   }
+      createSQLOptimizationTables(sql);
+
 // ----------------------------------------------------------------
    sql =   "CREATE TABLE RVI ("
       "useRVI  INT,"
@@ -353,16 +307,8 @@ void EARunOptimization::createSQLOptimizationTables() {
       "l_RVIperiod REAL,"
       "l_RVIma REAL, IDX INT)";
 
-   if (!DatabaseExecute(_optimizeDBHandle, sql)) {
-      ss=StringFormat("createSQLOptimizationTables -> create table RVI failed with code %d", GetLastError());
-      printf(ss);
-      ExpertRemove();
-   } else {
-      #ifdef _DEBUG_OPTIMIZATION
-         ss="createSQLOptimizationTables -> Create table RVI success";
-         printf(ss);
-      #endif
-   }
+      createSQLOptimizationTables(sql);
+
    // ----------------------------------------------------------------
    sql =   "CREATE TABLE STOC ("
       "useSTOC  INT,"
@@ -387,16 +333,8 @@ void EARunOptimization::createSQLOptimizationTables() {
       "l_STOCmamethod REAL,"
       "l_STOCpa REAL, IDX INT)";
 
-   if (!DatabaseExecute(_optimizeDBHandle, sql)) {
-      ss=StringFormat("createSQLOptimizationTables -> create table STOC failed with code %d", GetLastError());
-      printf(ss);
-      ExpertRemove();
-   } else {
-      #ifdef _DEBUG_OPTIMIZATION
-         ss="createSQLOptimizationTables -> Create table STOC success";
-         printf(ss);
-      #endif
-   }
+      createSQLOptimizationTables(sql);
+
    // ----------------------------------------------------------------
    sql =   "CREATE TABLE OSMA ("
       "useOSMA  INT,"
@@ -416,16 +354,8 @@ void EARunOptimization::createSQLOptimizationTables() {
       "l_OSMAsignalPeriod REAL,"
       "l_OSMApa REAL, IDX INT)";
 
-   if (!DatabaseExecute(_optimizeDBHandle, sql)) {
-      ss=StringFormat("createSQLOptimizationTables -> create table OSMA failed with code %d", GetLastError());
-      printf(ss);
-      ExpertRemove();
-   } else {
-      #ifdef _DEBUG_OPTIMIZATION
-         ss="createSQLOptimizationTables -> Create table OSMA success";
-         printf(ss);
-      #endif
-   }
+      createSQLOptimizationTables(sql);
+
    // ----------------------------------------------------------------
    sql =   "CREATE TABLE MACD ("
       "useMACD  INT,"
@@ -441,17 +371,8 @@ void EARunOptimization::createSQLOptimizationTables() {
       "l_MACDDfastEMA REAL,"
       "l_MACDDslowEMA REAL,"
       "l_MACDDsignalPeriod REAL, IDX INT)";
-      
-   if (!DatabaseExecute(_optimizeDBHandle, sql)) {
-      ss=StringFormat("createSQLOptimizationTables -> create table MACD failed with code %d", GetLastError());
-      printf(ss);
-      ExpertRemove();
-   } else {
-      #ifdef _DEBUG_OPTIMIZATION
-         ss="createSQLOptimizationTables -> Create table MACD success";
-         printf(ss);
-      #endif
-   }
+
+      createSQLOptimizationTables(sql);
 
    sql =   "CREATE TABLE MACDBULL ("
       "useMACDBULL INT,"
@@ -467,17 +388,9 @@ void EARunOptimization::createSQLOptimizationTables() {
       "l_MACDBULLfastEMA REAL,"
       "l_MACDBULLslowEMA REAL,"
       "l_MACDBULLsignalPeriod REAL, IDX INT)";
+
+      createSQLOptimizationTables(sql);
          
-   if (!DatabaseExecute(_optimizeDBHandle, sql)) {
-      ss=StringFormat("createSQLOptimizationTables -> create table MACDBULL failed with code %d", GetLastError());
-      printf(ss);
-      ExpertRemove();
-   } else {
-      #ifdef _DEBUG_OPTIMIZATION
-         ss="createSQLOptimizationTables -> Create table MACDBULL success";
-         printf(ss);
-      #endif
-   }
    // ----------------------------------------------------------------
    sql =   "CREATE TABLE MACDBEAR ("
       "useMACDBEAR  INT,"
@@ -493,18 +406,9 @@ void EARunOptimization::createSQLOptimizationTables() {
       "l_MACDBEARfastEMA REAL,"
       "l_MACDBEARslowEMA REAL,"
       "l_MACDBEARsignalPeriod REAL, IDX INT)";
-         
-   if (!DatabaseExecute(_optimizeDBHandle, sql)) {
-      ss=StringFormat("createSQLOptimizationTables -> create table MACDBEAR failed with code %d", GetLastError());
-      printf(ss);
-      ExpertRemove();
-   } else {
-      #ifdef _DEBUG_OPTIMIZATION
-         ss="createSQLOptimizationTables -> Create table MACDBEAR success";
-         printf(ss);
-      #endif
-   }
 
+      createSQLOptimizationTables(sql);
+         
    // ----------------------------------------------------------------
 
 }
@@ -525,7 +429,6 @@ void EARunOptimization::OnTesterPass() {
          end of a single pass in the OnTester() handler.
    */
    string ss="OnTesterPass ->  ....";
-
 
 
       string name = "";  // Public name/frame label
@@ -554,7 +457,7 @@ void EARunOptimization::OnTester(const double onTesterValue) {
    #ifdef _DEBUG_OPTIMIZATION
       string ss="OnTester ->  ....";
       writeLog;
-      printf(ss);
+      pss
    #endif
 
    if (onTesterValue>0) { 
@@ -757,16 +660,14 @@ void EARunOptimization::OnTester(const double onTesterValue) {
       //--- create a data frame and send it to the terminal
       if (!FrameAdd(MQLInfoString(MQL_PROGRAM_NAME)+"_stats", STATS_FRAME,v[0].v0[0], v)) {
          ss=StringFormat(" -> Stats Frame add error: ", GetLastError());
-         printf(ss);
+         pss
       } else {
          #ifdef _DEBUG_OPTIMIZATION
             ss=StringFormat(" -> Stats Frame added:%.2f",v[0].v0[0]);  
-            printf(ss);
+            pss
          #endif
       }
-
    }
-   
 }
 
 //+------------------------------------------------------------------+
@@ -784,8 +685,7 @@ void EARunOptimization::OnTesterDeinit() {
    */
 
    string ss="OnTesterDeinit ->  ....";
-   printf(ss);
-
+   pss
 
    //--- variables for reading frames
    string         name, sql;
@@ -797,13 +697,10 @@ void EARunOptimization::OnTesterDeinit() {
    FrameFirst();
    FrameFilter("", STATS_FRAME); // select frames with trading statistics for further work
 
-   ss="Loop start->  ....";
-   printf(ss);
-
    while (FrameNext(idx, name, id,v[0].v0[0], v)) {
 
-      ss="In Loop ->  ....";
-      printf(ss);
+      ss="In FrameNext Loop ->  ....";
+      pss
 
       //if (v[0].v0[2]<100) continue;
       // ----------------------------------------------------------------
@@ -824,12 +721,12 @@ void EARunOptimization::OnTesterDeinit() {
    
       if (!DatabaseExecute(_optimizeDBHandle, sql)) {
          ss=StringFormat("OnTesterDeinit -> Failed to insert PASSES with code %d", GetLastError());
-         printf(ss);
+         pss
          break;
       } else {
          #ifdef _DEBUG_OPTIMIZATION
             ss=" -> Insert into PASSES succcess";
-            printf(ss);
+            pss
          #endif
       }  
 
@@ -841,12 +738,12 @@ void EARunOptimization::OnTesterDeinit() {
       
       if (!DatabaseExecute(_optimizeDBHandle, sql)) {
          ss=StringFormat("OnTesterDeinit -> Failed to insert STRATEGY with code %d", GetLastError());
-         printf(ss);
+         pss
          break;
       } else {
          #ifdef _DEBUG_OPTIMIZATION
             ss=" -> Insert into STRATEGY succcess";
-            printf(ss);
+            pss
          #endif
       }  
 
@@ -858,12 +755,12 @@ void EARunOptimization::OnTesterDeinit() {
       
       if (!DatabaseExecute(_optimizeDBHandle, sql)) {
          ss=StringFormat("OnTesterDeinit -> Failed to insert ADX with code %d", GetLastError());
-         printf(ss);
+         pss
          break;
       } else {
          #ifdef _DEBUG_OPTIMIZATION
             ss=" -> Insert into ADX succcess";
-            printf(ss);
+            pss
          #endif
       }  
    
@@ -881,12 +778,12 @@ void EARunOptimization::OnTesterDeinit() {
       
       if (!DatabaseExecute(_optimizeDBHandle, sql)) {
          ss=StringFormat("OnTesterDeinit -> Failed to insert RSI with code %d", GetLastError());
-         printf(ss);
+         pss
          break;
       } else {
          #ifdef _DEBUG_OPTIMIZATION
             ss=" -> Insert into RSI succcess";
-            printf(ss);
+            pss
          #endif
       }  
 
@@ -900,12 +797,12 @@ void EARunOptimization::OnTesterDeinit() {
       
       if (!DatabaseExecute(_optimizeDBHandle, sql)) {
          ss=StringFormat("OnTesterDeinit -> Failed to insert MFI with code %d", GetLastError());
-         printf(ss);
+         pss
          break;
       } else {
          #ifdef _DEBUG_OPTIMIZATION
             ss=" -> Insert into MFI succcess";
-            printf(ss);
+            pss
          #endif
       }  
 
@@ -923,12 +820,12 @@ void EARunOptimization::OnTesterDeinit() {
       
       if (!DatabaseExecute(_optimizeDBHandle, sql)) {
          ss=StringFormat("OnTesterDeinit -> Failed to insert SAR with code %d", GetLastError());
-         printf(ss);
+         pss
          break;
       } else {
          #ifdef _DEBUG_OPTIMIZATION
             ss=" -> Insert into SAR succcess";
-            printf(ss);
+            pss
          #endif
       }  
 
@@ -945,12 +842,12 @@ void EARunOptimization::OnTesterDeinit() {
       
       if (!DatabaseExecute(_optimizeDBHandle, sql)) {
          ss=StringFormat("OnTesterDeinit -> Failed to insert ICH with code %d", GetLastError());
-         printf(ss);
+         pss
          break;
       } else {
          #ifdef _DEBUG_OPTIMIZATION
             ss=" -> Insert into ICH succcess";
-            printf(ss);
+            pss
          #endif
       }  
 
@@ -964,12 +861,12 @@ void EARunOptimization::OnTesterDeinit() {
       
       if (!DatabaseExecute(_optimizeDBHandle, sql)) {
          ss=StringFormat("OnTesterDeinit -> Failed to insert RVI with code %d", GetLastError());
-         printf(ss);
+         pss
          break;
       } else {
          #ifdef _DEBUG_OPTIMIZATION
             ss=" -> Insert into RVI succcess";
-            printf(ss);
+            pss
          #endif
       }  
 
@@ -987,12 +884,12 @@ void EARunOptimization::OnTesterDeinit() {
       
       if (!DatabaseExecute(_optimizeDBHandle, sql)) {
          ss=StringFormat("OnTesterDeinit -> Failed to insert STOC with code %d", GetLastError());
-         printf(ss);
+         pss
          break;
       } else {
          #ifdef _DEBUG_OPTIMIZATION
             ss=" -> Insert into STOC succcess";
-            printf(ss);
+            pss
          #endif
       }  
 
@@ -1009,12 +906,12 @@ void EARunOptimization::OnTesterDeinit() {
       
       if (!DatabaseExecute(_optimizeDBHandle, sql)) {
          ss=StringFormat("OnTesterDeinit -> Failed to insert OSMA with code %d", GetLastError());
-         printf(ss);
+         pss
          break;
       } else {
          #ifdef _DEBUG_OPTIMIZATION
             ss=" -> Insert into OSMA succcess";
-            printf(ss);
+            pss
          #endif
       }  
 
@@ -1029,12 +926,12 @@ void EARunOptimization::OnTesterDeinit() {
       
       if (!DatabaseExecute(_optimizeDBHandle, sql)) {
          ss=StringFormat("OnTesterDeinit -> Failed to insert MACD with code %d", GetLastError());
-         printf(ss);
+         pss
          break;
       } else {
          #ifdef _DEBUG_OPTIMIZATION
             ss=" -> Insert into MACD succcess";
-            printf(ss);
+            pss
          #endif
       }
 
@@ -1049,12 +946,12 @@ void EARunOptimization::OnTesterDeinit() {
       
       if (!DatabaseExecute(_optimizeDBHandle, sql)) {
          ss=StringFormat("OnTesterDeinit -> Failed to insert MACDBULL with code %d", GetLastError());
-         printf(ss);
+         pss
          break;
       } else {
          #ifdef _DEBUG_OPTIMIZATION
             ss=" -> Insert into MACDBULL succcess";
-            printf(ss);
+            pss
          #endif
       }  
   
@@ -1071,11 +968,11 @@ void EARunOptimization::OnTesterDeinit() {
       
       if (!DatabaseExecute(_optimizeDBHandle, sql)) {
          ss=StringFormat("OnTesterDeinit -> Failed to insert MACDBEAR with code %d", GetLastError());
-         printf(ss);
+         pss
       } else {
          #ifdef _DEBUG_OPTIMIZATION
             ss=" -> Insert into PASSES succcess";
-            printf(ss);
+            pss
          #endif
       }  
       
@@ -1087,7 +984,7 @@ void EARunOptimization::OnTesterDeinit() {
 //|                                                                  |
 //+------------------------------------------------------------------+
 void EARunOptimization::reloadStrategy() {
-
+/*
    EATechnicalParameters *t;
    int idx;
 
@@ -1098,7 +995,7 @@ void EARunOptimization::reloadStrategy() {
       ExpertRemove();
    } else {
       ss="reloadStrategy -> Optimization DB open success for strategy update";
-      printf(ss);
+      pss
    }
 
    string sql="SELECT IDX FROM PASSES WHERE reloadStrategy=1";
@@ -1107,20 +1004,20 @@ void EARunOptimization::reloadStrategy() {
       #ifdef _DEBUG_OPTIMIZATION
          ss=StringFormat("updateSelected ->  DB query failed with code %d",GetLastError());
          writeLog
-         printf(ss);
+         pss
       #endif    
    }
    if (!DatabaseRead(request)) {
       #ifdef _DEBUG_OPTIMIZATION
          ss=StringFormat("updateSelected -> DB read failed with code %d",GetLastError());
          writeLog
-         printf(ss);
+         pss
       #endif   
    } else {
          DatabaseColumnInteger(request,0,idx);
          #ifdef _DEBUG_OPTIMIZATION
             ss=StringFormat("updateSelected -> optimal value found at index:%d",idx);
-            printf(ss);
+            pss
          #endif
    }
 
@@ -1128,7 +1025,6 @@ void EARunOptimization::reloadStrategy() {
    reloadValues(v[0].v1,"STRATEGY",idx);
    if (reloadValues(v[0].v2,"ADX",idx)) {
       t.insertUpdateTable(tableName,&v[0].v2,);
-
    };
    reloadValues(v[0].v3,"RSI",idx);
    reloadValues(v[0].v4,"MFI",idx);
@@ -1140,7 +1036,7 @@ void EARunOptimization::reloadStrategy() {
    reloadValues(v[0].v10,"MACD",idx);
    reloadValues(v[0].v11,"MACDBULL",idx);
    reloadValues(v[0].v12,"MACDBEAR",idx);
-
+*/
    
 }
 //+------------------------------------------------------------------+
@@ -1151,7 +1047,7 @@ int EARunOptimization::buildSQLTableRequest(string tableName, int idx) {
 
    #ifdef _DEBUG_OPTIMIZATION
       ss="buildSQLTableRequest -> ....";
-      printf(ss);
+      pss
       printf(sql);
    #endif
 
@@ -1159,7 +1055,7 @@ int EARunOptimization::buildSQLTableRequest(string tableName, int idx) {
    if (request==INVALID_HANDLE) {
       #ifdef _DEBUG_OPTIMIZATION
          ss=StringFormat("buildSQLRequest ->  Table:%s index:%d failed with code %d",tableName,idx,GetLastError());
-         printf(ss);
+         pss
          ExpertRemove();
       #endif    
    }
@@ -1179,14 +1075,15 @@ void EARunOptimization::reloadValues(double &theArray[], string tableName,int id
    if (!DatabaseRead(request)) {
       #ifdef _DEBUG_OPTIMIZATION
          ss=StringFormat("reloadValues -> Table:%s index:%d, failed with code %d",tableName,idx,GetLastError());
-         printf(ss);
+         pss
          ExpertRemove();
       #endif   
    } else {
 
       #ifdef _DEBUG_OPTIMIZATION
          ss="reloadValues -> success ....";
-         printf(ss);
+         pss
+      #endif
    }
 
       // Get the first filed and check if we are evening using this indicator
@@ -1194,7 +1091,7 @@ void EARunOptimization::reloadValues(double &theArray[], string tableName,int id
       if (isUsing==0) {
             #ifdef _DEBUG_OPTIMIZATION
                ss=StringFormat("reloadValues -> indicator type:%s was not selected active",tableName);
-               printf(ss);
+               pss
             #endif
          return; // Not being used
       } else {
@@ -1204,7 +1101,7 @@ void EARunOptimization::reloadValues(double &theArray[], string tableName,int id
             DatabaseColumnDouble(request,i,theArray[i]);
             #ifdef _DEBUG_OPTIMIZATION
                ss=StringFormat("%s -> index:%d value:%1.2f",tableName,i,theArray[i]);
-               printf(ss);
+               pss
             #endif
          }
       }

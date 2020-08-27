@@ -8,8 +8,6 @@
 #property version   "1.00"
 
 
-
-
 #include "EAEnum.mqh"
 #include "EAModuleTechnicals.mqh"
 
@@ -43,7 +41,6 @@ EAInputsOutputs(EATechnicalParameters &t);
 
    virtual int Type() const {return _STRATEGY;};
 
-
    double            inputs[];       
    double            outputs[];      
 
@@ -62,7 +59,7 @@ EAInputsOutputs::EAInputsOutputs(EATechnicalParameters &tech) {
    #ifdef _DEBUG_NN_INPUTS_OUTPUTS
       ss="EAInputsOutputs ->  Object Created ....";
       writeLog
-      printf(ss);
+      pss
    #endif 
 
    shortTerm=new EAModuleTechnicals;
@@ -74,13 +71,13 @@ EAInputsOutputs::EAInputsOutputs(EATechnicalParameters &tech) {
          ss="-> ERROR creating technical shortTerm mediumTerm longTerm objects";
          writeLog
       #endif
-      printf(ss);
+      pss
       ExpertRemove();
    } else {
       #ifdef _DEBUG_NN_INPUTS_OUTPUTS
          ss="-> SUCCESS creating technical shortTerm mediumTerm longTerm objects";
          writeLog
-         printf(ss);
+         pss
       #endif
    }
 
@@ -105,48 +102,48 @@ void EAInputsOutputs::setupTechnicalParameters(EATechnicalParameters &tech) {
    #ifdef _DEBUG_NN_INPUTS_OUTPUTS
       ss="setupTechnicalParameters ->  ....";
       writeLog
-      printf(ss);
+      pss
    #endif 
 
     //if (tech.t.useADX) {
       #ifdef _DEBUG_NN_INPUTS_OUTPUTS
          ss=StringFormat(" Short ADX Period:%s\n Short ADX MA:%d\n Medium ADX Period:%s\n Medium ADX MA:%d\n Long ADX Period:%s\n Long ADX MA:%d\n",
-         EnumToString(tech.t.s_ADXperiod),tech.t.s_ADXma,EnumToString(tech.t.m_ADXperiod),tech.t.m_ADXma,EnumToString(tech.t.l_ADXperiod),tech.t.l_ADXma);
+         EnumToString(tech.adx.s_ADXperiod),tech.adx.s_ADXma,EnumToString(tech.adx.m_ADXperiod),tech.adx.m_ADXma,EnumToString(tech.adx.l_ADXperiod),tech.adx.l_ADXma);
          writeLog
-         printf(ss);
+         pss
       #endif
       // ADX      ADXNormalizedValue(int start, int buffer) 0=Main 1=DI+ 2=DI-
-      shortTerm.ADXSetParameters(tech.t.s_ADXperiod,tech.t.s_ADXma);
-      mediumTerm.ADXSetParameters(tech.t.m_ADXperiod,tech.t.m_ADXma);
-      longTerm.ADXSetParameters(tech.t.l_ADXperiod,tech.t.l_ADXma);
+      shortTerm.ADXSetParameters(tech.adx.s_ADXperiod,tech.adx.s_ADXma);
+      mediumTerm.ADXSetParameters(tech.adx.m_ADXperiod,tech.adx.m_ADXma);
+      longTerm.ADXSetParameters(tech.adx.l_ADXperiod,tech.adx.l_ADXma);
 
    //}
 
    //if (tech.t.useRSI) {
       #ifdef _DEBUG_NN_INPUTS_OUTPUTS
          ss=StringFormat(" Short RSI Period:%s\n Short RSI MA:%d\n Medium RSI Period:%s\n Medium RSI MA:%d\n Long RSI Period:%s\n Long RSI MA:%d\n",
-         EnumToString(tech.t.s_RSIperiod),tech.t.s_RSIma,EnumToString(tech.t.m_RSIperiod),tech.t.m_RSIma,EnumToString(tech.t.l_RSIperiod),tech.t.l_RSIperiod);
+         EnumToString(tech.rsi.s_RSIperiod),tech.rsi.s_RSIma,EnumToString(tech.rsi.m_RSIperiod),tech.rsi.m_RSIma,EnumToString(tech.rsi.l_RSIperiod),tech.rsi.l_RSIperiod);
          writeLog
-         printf(ss);
+         pss
       #endif
       // RSI     RSINormalizedValue(int start)
-      shortTerm.RSISetParameters(tech.t.s_RSIperiod,tech.t.s_RSIma,tech.t.s_RSIap);
-      mediumTerm.RSISetParameters(tech.t.m_RSIperiod,tech.t.m_RSIma,tech.t.m_RSIap);
-      longTerm.RSISetParameters(tech.t.l_RSIperiod,tech.t.l_RSIperiod,tech.t.l_RSIap);
+      shortTerm.RSISetParameters(tech.rsi.s_RSIperiod, tech.rsi.s_RSIma, tech.rsi.s_RSIap);
+      mediumTerm.RSISetParameters(tech.rsi.m_RSIperiod,tech.rsi.m_RSIma,tech.rsi.m_RSIap);
+      longTerm.RSISetParameters(tech.rsi.l_RSIperiod, tech.rsi.l_RSIperiod, tech.rsi.l_RSIap);
    //}
 /*
    if (tech.t.useMFI) {
       // MFI MFINormalizedValue(int start) 
-      shortTerm.MFISetParameters(tech.t.s_MFIperiod,tech.t.s_MFIma);
-      mediumTerm.MFISetParameters(tech.t.m_MFIperiod,tech.t.m_MFIma);
-      longTerm.MFISetParameters(tech.t.l_MFIperiod,tech.t.l_MFIma);
+      shortTerm.MFISetParameters(tech.adx.s_MFIperiod,tech.adx.s_MFIma);
+      mediumTerm.MFISetParameters(tech.adx.m_MFIperiod,tech.adx.m_MFIma);
+      longTerm.MFISetParameters(tech.adx.l_MFIperiod,tech.adx.l_MFIma);
    }
 
    if (tech.t.useSAR) {
       // SAR  SARNormalizedValue(ENUM_TIMEFRAMES period)
-      shortTerm.SARSetParameters(tech.t.s_SARperiod,tech.t.s_SARstep,tech.t.s_SARmax);
-      mediumTerm.SARSetParameters(tech.t.m_SARperiod,tech.t.m_SARstep,tech.t.m_SARmax);
-      longTerm.SARSetParameters(tech.t.l_SARperiod,tech.t.l_SARstep,tech.t.l_SARmax);
+      shortTerm.SARSetParameters(tech.adx.s_SARperiod,tech.adx.s_SARstep,tech.adx.s_SARmax);
+      mediumTerm.SARSetParameters(tech.adx.m_SARperiod,tech.adx.m_SARstep,tech.adx.m_SARmax);
+      longTerm.SARSetParameters(tech.adx.l_SARperiod,tech.adx.l_SARstep,tech.adx.l_SARmax);
    }
 
    if (tech.t.useICH) {
@@ -159,9 +156,9 @@ void EAInputsOutputs::setupTechnicalParameters(EATechnicalParameters &tech) {
 
    if (tech.t.useRVI) {
       // RVI   RVINormalizedValue(int start, int buffer) 
-      shortTerm.RVISetParameters(tech.t.s_RVIperiod,tech.t.s_RVIma);
-      mediumTerm.RVISetParameters(tech.t.m_RVIperiod,tech.t.m_RVIma);
-      longTerm.RVISetParameters(tech.t.l_RVIperiod,tech.t.l_RVIma);
+      shortTerm.RVISetParameters(tech.adx.s_RVIperiod,tech.adx.s_RVIma);
+      mediumTerm.RVISetParameters(tech.adx.m_RVIperiod,tech.adx.m_RVIma);
+      longTerm.RVISetParameters(tech.adx.l_RVIperiod,tech.adx.l_RVIma);
    }
 
    if(tech.t.useSTOC) {
@@ -173,34 +170,40 @@ void EAInputsOutputs::setupTechnicalParameters(EATechnicalParameters &tech) {
 
    if (tech.t.useOSMA) {
       // OSMA OSMANormalizedValue(int start)
-      shortTerm.OSMASetParameters(tech.t.s_OSMAperiod,tech.t.s_OSMAfastEMA,tech.t.s_OSMAslowEMA,tech.t.s_OSMAsignalPeriod,tech.t.s_OSMApa);
-      mediumTerm.OSMASetParameters(tech.t.m_OSMAperiod,tech.t.m_OSMAfastEMA,tech.t.m_OSMAslowEMA,tech.t.m_OSMAsignalPeriod,tech.t.m_OSMApa);
-      longTerm.OSMASetParameters(tech.t.l_OSMAperiod,tech.t.l_OSMAfastEMA,tech.t.l_OSMAslowEMA,tech.t.l_OSMAsignalPeriod,tech.t.l_OSMApa);
+      shortTerm.OSMASetParameters(tech.adx.s_OSMAperiod,tech.adx.s_OSMAfastEMA,tech.adx.s_OSMAslowEMA,tech.adx.s_OSMAsignalPeriod,tech.adx.s_OSMApa);
+      mediumTerm.OSMASetParameters(tech.adx.m_OSMAperiod,tech.adx.m_OSMAfastEMA,tech.adx.m_OSMAslowEMA,tech.adx.m_OSMAsignalPeriod,tech.adx.m_OSMApa);
+      longTerm.OSMASetParameters(tech.adx.l_OSMAperiod,tech.adx.l_OSMAfastEMA,tech.adx.l_OSMAslowEMA,tech.adx.l_OSMAsignalPeriod,tech.adx.l_OSMApa);
    }
 
    if (tech.t.useMACD||tech.t.useMACDBULLDIV||tech.t.useMACDBEARDIV) {
-      shortTerm.MACDSetupParametersDivergence(tech.t.s_MACDDperiod,tech.t.s_MACDDfastEMA,tech.t.s_MACDDslowEMA,tech.t.s_MACDDsignalPeriod);
-      mediumTerm.MACDSetupParametersDivergence(tech.t.m_MACDDperiod,tech.t.m_MACDDfastEMA,tech.t.m_MACDDslowEMA,tech.t.m_MACDDsignalPeriod);
-      longTerm.MACDSetupParametersDivergence(tech.t.l_MACDDperiod,tech.t.l_MACDDfastEMA,tech.t.l_MACDDslowEMA,tech.t.l_MACDDsignalPeriod);
+      shortTerm.MACDSetupParametersDivergence(tech.adx.s_MACDDperiod,tech.adx.s_MACDDfastEMA,tech.adx.s_MACDDslowEMA,tech.adx.s_MACDDsignalPeriod);
+      mediumTerm.MACDSetupParametersDivergence(tech.adx.m_MACDDperiod,tech.adx.m_MACDDfastEMA,tech.adx.m_MACDDslowEMA,tech.adx.m_MACDDsignalPeriod);
+      longTerm.MACDSetupParametersDivergence(tech.adx.l_MACDDperiod,tech.adx.l_MACDDfastEMA,tech.adx.l_MACDDslowEMA,tech.adx.l_MACDDsignalPeriod);
    }
 */
    //if (tech.t.useZZ) {
       #ifdef _DEBUG_NN_INPUTS_OUTPUTS
          ss=StringFormat(" Short ZZ Period:%s\n Medium ZZ Period:%s\n Long ZZ Period:%s\n",
-         EnumToString(tech.t.s_ZZperiod),EnumToString(tech.t.m_ZZperiod),EnumToString(tech.t.l_ZZperiod));
+         EnumToString(tech.zz.s_ZZperiod),EnumToString(tech.zz.m_ZZperiod),EnumToString(tech.zz.l_ZZperiod));
          writeLog
-         printf(ss);
+         pss
       #endif
 
-      shortTerm.ZIGZAGSetupParameters(tech.t.s_ZZperiod);
-      mediumTerm.ZIGZAGSetupParameters(tech.t.m_ZZperiod);
-      longTerm.ZIGZAGSetupParameters(tech.t.l_ZZperiod);
+      shortTerm.ZIGZAGSetupParameters(tech.zz.s_ZZperiod);
+      mediumTerm.ZIGZAGSetupParameters(tech.zz.m_ZZperiod);
+      longTerm.ZIGZAGSetupParameters(tech.zz.l_ZZperiod);
    //}
 
    // Prime the input and output arrays we do this so that the DF and NN objects know
    // the matrix size we are deailing with.
+   
    getInputs(1);
    getOutputs(1);
+   #ifdef _DEBUG_NN_INPUTS_OUTPUTS
+      printf(" ************ setupTechnicalParameters -> ");
+      ArrayPrint(inputs);
+      ArrayPrint(outputs);
+   #endif
 
 }
 
@@ -212,7 +215,7 @@ void EAInputsOutputs::getInputs(int currentBar) {
    #ifdef _DEBUG_NN_INPUTS_OUTPUTS
       ss=StringFormat("getInputs -> for bar number:%d",currentBar);
       writeLog
-      printf(ss);
+      pss
    #endif 
 
    double   i[100];
@@ -251,7 +254,7 @@ void EAInputsOutputs::getInputs(int currentBar) {
          ss=ss+"  "+DoubleToString(inputs[i]);
       }
       writeLog
-      printf(ss);
+      pss
    #endif
    
    
@@ -266,7 +269,7 @@ void EAInputsOutputs::getOutputs(int currentBar) {
    #ifdef _DEBUG_NN_INPUTS_OUTPUTS
       ss=StringFormat("getOutputs ->for bar number:%d",currentBar);
       writeLog
-      printf(ss);
+      pss
    #endif  
 
    double  o[2];
@@ -274,8 +277,8 @@ void EAInputsOutputs::getOutputs(int currentBar) {
 
    // Output are the reference we will try and train the model to
    
-   //outputs[0]=mediumTerm.SARValue(tech.t.m_SARperiod);
-   //outputs[1]=longTerm.SARValue(tech.t.l_SARperiod);
+   //outputs[0]=mediumTerm.SARValue(tech.adx.m_SARperiod);
+   //outputs[1]=longTerm.SARValue(tech.adx.l_SARperiod);
 
    EAEnum x = shortTerm.ZIGZAGValue(currentBar);
 
@@ -296,7 +299,7 @@ void EAInputsOutputs::getOutputs(int currentBar) {
          ss=ss+"  "+DoubleToString(outputs[i]);
       }
       writeLog
-      printf(ss);
+      pss
    #endif
 
 }

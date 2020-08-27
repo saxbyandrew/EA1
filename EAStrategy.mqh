@@ -8,17 +8,14 @@
 #property version   "1.00"
 
 
-
 #include "EAEnum.mqh"
 #include "EATimingBase.mqh"
 #include "EAStrategyBase.mqh"
 #include "EANeuralNetwork.mqh"
 #include "EAInputsOutputs.mqh"
-#include "EADataFrame.mqh"
 #include "EANeuralNetwork.mqh"
 #include "EAInputsOutputs.mqh"
 #include "EATechnicalParameters.mqh"
-
 
 //=========
 class EAStrategy : public EAStrategyBase {
@@ -33,7 +30,6 @@ private:
    EATimingBase            *t;          // Timing Module
    EATechnicalParameters   *tech;
    EAInputsOutputs         *io;        // NN Input Output Module
-   EADataFrame             *df;        // The dataframe object
    EANeuralNetwork         *nn;        // The network 
 
 //=========
@@ -60,41 +56,45 @@ EAStrategy();
 //+------------------------------------------------------------------+
 EAStrategy::EAStrategy() {
 
-   #ifdef _DEBUG_STRATGEY
+   #ifdef _DEBUG_STRATEGY
       Print(__FUNCTION__);
    #endif
    
+   MqlTick last_tick;
 
+   SymbolInfoTick(Symbol(),last_tick); // Also STD lib is RefreshRates()
+
+   // 0/ Create the timing object
    t=new EATimingBase();
    if (CheckPointer(t)==POINTER_INVALID) {
       ss="EAStrategy -> ERROR created timing object";
-         #ifdef _DEBUG_STRATGEY
+         #ifdef _DEBUG_STRATEGY
             writeLog
          #endif
-      printf(ss);
+      pss
       ExpertRemove();
    } else {
       ss="EAStrategy -> SUCCESS created timing object";
-      #ifdef _DEBUG_STRATGEY
+      #ifdef _DEBUG_STRATEGY
          writeLog
-         printf(ss);
+         pss
       #endif
    }
 
    // 1/ Create the new Technincals object
-   tech=new EATechnicalParameters(usp.baseStrategyReference); // Using the base ref as this is the main strategy
+   tech=new EATechnicalParameters(usp.baseReference); // Using the base ref as this is the main strategy
    if (CheckPointer(tech)==POINTER_INVALID) {
       ss="EAStrategy -> ERROR created technical object";
-         #ifdef _DEBUG_STRATGEY
+         #ifdef _DEBUG_STRATEGY
             writeLog
          #endif
-      printf(ss);
+      pss
       ExpertRemove();
    } else {
       ss="EAStrategy -> SUCCESS created technical object";
-      #ifdef _DEBUG_STRATGEY
+      #ifdef _DEBUG_STRATEGY
          writeLog
-         printf(ss);
+         pss
       #endif
    }
 
@@ -102,60 +102,40 @@ EAStrategy::EAStrategy() {
    io=new EAInputsOutputs(tech);
    if (CheckPointer(io)==POINTER_INVALID) {
       ss="EAStrategy -> ERROR created input/output object";
-         #ifdef _DEBUG_STRATGEY
+         #ifdef _DEBUG_STRATEGY
             writeLog
          #endif
-      printf(ss);
+      pss
       ExpertRemove();
    } else {
       ss="EAStrategy -> SUCCESS created input/output object";
-      #ifdef _DEBUG_STRATGEY
+      #ifdef _DEBUG_STRATEGY
          writeLog
-         printf(ss);
+         pss
       #endif
    }
 
    // 3/ create a new network to train based on the dataframe if needed
-   nn=new EANeuralNetwork(usp.dnnBaseStrategyNumber,io);
+   nn=new EANeuralNetwork(usp.baseReference,io); // base refer here in the main NN number
    if (CheckPointer(nn)==POINTER_INVALID) {
       ss="EAStrategy -> ERROR created neural network object";
-         #ifdef _DEBUG_STRATGEY
+         #ifdef _DEBUG_STRATEGY
             writeLog
          #endif
-      printf(ss);
+      pss
       ExpertRemove();
    } else {
-      #ifdef _DEBUG_STRATGEY  
-         ss=StringFormat("EAStrategy -> Using base strategy number:%d",usp.dnnBaseStrategyNumber);
+      #ifdef _DEBUG_STRATEGY  
+         ss=StringFormat("EAStrategy -> Using base strategy number:%d",usp.baseReference);
          writeLog
-         printf(ss);
+         pss
       #endif 
    }
 
-   // 4/ Create a data frame object if we are in optimization mode
-   if (MQLInfoInteger(MQL_OPTIMIZATION) || MQLInfoInteger(MQL_VISUAL_MODE) || MQLInfoInteger(MQL_TESTER) && nn.createNewDataFrame) {
-      df=new EADataFrame(io);
-      if (CheckPointer(df)==POINTER_INVALID) {
-         ss="EAStrategy -> ERROR created dataframe object";
-         #ifdef _DEBUG_STRATGEY
-            writeLog
-         #endif
-         printf(ss);
-         ExpertRemove();
-      } else {
-         ss="EAStrategy -> SUCCESS created dataframe object";
-         #ifdef _DEBUG_STRATGEY
-            writeLog
-            printf(ss);
-         #endif
-      }
-   } else {
-      #ifdef _DEBUG_STRATGEY  
-         ss="EAStrategy -> In MQL_OPTIMIZATION or MQL_VISUAL_MODE or MQL_TESTER so creating a DF";
-         writeLog
-         printf(ss); 
-      #endif 
-   } 
+   showPanel {
+      ip.mainInfoPanel();
+   }
+   
 }
 //+------------------------------------------------------------------+
 //|                                                                  |
@@ -165,7 +145,6 @@ EAStrategy::~EAStrategy() {
    delete t;
    delete io;
    delete tech;
-   delete df;
    delete nn;
 
 }
@@ -175,26 +154,45 @@ EAStrategy::~EAStrategy() {
 //+------------------------------------------------------------------+
 EAEnum EAStrategy::waitOnTriggers() {
 
+   string s;
    double trigger;
 
-   #ifdef _DEBUG_STRATGEY_TRIGGERS  
-      Print(__FUNCTION__);
-   #endif 
+   //#ifdef _DEBUG_STRATEGY_TRIGGERS  
+      //Print(__FUNCTION__);
+   //#endif 
 
    // Pass in the live values into the trained model
    // Get the updated inputs from the input/output model and 
    // pass these to the NN to forecast a output
+   #ifdef _DEBUG_STRATEGY_TRIGGERS
+      if (MQLInfoInteger(MQL_OPTIMIZATION)) {
+         ss=" -> networkForcast called in optimization mode";
+         writeLog
+      }
+   #endif
+
    io.getInputs(1);                                // Inputs for the current bar Outputs are returned
    nn.networkForcast(io.inputs,io.outputs);        // ask the NN to forcast a output(s)
+   #ifdef _DEBUG_STRATEGY_TRIGGERS
+      ss="Inputs: ";
+      for (int i=0;i<ArraySize(io.inputs);i++) {
+         ss=ss+DoubleToString(io.inputs[i]);
+      }
+      writeLog
+      ss="Outputs: ";
+      for (int i=0;i<ArraySize(io.outputs);i++) {
+         ss=ss+DoubleToString(io.outputs[i]);
+      }
+      writeLog
+   #endif
    
-   /*
-   showPanel {
-      
-         //mp.updateInfo2Label(20,"DDN Inputs:");
-         //mp.updateInfo2Label(21,"DDN Outputs:");
-         //mp.updateInfo2Value(20,StringFormat("%1.2f %1.2f %1.2f %1.2f",io.inputs[0],io.inputs[1],inputs[2],inputs[3]));
-         //mp.updateInfo2Value(21,StringFormat("%1.2f %1.2f",outputs[0],outputs[1]));
 
+
+
+      //ip.updateInfo2Value(20,StringFormat("%1.2f %1.2f %1.2f %1.2f",io.inputs[0],io.inputs[1],inputs[2],inputs[3]));
+      //ip.updateInfo2Value(21,StringFormat("%1.2f %1.2f",outputs[0],outputs[1]));
+   
+/*
          //mp.updateInfo2Label(22,StringFormat("SADXM:%2.2f SADX+:%2.2f SRSI:%2.2f",inputs[0],inputs[1],inputs[2]));
          //mp.updateInfo2Label(23,StringFormat("MADXM:%2.2f MADX+:%2.2f MRSI:%2.2f",inputs[3],inputs[4],inputs[5]));
          //mp.updateInfo2Label(24,StringFormat("LADXM:%2.2f LADX+:%2.2f LRSI:%2.2f",inputs[6],inputs[7],inputs[8]));
@@ -202,7 +200,7 @@ EAEnum EAStrategy::waitOnTriggers() {
       }
 
 /*
-   #ifdef _DEBUG_STRATGEY  
+   #ifdef _DEBUG_STRATEGY  
       printf("Network retured:");
       ArrayPrint(inputs);
       ArrayPrint(outputs);
@@ -235,10 +233,10 @@ EAEnum EAStrategy::waitOnTriggers() {
 
    // Allow LONG/SHORTS if strategy values have been set       
    if (usp.maxLong>0 && io.outputs[0]>0.6) {    
-      #ifdef _DEBUG_STRATGEY_TRIGGERS                                                               
+      #ifdef _DEBUG_STRATEGY_TRIGGERS                                                               
          ss="waitOnTriggers -> Network returned Long trigger";
          writeLog
-         printf(ss);
+         pss
       #endif 
    
       usp.orderTypeToOpen=ORDER_TYPE_BUY;  // Cast the specific values before opening a position !!!
@@ -247,10 +245,10 @@ EAEnum EAStrategy::waitOnTriggers() {
    
    // SHORT  
    if (usp.maxShort>0 && io.outputs[1]>0.6) {   
-      #ifdef _DEBUG_STRATGEY_TRIGGERS                                                               
+      #ifdef _DEBUG_STRATEGY_TRIGGERS                                                               
          ss="waitOnTriggers -> Network returned Short trigger";
          writeLog
-         printf(ss);
+         pss
       #endif 
       
       usp.orderTypeToOpen=ORDER_TYPE_SELL;   // Cast the specific values before opening a position !!!
@@ -262,15 +260,22 @@ EAEnum EAStrategy::waitOnTriggers() {
    if (triggers[_TLAST]==_NEW_POSITION) {
       resetTriggers(_NEW_POSITION);
 
+      #ifdef _DEBUG_STRATEGY_TRIGGERS                                                               
+         ss="waitOnTriggers -> trigger new position open";
+         writeLog
+         pss
+      #endif 
+
       switch (usp.orderTypeToOpen) {
          case ORDER_TYPE_BUY: return (_OPEN_LONG);   
+         }
          break;
          case ORDER_TYPE_SELL: return(_OPEN_SHORT);
          break;
       }
       
    }
-   
+
    return _NO_ACTION;
 }        
 
@@ -279,53 +284,47 @@ EAEnum EAStrategy::waitOnTriggers() {
 //+------------------------------------------------------------------+
 EAEnum EAStrategy::runOnBar() {
 
-   #ifdef _DEBUG_STRATGEY
+   #ifdef _DEBUG_STRATEGY
       Print(__FUNCTION__);
    #endif  
    
-   static int cnt=0;
    EAEnum retValue;
-   
-   
 
-   // Check if we are building a DataFrame either in strategy testing mode or specified via the DB
-   if (MQLInfoInteger(MQL_OPTIMIZATION) || MQLInfoInteger(MQL_VISUAL_MODE) || MQLInfoInteger(MQL_TESTER)) {
-      if (df.barCnt>0) { 
-         #ifdef _DEBUG_STRATGEY
-            ss=StringFormat(" -> buildDataFrame:%d",df.barCnt);
-            writeLog
-            printf(ss);
-         #endif 
-         df.buildDataFrame(io); // Get the next bars info and store it
+   /*
+   // This has been placed here instread of in the nn module because if placed there teh values returned are EMPTY VALUES
+   if (nn.rebuild_DataFrame) {
+      io.getInputs(1);
+      if (io.inputs[0]>0) {
+         printf("111111111111111111111111");
+         nn.buildDataFrame(io);
          return _NO_ACTION;
-      }
-      // Once DF is completed we train the network
-      if (df.barCnt==0&&nn.isTrained==false) { 
-         #ifdef _DEBUG_STRATGEY
-            ss=" -> training the Network";
-            writeLog
-            printf(ss);
-         #endif 
-         nn.trainNetwork(df);
-         _x[cnt]=cnt;
-         
-         FrameAdd(MQLInfoString(MQL_PROGRAM_NAME)+"_network", 2,cnt++, _x);
+      } else {
+         printf("00000000000000000000");
       }
    }
-
-/*
-   if (reload) {
-      EANeuralNetwork *test=new EANeuralNetwork(usp.dnnBaseStrategyNumber,io);
-      reload=false;
-      printf("------------------------------------------");
-   }
-*/
-   retValue=waitOnTriggers();
+   */
 
    // Check trading times first
-   if (t.sessionTimes()) return retValue;
+   //if (t.sessionTimes()) return retValue;
+   
+   if (MQLInfoInteger(MQL_OPTIMIZATION) && nn.isTrained==false) {
+      #ifdef _DEBUG_STRATEGY
+         ss=" -> Building DF";
+         writeLog
+      #endif
+      nn.buildDataFrame(io);  // Get the next bars info and store it
+      return _NO_ACTION;      // return with no action till the DF is completed
+   } else {
+      #ifdef _DEBUG_STRATEGY
+         ss=" -> NN Training completed in optimization mode";
+         writeLog
+      #endif
 
-   return _NO_ACTION;
+   }
+
+   retValue=waitOnTriggers();
+
+   return retValue;
 }
 //+------------------------------------------------------------------+
 //|                                                                  |
