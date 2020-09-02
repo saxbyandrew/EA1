@@ -92,12 +92,12 @@ EAStrategyCandleTest::EAStrategyCandleTest() {
       showPanel {
          // Determine which type of DNN
          if (bool (pb.dnnType&_LONG)) {
-            mp.updateInfo2Label(13,StringFormat("DNN strategy#:%d (Long) start:%1.2f end:%1.2f",pb.dnnLongNumber,dnn.weight[0],dnn.weight[ArraySize(dnn.weight)-1])); 
-            mp.updateInfo2Value(13,"");
+            //mp.updateInfoLabel(13,3,StringFormat("DNN strategy#:%d (Long) start:%1.2f end:%1.2f",pb.dnnLongNumber,dnn.weight[0],dnn.weight[ArraySize(dnn.weight)-1])); 
+            //mp.updateInfoValue(13,4,"");
          }
          if (bool (pb.dnnType&_SHORT)) {
-            mp.updateInfo2Label(14,StringFormat("DNN strategy#:%d (Short) start:%1.2f end:%1.2f",pb.dnnShortNumber,dnn.weight[0],dnn.weight[ArraySize(dnn.weight)-1])); 
-            mp.updateInfo2Value(14,""); 
+            //mp.updateInfoLabel(14,3,StringFormat("DNN strategy#:%d (Short) start:%1.2f end:%1.2f",pb.dnnShortNumber,dnn.weight[0],dnn.weight[ArraySize(dnn.weight)-1])); 
+            //mp.updateInfoValue(14,4,""); 
          }
 
       }

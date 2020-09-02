@@ -227,14 +227,14 @@ bool EAMain::checkMaxDailyOpenQty() {
    int sNumber, cnt=0;
    string s;
 
-   showPanel ip.updateInfo1Label(9, "Max Positions/Day");  
+   showPanel ip.updateInfoLabel(18,0, "Max Positions/Day");  
    if (usp.maxDaily<=0) {
       #ifdef _DEBUG_MAIN_LOOP 
          ss="checkMaxDailyOpenQty -> No max number of daily positions specfied";
          writeLog
          pss
       #endif    
-      showPanel ip.updateInfo1Value(9,"No Maximum");
+      showPanel ip.updateInfoLabel(18,1,"No Maximum");
       return true;           // No max daily qty
    }
 
@@ -248,7 +248,7 @@ bool EAMain::checkMaxDailyOpenQty() {
                writeLog
          pss
    #endif  
-   showPanel ip.updateInfo1Value(9,IntegerToString(usp.maxDaily));
+   showPanel ip.updateInfoLabel(18,1,IntegerToString(usp.maxDaily));
    // Get todays order history    
    if (HistorySelect(StructToTime(start), StructToTime(end))) {   
       for (int i=0;i<HistoryDealsTotal();i++) {         
@@ -265,7 +265,7 @@ bool EAMain::checkMaxDailyOpenQty() {
                writeLog
                pss
             #endif
-            showPanel ip.updateInfo1Value(9,s);
+            showPanel ip.updateInfoLabel(18,1,s);
             return false;  
          }  else {
             #ifdef _DEBUG_MAIN_LOOP
@@ -273,7 +273,7 @@ bool EAMain::checkMaxDailyOpenQty() {
                writeLog
                pss
             #endif
-            showPanel ip.updateInfo1Value(9,s);
+            showPanel ip.updateInfoLabel(18,1,s);
          }                 
       }
    }

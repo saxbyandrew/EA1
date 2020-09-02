@@ -278,7 +278,7 @@ bool EALong::newPosition() {
 
 
         if (longPositions.Total()>=usp.maxLong) {
-            showPanel ip.updateInfo2Value(16,StringFormat("%d Maximum Reached",usp.maxLong));
+            showPanel ip.updateInfoLabel(17,0,StringFormat("%d Maximum Reached",usp.maxLong));
             #ifdef _DEBUG_LONG
                 ss="newPosition -> Max number of LONG reached";
                 writeLog
@@ -286,7 +286,8 @@ bool EALong::newPosition() {
             #endif 
             return false;
         } else {
-            showPanel ip.updateInfo2Value(16,usp.maxLong);
+            showPanel ip.updateInfoLabel(17,0,"Open Long");
+            showPanel ip.updateInfoLabel(17,1,usp.maxLong);
         }                    
 
         // Build a new position object based on defaults

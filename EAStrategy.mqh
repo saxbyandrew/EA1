@@ -133,7 +133,7 @@ EAStrategy::EAStrategy() {
    }
 
    showPanel {
-      ip.mainInfoPanel();
+      //ip.mainInfoPanel();
    }
    
 }
@@ -171,7 +171,7 @@ EAEnum EAStrategy::waitOnTriggers() {
       }
    #endif
 
-   io.getInputs(1);                                // Inputs for the current bar Outputs are returned
+   // Inputs for the current bar Outputs are returned
    nn.networkForcast(io.inputs,io.outputs);        // ask the NN to forcast a output(s)
    #ifdef _DEBUG_STRATEGY_TRIGGERS
       ss="Inputs: ";
@@ -185,7 +185,6 @@ EAEnum EAStrategy::waitOnTriggers() {
       }
       writeLog
    #endif
-   
 
 
 
@@ -268,7 +267,6 @@ EAEnum EAStrategy::waitOnTriggers() {
 
       switch (usp.orderTypeToOpen) {
          case ORDER_TYPE_BUY: return (_OPEN_LONG);   
-         }
          break;
          case ORDER_TYPE_SELL: return(_OPEN_SHORT);
          break;
@@ -289,6 +287,7 @@ EAEnum EAStrategy::runOnBar() {
    #endif  
    
    EAEnum retValue;
+   static int delay=0;
 
    /*
    // This has been placed here instread of in the nn module because if placed there teh values returned are EMPTY VALUES
@@ -306,6 +305,21 @@ EAEnum EAStrategy::runOnBar() {
 
    // Check trading times first
    //if (t.sessionTimes()) return retValue;
+
+
+   if (usp.runMode==_RUN_STRATEGY_REBUILD_NN) {
+      #ifdef _DEBUG_STRATEGY
+         ss=StringFormat(" -> Building new DF first time %d",delay);
+         printf(ss);
+      #endif
+      io.getInputs(1);   
+      io.getOutputs(1); 
+      if (delay>10) {
+         nn.buildDataFrame(io);
+      }
+      delay++;
+      return _NO_ACTION;      // return with no action till the DF is completed
+   }
    
    if (MQLInfoInteger(MQL_OPTIMIZATION) && nn.isTrained==false) {
       #ifdef _DEBUG_STRATEGY

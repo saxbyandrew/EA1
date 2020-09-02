@@ -10,6 +10,7 @@
 #define INDENT_LEFT                         (20)      // indent from left (with allowance for border width)
 #define INDENT_TOP                          (100)      // indent from top (with allowance for border width)
 #define CONTROL_HEIGHT                      (30)      // size by Y coordinate
+#define COLUMN_WIDTH                        (150)
 
 
 #include <Controls\Dialog.mqh>
@@ -47,8 +48,7 @@ private:
    };
    */
 
-   void              createInfo1Controls(string tableGroup);
-   void              createInfo2Controls(string tableGroup);
+   void              createInfoLabels(string tableGroup);
    //Pinfo             tabPage1[35];           // Labels and controls on Tab Page 1
    //Pinfo             info1[35];         // Labels and Values
    //Pinfo             info2[35];
@@ -84,21 +84,8 @@ public:
    virtual bool      Create(const long chart,const string name,const int subwin,const int x1,const int y1,const int x2,const int y2);
    virtual bool      OnEvent(const int id,const long &lparam,const double &dparam,const string &sparam);
 
-   void              updateInfo(int row, int col, string val);
-   void              updateInfo1Label(int row, string val) {updateInfo(row,1,val);};
-   void              updateInfo2Label(int row, string val) {updateInfo(row,2,val);};
-   void              updateInfo1Value(int row, string val) {updateInfo(row,3,val);};
-   void              updateInfo2Value(int row, string val) {updateInfo(row,4,val);};
+   void              updateInfoLabel(int row, int col, string val);
 
-   //void              updateInfo1Label(int index, string val) {info1[index].labelObject.Text(val);};  
-   //void              updateInfo1Value(int index, string val) {info1[index].valueObject.Text(val);};  
-   //void              updateInfo2Label(int index, string val) {info2[index].labelObject.Text(val);};  
-   //void              updateInfo2Value(int index, string val) {info2[index].valueObject.Text(val);};
-   
-   //void              setInfo1LabelColor(int index, color clr) {info1[index].labelObject.Color(clr);};
-   //void              setInfo1ValueColor(int index, color clr) {info1[index].valueObject.Color(clr);};
-   //void              setInfo2LabelColor(int index, color clr) {info2[index].labelObject.Color(clr);};
-   //void              setInfo2ValueColor(int index, color clr) {info2[index].valueObject.Color(clr);};
 
    void              showPanelDetails();
    void              mainInfoPanel();
@@ -211,34 +198,20 @@ EAPanel::~EAPanel() {
 //+------------------------------------------------------------------+
 //| Create                                                           |
 //+------------------------------------------------------------------+
-void EAPanel::updateInfo(int row, int col, string val) {
+void EAPanel::updateInfoLabel(int row, int col, string val) {
 
-   // Co1 1 and 3 = label object
-   // Col 2 and 4 = value object
-   string filter;
-
-   if (col==1||col==3) filter="GROUP1";
-   if (col==2||col==4) filter="GROUP2";
+   #ifdef _DEBUG_PANEL
+      printf("EAPanel::updateInfo %s for row:%d and col:%d",val,row,col);
+   #endif
 
    for (int i=0;i<screenObjects.Total();i++) {
       EAScreenObject *s=screenObjects.At(i);
-      if (s.rowNumber=row && s.screenName==filter) {
-         // did this to cast the object type
-         CLabel *l=s.labelObject;
-         l.Text(val); 
-         s.labelObject=l;
-         return;
-      }
-      if (s.rowNumber=row && s.screenName==filter) {
-                  // did this to cast the object type
-         CLabel *l=s.valueObject;
-         l.Text(val); 
-         s.valueObject=l;
-         return;
+      printf("Found %d %d",s.rowNumber,s.columnNumber);
+      if (row==s.rowNumber && col==s.columnNumber) {
+         s.infolabelObject.Text(val);
          return;
       }
    }
-   
 }
 //+------------------------------------------------------------------+
 //| Create                                                           |
@@ -314,6 +287,8 @@ void EAPanel::showHideControls(string screenName) {
 //|                                                          |
 //+------------------------------------------------------------------+
 void EAPanel::showControls(string screenName) {
+
+return;
 
    static bool sFlag=true;
 
@@ -425,141 +400,72 @@ void EAPanel::createEditControls(string tableGroup) {
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-void EAPanel::createInfo1Controls(string tableGroup) {
+void EAPanel::createInfoLabels(string tableGroup) {
 
       string labelName;
-      int   cellHeight=18;
-      int   cellWidth=200;
       int   x1, y1, x2, y2;
 
       CLabel *lObject, *vObject;
-      string labels[35]={"-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-"};
-      string values[35]={"-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-"};
 
-      for (int i=0;i<ArraySize(labels);i++) {
+      for (int row=0;row<25;row++) {
 
-         lObject=new CLabel;     
-         lObject.Text(labels[i]);    
-         lObject.Color(clrBlack);
-         lObject.FontSize(8);
+ 
+         for (int col=0;col<4;col++) {
+            lObject=new CLabel;  
+            //ss=StringFormat("%d:%d",row,col);   
+            lObject.Text("");    
+            lObject.Color(clrBlack);
+            lObject.FontSize(8);
 
-         vObject=new CLabel;
-         vObject.Text(values[i]);
-         vObject.Color(clrGreen);
-         vObject.FontSize(8);
+            // XY Placement Name
+            labelName=StringFormat("L1%d%d",row,col);
+            // Set the XY positions
+            x1=(col*COLUMN_WIDTH);
+            y1=INDENT_TOP+(CONTROL_HEIGHT*row);
+            x2=(col*COLUMN_WIDTH)+COLUMN_WIDTH;
+            y2=INDENT_TOP+(CONTROL_HEIGHT*row)+CONTROL_HEIGHT;
 
-         // XY Placement Name
-         labelName=StringFormat("L1%d",i);
-         x1=ClientAreaLeft();
-         y1=INDENT_TOP+(cellHeight*i);
-         x2=ClientAreaLeft()+cellWidth;
-         y2=INDENT_TOP+cellHeight+(cellHeight*i);
+            lObject.Create(0,labelName,0,x1,y1,x2,y2);
+            Add(lObject); 
 
-         lObject.Create(0,labelName,0,x1,y1,x2,y2);
+            // Save this label/ control pair
+            EAScreenObject *s=new EAScreenObject;
+            if (CheckPointer(s)==POINTER_INVALID) {
+               printf(" -> createComboControls ERROR creating EAScreenInfo object");
+               return;
+            }                         // Add to CApDialog
 
-         // XY Placement Values
-         labelName=StringFormat("_V1%d",i);
-         x1=ClientAreaLeft()+cellWidth;
-         y1=INDENT_TOP+(cellHeight*i);
-         x2=ClientAreaLeft()+(cellWidth*2);
-         y2=INDENT_TOP+cellHeight+(cellHeight*i);
-
-         vObject.Create(0,labelName,0,x1,y1,x2,y2);
-
-         // Save this label/ control pair
-         EAScreenObject *s=new EAScreenObject;
-         if (CheckPointer(s)==POINTER_INVALID) {
-            printf(" -> createComboControls ERROR creating EAScreenInfo object");
-            return;
-         } else {
-            s.rowNumber=i;
-            s.sqlFieldName="GROUP1";
+            s.rowNumber=row;
+            s.columnNumber=col;
+            s.sqlFieldName="INFO";
             s.screenName=tableGroup;
-            s.labelObject=lObject;
-            s.valueObject=vObject;
-            s.isVisible=false;
-            screenObjects.Add(s);  
-            s.labelObject.Hide();
-            s.valueObject.Hide();
+            s.infolabelObject=lObject;
+            screenObjects.Add(s);
+
+            #ifdef _DEBUG_PANEL
+               printf("createInfoLabels ---> %s row:%d col:%d -- %d %d %d %d",s.infolabelObject.Text(),s.rowNumber,s.columnNumber,x1,y1,x2,y2);
+            #endif
          }
       }
+
 }
 
-//+------------------------------------------------------------------+
-//|                                                                  |
-//+------------------------------------------------------------------+
-void EAPanel::createInfo2Controls(string tableGroup) {
-
-      string labelName;
-      int   cellHeight=18;
-      int   cellWidth=160;
-      int   x1, y1, x2, y2;
-
-      CLabel *lObject, *vObject;
-      string labels[35]={"-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-"};
-      string values[35]={"-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-"};
-
-      for (int i=0;i<ArraySize(labels);i++) {
-
-         lObject=new CLabel;     
-         lObject.Text(labels[i]);    
-         lObject.Color(clrBlack);
-         lObject.FontSize(8);
-
-         vObject=new CLabel;
-         vObject.Text(values[i]);
-         vObject.Color(clrGreen);
-         vObject.FontSize(8);
-
-         // XY Placement Name
-         labelName=StringFormat("_L2%d",i);
-         x1=ClientAreaLeft()+(cellWidth*2);
-         y1=INDENT_TOP+(cellHeight*i);
-         x2=ClientAreaLeft()+(cellWidth*3);
-         y2=INDENT_TOP+cellHeight+(cellHeight*i);
-
-         lObject.Create(0,labelName,0,x1,y1,x2,y2);
-
-         // XY Placement Values
-         labelName=StringFormat("_V2%d",i);
-         x1=ClientAreaLeft()+(cellWidth*3);
-         y1=INDENT_TOP+(cellHeight*i);
-         x2=ClientAreaLeft()+(cellWidth*4);
-         y2=INDENT_TOP+cellHeight+(cellHeight*i);
-
-         vObject.Create(0,labelName,0,x1,y1,x2,y2);
-
-         // Save this label/ control pair
-         EAScreenObject *s=new EAScreenObject;
-         if (CheckPointer(s)==POINTER_INVALID) {
-            printf(" -> createComboControls ERROR creating EAScreenInfo object");
-            return;
-         } else {
-            s.rowNumber=i;
-            s.sqlFieldName="GROUP2";
-            s.screenName=tableGroup;
-            s.labelObject=lObject;
-            s.valueObject=vObject;
-            s.isVisible=false;
-            screenObjects.Add(s);  
-            s.labelObject.Hide();
-            s.valueObject.Hide();
-         }
-      }
-}
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
 void EAPanel::showPanelDetails() {
 
+
+return;
+
    _positionListYOffset=12;
    _totalPositionListSize=9;
 
 
-   mainInfoPanel();
+   //mainInfoPanel();
 
    // change color once
-   updateInfo2Value(18,"");
+   //(18,1,"");
    //setInfo2LabelColor(18,clrRed);
    //setInfo2ValueColor(18,clrRed);
 
@@ -575,175 +481,178 @@ void EAPanel::mainInfoPanel() {
       string ss; 
    #endif 
 
-   updateInfo1Label(0, "Strategy Number");  
-   updateInfo1Value(0,IntegerToString(usp.strategyNumber));
+   printf("1111111");
+   updateInfoLabel(0,0, "Strategy Number"); 
 
-   updateInfo1Label(1, "Trading Time");  
+
+   updateInfoLabel(0,1,IntegerToString(usp.strategyNumber));
+
+   updateInfoLabel(5,0, "Trading Time");  
    
 
    if (ustp.sessionTradingTime=="Any Time") {
-      updateInfo1Value(1,"Any Time");
+      updateInfoLabel(5,1,"Any Time");
    }
 
    if (ustp.sessionTradingTime=="Fixed Time") {
-      updateInfo1Value(1,"Fixed Time");
+      updateInfoLabel(5,1,"Fixed Time");
 
-      updateInfo1Label(2, "Trading Start");  
-      updateInfo1Value(2,ustp.tradingStart);
-      updateInfo1Label(3, "Trading End");  
-      updateInfo1Value(3,ustp.tradingEnd);
+      updateInfoLabel(6,0,"Trading Start");  
+      updateInfoLabel(6,1,ustp.tradingStart);
+      updateInfoLabel(7,0,"Trading End");  
+      updateInfoLabel(7,1,ustp.tradingEnd);
    }
 
    if (ustp.sessionTradingTime=="Session Time") {
-      updateInfo1Value(1,"Session Time");
-      updateInfo1Label(2, "Trading Start");  
-      updateInfo1Value(2,ustp.tradingStart);
-      updateInfo1Label(3, "Trading End");  
-      updateInfo1Value(3,ustp.tradingEnd);
+      updateInfoLabel(5,1,"Session Time");
+      updateInfoLabel(6,0,"Trading Start");  
+      updateInfoLabel(6,1,ustp.tradingStart);
+      updateInfoLabel(7,0,"Trading End");  
+      updateInfoLabel(7,1,ustp.tradingEnd);
 
       if (ustp.marketOpenDelay!=0) {
-         updateInfo1Label(4, "Market Open Delay");  
-         updateInfo1Value(4,IntegerToString(ustp.marketOpenDelay));
+         updateInfoLabel(8,0,"Market Open Delay");  
+         updateInfoLabel(8,1,IntegerToString(ustp.marketOpenDelay));
       } else {
-         updateInfo1Label(4, "Market Open Delay");  
-         updateInfo1Value(4, "No Delay");
+         updateInfoLabel(8,0,"Market Open Delay");  
+         updateInfoLabel(8,1,"No Delay");
       }
 
       if (ustp.marketCloseDelay!=0) {
-         updateInfo1Label(5, "Market Close Delay");  
-         updateInfo1Value(5,IntegerToString(ustp.marketCloseDelay));
+         updateInfoLabel(9,0, "Market Close Delay");  
+         updateInfoLabel(9,1,IntegerToString(ustp.marketCloseDelay));
       } else {
-         updateInfo1Label(5, "Market Close Delay");  
-         updateInfo1Value(5, "No Delay");
+         updateInfoLabel(9,0, "Market Close Delay");  
+         updateInfoLabel(9,1, "No Delay");
       }
    }
 
 
-   updateInfo1Label(6, "Weekend Trading");
+   updateInfoLabel(10,0,"Weekend Trading");
    if (ustp.allowWeekendTrading) {
-         updateInfo1Value(6,"Yes");
+         updateInfoLabel(10,1,"Yes");
    } else {
-         updateInfo1Value(6,"No");
+         updateInfoLabel(10,1,"No");
    }
 
-   updateInfo1Label(7, "EOD Close");  
+   updateInfoLabel(11,0,"EOD Close");  
    if (bool (usp.closingTypes&_CLOSE_AT_EOD)) {
-         updateInfo1Value(7,"Yes");
+         updateInfoLabel(11,1,"Yes");
    } else {
-         updateInfo1Value(7,"No");
+         updateInfoLabel(11,1,"No");
    }
 
-   updateInfo1Label(8, "Overnight holding");  
+   updateInfoLabel(12,0, "Overnight holding");  
    if (usp.maxDailyHold>0) {
-         updateInfo1Value(8,"Yes");
+         updateInfoLabel(12,1,"Yes");
    } else {
-         updateInfo1Value(8,"No");
+         updateInfoLabel(12,1,"No");
    }
 
 
    // MOVED TO  EAMain::checkMaxDailyOpenQty
-   //updateInfo1Label(9, "Max Positions/Day");  
+   //updateInfoLabel(9, "Max Positions/Day");  
    //if (usp.maxTotalDailyPositions==-1) {
-      //updateInfo1Value(9,"No Maximum");
+      //updateInfoLabel(9,"No Maximum");
    //} else {
-      //updateInfo1Value(9,StringToInteger(usp.maxTotalDailyPositions));
+      //updateInfoLabel(9,StringToInteger(usp.maxTotalDailyPositions));
    //}
 
-   updateInfo1Label(10, "Max day to hold"); 
+   updateInfoLabel(13,0, "Max day to hold"); 
    if (usp.maxDailyHold>0) {
-      updateInfo1Value(10,IntegerToString(usp.maxDailyHold));
+      updateInfoLabel(13,1,IntegerToString(usp.maxDailyHold));
    } else {
-      updateInfo1Value(10,"Infinite");
+      updateInfoLabel(13,1,"Infinite");
    }
    
 
    // Info 2
 
-   updateInfo2Label(0, "Close in Profit");  
+   updateInfoLabel(3,2, "Close in Profit");  
    if (bool (usp.closingTypes&_IN_PROFIT_CLOSE_POSITION)) {
-         updateInfo2Value(0,"Yes");
-         updateInfo2Label(2, "Profit Long");  
-         updateInfo2Value(2,StringFormat("$%5.2f",usp.fptl));
-         updateInfo2Label(4, "Profit Short");  
-         updateInfo2Value(4,StringFormat("$%5.2f",usp.fpts));
+         updateInfoLabel(3,3,"Yes");
+         updateInfoLabel(4,2, "Profit Long");  
+         updateInfoLabel(4,3,StringFormat("$%5.2f",usp.fptl));
+         updateInfoLabel(5,2, "Profit Short");  
+         updateInfoLabel(5,3,StringFormat("$%5.2f",usp.fpts));
 
    } else {
-         updateInfo2Value(0,"No");
+         updateInfoLabel(3,2,"No");
    }
 
-   updateInfo2Label(1, "Close in Loss");  
+   updateInfoLabel(6,2, "Close in Loss");  
    if (bool (usp.closingTypes&_IN_LOSS_CLOSE_POSITION)) {
-         updateInfo2Value(1,"Yes");
-         updateInfo2Label(3, "Loss Long");  
-         updateInfo2Value(3,StringFormat("$%5.2f",usp.fltl));
-         updateInfo2Label(5, "Loss Short");  
-         updateInfo2Value(5,StringFormat("$%5.2f",usp.flts));
+         updateInfoLabel(6,3,"Yes");
+         updateInfoLabel(7,2, "Loss Long");  
+         updateInfoLabel(7,3,StringFormat("$%5.2f",usp.fltl));
+         updateInfoLabel(8,2, "Loss Short");  
+         updateInfoLabel(8,3,StringFormat("$%5.2f",usp.flts));
    } else {
-         updateInfo2Value(1,"No");
+         updateInfoLabel(6,3,"No");
+         updateInfoLabel(7,2,"-");  
+         updateInfoLabel(7,3,"-");
+         updateInfoLabel(8,2,"-");  
+         updateInfoLabel(8,3,"-");
    }
 
 
-
-   updateInfo2Label(6, "Long Hedge");  
+   updateInfoLabel(9,2, "Long Hedge");  
    if (usp.inLossOpenLongHedge) {
-         updateInfo2Value(6,"Yes");
-         updateInfo2Label(7, "Hedge Loss Amt");  
-         updateInfo2Value(7,StringFormat("$%5.2f",usp.longHLossamt));
-         updateInfo2Label(8, "Hedge Number"); 
+         updateInfoLabel(9,3,"Yes");
+         updateInfoLabel(10,2,"Hedge Loss Amt");  
+         updateInfoLabel(10,3,StringFormat("$%5.2f",usp.longHLossamt));
+         //updateInfoLabel(20,2,"Hedge Number"); 
          //pdateInfo2Value(8,StringFormat("%d",usp.dnnHedgeNumber));
    } else {
-         updateInfo2Value(6,"No");
-         updateInfo2Label(7, "-");  
-         updateInfo2Value(7,"-");
-         updateInfo2Label(8,"-");
-         updateInfo2Value(8, "-"); 
+         updateInfoLabel(9,2,"No");
+         updateInfoLabel(10,2,"-");  
+         updateInfoLabel(10,3,"-");
+
    }
 
-   updateInfo2Label(9, "Open Martingale");  
+   updateInfoLabel(11,2,"Open Martingale");  
    if (usp.inLossOpenMartingale) {
-         updateInfo2Value(9,"Yes");
-         updateInfo2Label(10, "Martingale Positions");  
-         updateInfo2Value(10,IntegerToString(usp.maxMg));
-         updateInfo2Label(11, "Martingale multiplier");  
-         updateInfo2Value(11,IntegerToString(usp.mgMultiplier));
-         updateInfo2Label(12, "Martingale Number"); 
-         //updateInfo2Value(12,StringFormat("%d",usp.dnnMartingaleNumber));
+         updateInfoLabel(11,3,"Yes");
+         updateInfoLabel(12,2,"Martingale Positions");  
+         updateInfoLabel(12,3,IntegerToString(usp.maxMg));
+         updateInfoLabel(13,2,"Martingale multiplier");  
+         updateInfoLabel(13,3,IntegerToString(usp.mgMultiplier));
 
    } else {
-         updateInfo2Value(9,"No");
-         updateInfo2Label(10, "-");  
-         updateInfo2Value(10,"-");
-         updateInfo2Label(11, "-");  
-         updateInfo2Value(11,"-");
-         updateInfo2Label(12, "-");  
-         updateInfo2Value(12,"-");
+         updateInfoLabel(11,3,"No");
+         updateInfoLabel(12,2,"-");  
+         updateInfoLabel(12,3,"-");
+         updateInfoLabel(24,2,"-");  
+         updateInfoLabel(13,3,"-");
+         updateInfoLabel(13,2, "-");  
    }
 
 
 
-   updateInfo2Label(15, "Lot Size"); 
-   updateInfo2Value(15,DoubleToString(usp.lotSize));
+
+   updateInfoLabel(0,2, "Lot Size"); 
+   updateInfoLabel(0,3,DoubleToString(usp.lotSize));
 
    if (usp.maxLong>0) {
-      updateInfo2Label(16, "Max allowed Long"); 
-      updateInfo2Value(16,IntegerToString(usp.maxLong));
+      updateInfoLabel(1,2,"Max allowed Long"); 
+      updateInfoLabel(1,3,IntegerToString(usp.maxLong));
    } else {
-      updateInfo2Label(16, "No Long position allowed"); 
-      updateInfo2Value(16,"-");
+      updateInfoLabel(1,2,"No Long position allowed"); 
+      updateInfoLabel(1,3,"-");
    }
    
    if (usp.maxShort>0) {
-   updateInfo2Label(17, "Max allowed Short"); 
-   updateInfo2Value(17,IntegerToString(usp.maxShort));
+   updateInfoLabel(2,2,"Max allowed Short"); 
+   updateInfoLabel(2,3,IntegerToString(usp.maxShort));
    } else {
-   updateInfo2Label(17, "No Short positions allowed"); 
-   updateInfo2Value(17,"-");
+   updateInfoLabel(2,2,"No Short positions allowed"); 
+   updateInfoLabel(2,3,"-");
    }
 
 
-
-   updateInfo2Label(19, "---- Triggers ----"); 
-   updateInfo2Value(19, "------------------");
+return;
+   updateInfoLabel(19,2,"---- Triggers ----"); 
+   updateInfoLabel(19,3,"------------------");
 
 }
 
@@ -752,17 +661,18 @@ void EAPanel::mainInfoPanel() {
 //+------------------------------------------------------------------+
 void EAPanel::accountInfoUpdate() {
 
-      string posInfo=StringFormat("Long:%d Short:%d Martingale:%d Hedge:%d",longPositions.Total(),shortPositions.Total(),martingalePositions.Total(),longHedgePositions.Total());
-      updateInfo1Label(22,posInfo);  
-      updateInfo1Value(22,"");
 
-      updateInfo1Label(23,StringFormat("Total Swap Costs: $%3.2f",usp.swapCosts));
-      updateInfo1Value(23,"");
+      string posInfo=StringFormat("Long:%d Short:%d Martingale:%d Hedge:%d",longPositions.Total(),shortPositions.Total(),martingalePositions.Total(),longHedgePositions.Total());
+      updateInfoLabel(14,0,posInfo);  
+      updateInfoLabel(14,1,"");
+
+      updateInfoLabel(15,0,StringFormat("Total Swap Costs: $%3.2f",usp.swapCosts));
+      updateInfoLabel(15,1,"");
 
 
       string accInfo=StringFormat("Bal:$%3.2f Profit:$%3.2f Margin:$%3.2f",AccountInfo.Balance(),AccountInfo.Profit(),AccountInfo.Margin());
-      updateInfo2Label(18,accInfo);  
-      updateInfo2Value(18,"");
+      updateInfoLabel(16,0,accInfo);  
+      updateInfoLabel(16,1,"");
 
 }
 //+------------------------------------------------------------------+
@@ -771,8 +681,8 @@ void EAPanel::accountInfoUpdate() {
 void EAPanel::clearPositionLabel() {
 
    for (int i=_positionListYOffset;i<_positionListYOffset+_totalPositionListSize;i++) {
-      updateInfo1Label(i,"*");
-      updateInfo1Value(i,"*");
+      updateInfoLabel(i,1,"*");
+      updateInfoLabel(i,3,"*");
    } 
    
 }
@@ -796,9 +706,9 @@ void EAPanel::createPositionLabel(EAPosition &p, int idx) {
 
    s=StringFormat("%s %d    $%3.2f    %2d $%3.2f",s1,p.ticket,p.currentPnL ,p.daysOpen, p.swapCosts);
    if (idx>_totalPositionListSize) {
-      updateInfo1Label(idx,s);
+      updateInfoLabel(idx,1,s);
    } else {
-      updateInfo1Value(idx,s);
+      updateInfoLabel(idx,1,s);
    }
 
 }
@@ -964,20 +874,27 @@ bool EAPanel::Create(const long chart,const string name,const int subwin,const i
 
    //createButtonControls();
    
-   createTabControls("TAB");
-   createComboControls("STRATEGY");
-   createEditControls("STRATEGY");
-   createComboControls("TIMING");
-   createEditControls("TIMING");
-   createInfo1Controls("GROUP1");
-   createInfo2Controls("GROUP2");
-
-   EAScreenObject *s;
-   for (int i=0;i<screenObjects.Total();i++) {
+   //createTabControls("TAB");
+   //createComboControls("STRATEGY");
+   //createEditControls("STRATEGY");
    
-      s=screenObjects.At(i);
-      printf("->%s",s.sqlFieldName);
-   }
+   //createComboControls("TIMING");
+   //createEditControls("TIMING");
+   createInfoLabels("INFO");
+   mainInfoPanel();
+
+   //showControls("GROUP1");
+   //showControls("GROUP2");
+
+
+   #ifdef _DEBUG_PANEL
+      EAScreenObject *s;
+      for (int i=0;i<screenObjects.Total();i++) {
+   
+         s=screenObjects.At(i);
+         printf("->%s",s.sqlFieldName);
+      }
+   #endif
    //createComboControls("ADX");
    
    //createComboControls("RSI");

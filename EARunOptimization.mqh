@@ -437,7 +437,7 @@ void EARunOptimization::OnTesterPass() {
       double val  =0.0; // Single numerical value of the frame
       //---
       FrameNext(pass,name,id,val);
-      Print("Name: ",name," pass: "+IntegerToString(pass)+" VAL:",val); //DoubleToString(v[1].v0[2],2), "SHARPE: ",DoubleToString(v[1].v0[5],2));
+      Print(" ---> Name: ",name," pass: "+IntegerToString(pass)+" frame:" +DoubleToString(val)); //DoubleToString(v[1].v0[2],2), "SHARPE: ",DoubleToString(v[1].v0[5],2));
 
 }
 //+------------------------------------------------------------------+

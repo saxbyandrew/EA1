@@ -9,19 +9,19 @@
 
 #define  STATS_FRAME  1
 //#define _DEBUG_MYEA
-//#define _DEBUG_PANEL
-//#define _DEBUG_COMBOXBOX
-//#define _DEBUG_EDIT
+#define _DEBUG_PANEL
+#define _DEBUG_COMBOXBOX
+#define _DEBUG_EDIT
 //#define _DEBUG_CPANEL   // Blank panel NOT infoPanel !
 //#define _DEBUG_TAB_CONTROL
-//#define _DEBUG_PARAMETERS
-#define _DEBUG_MAIN_LOOP
+#define _DEBUG_PARAMETERS
+//#define _DEBUG_MAIN_LOOP
 //#define _DEBUG_STRATEGY_TIME
 //#define _DEBUG_TECHNICAL_PARAMETERS
 //#define _DEBUG_NN_INPUTS_OUTPUTS
 //#define _DEBUG_NN
 //#define _DEBUG_STRATEGY
-#define _DEBUG_STRATEGY_TRIGGERS
+//#define _DEBUG_STRATEGY_TRIGGERS
 //#define _DEBUG_DATAFRAME
 //#define _DEBUG_LONG 
 //#define _DEBUG_LABEL
@@ -101,10 +101,9 @@ EARunOptimization       optimization;
 //+------------------------------------------------------------------+
 int OnInit() {
 
-    #ifdef _DEBUG_MYEA
-        string ss;
-    #endif
-
+    
+    string ss;
+    
     ENABLE_EVENTS=false;
 
     MqlDateTime t;
@@ -150,20 +149,20 @@ int OnInit() {
     showPanel {
         ip=new EAPanel;                                                                          
         if (CheckPointer(ip)==POINTER_INVALID) {
-            #ifdef _DEBUG_MYEA
+            #ifdef _DEBUG_PANEL
                 ss="OnInit -> Error instantiating info panel";
                 pss
             #endif  
             ExpertRemove();
         } else {
             ip.Create(0,"Panel",0,10,10,700,900);
-            #ifdef _DEBUG_MYEA
+            #ifdef _DEBUG_PANEL
                 ss="OnInit -> Success instantiating info panel";
                 pss
             #endif  
         } 
         if (!ip.Run()) {
-            #ifdef _DEBUG_MYEA
+            #ifdef _DEBUG_PANEL
                 ss="OnInit -> Error running info panel";
                 pss
             #endif  
@@ -203,8 +202,61 @@ void OnDeinit(const int reason) {
     
     delete(expertAdvisor);
     delete(strategyParameters);
-    //showPanel {infoPanel.Destroy(reason);}
+    showPanel {infoPanel.Destroy(reason);}
     EventKillTimer();
+}
+//+------------------------------------------------------------------+
+//| Expert tick function                                             |
+//+------------------------------------------------------------------+
+void eaStrategyLoad() {
+
+    strategyParameters=new EAStrategyParameters;
+    if (CheckPointer(strategyParameters)==POINTER_INVALID) {
+        #ifdef _DEBUG_MYEA
+            ss="OnInit -> Error instantiating strategy parameters";
+            writeLog;
+            pss
+        #endif 
+        ExpertRemove();
+    } else {
+        #ifdef _DEBUG_MYEA
+            ss="OnInit -> Success instantiating strategy parameters";
+            writeLog;
+            pss
+        #endif 
+    }
+
+    usp.runMode=_RUN_STRATEGY_REBUILD_NN;
+
+    expertAdvisor=new EAMain;                                  // Instantiate the EA                                           
+    if (CheckPointer(expertAdvisor)==POINTER_INVALID) {
+        #ifdef _DEBUG_MYEA
+            ss="OnInit  -> Error instantiating main EA";
+            writeLog
+            pss
+        #endif 
+        ExpertRemove();
+        
+    } else {
+        #ifdef _DEBUG_MYEA
+            ss="OnInit  -> Success instantiating main EA";
+            writeLog
+            pss
+        #endif 
+    }
+
+}
+
+//+------------------------------------------------------------------+
+//| Expert tick function                                             |
+//+------------------------------------------------------------------+
+void eaStrategyUpdate() {
+
+    delete expertAdvisor;
+    delete strategyParameters;
+
+    eaStrategyLoad();
+
 }
 //+------------------------------------------------------------------+
 //| Expert tick function                                             |
@@ -224,9 +276,14 @@ void OnTick() {
    //========= 
     if(lastBar!=iTime(NULL,PERIOD_CURRENT,0)) {
         lastBar=iTime(NULL,PERIOD_CURRENT,0);
-        //#ifdef _DEBUG_MYEA
-            //Print(__FUNCTION__," _-> In OnTick fire OnBar");
-        //#endif 
+
+        //=========
+        // ON RELOAD
+        //=========
+        if (usp.runMode==_RUN_STRATEGY_UPDATE) {
+            //eaStrategyUpdate();
+        }
+
         expertAdvisor.runOnBar(); 
         showPanel ip.accountInfoUpdate();  
     }
@@ -307,21 +364,18 @@ void OnTesterDeinit() {
 
 }
 
-
-
 //+------------------------------------------------------------------+
 //| Tester function                                                  |
 //+------------------------------------------------------------------+
 double OnTester() {
 
-/*
     double val=TesterStatistics(STAT_SHARPE_RATIO);
     printf ("================OnTester=================");
-    if (val>0.01) {
+    if (val>0.45) {
         optimization.OnTester(val);
     }
-*/
-optimization.OnTester(1);
+
+//optimization.OnTester(1);
 
     /*
     if (val)

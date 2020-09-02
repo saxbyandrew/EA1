@@ -28,6 +28,7 @@ public:
 
       CWnd           *labelObject;  // Text Information
       CWnd           *valueObject;  // Changing value information
+      CLabel         *infolabelObject;    
       string         sqlFieldName;
       string         screenName;
       int            rowNumber;

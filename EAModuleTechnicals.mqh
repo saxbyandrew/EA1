@@ -180,6 +180,7 @@ double EAModuleTechnicals::ADXNormalizedValue(int lookBack, int buffer) {
             printf("ADX --> getting a EMPTY VALUE 2");
         }
     #endif
+
     if (adx.Main(lookBack)==EMPTY_VALUE) return 0;
 
     switch (buffer) {
@@ -241,10 +242,12 @@ void EAModuleTechnicals::ADXSetParameters(ENUM_TIMEFRAMES period, int maperiod) 
         #endif
     } 
 
+/*
     adx.Refresh(OBJ_ALL_PERIODS);
     printf("ADXSetParameters BarsCalculated:%d",adx.BarsCalculated());
     printf("ADXSetParameters STATUS:%s",adx.Status());
     adx.BufferResize(2000);
+    */
 } 
 
 
@@ -1571,7 +1574,7 @@ EAEnum EAModuleTechnicals::ZIGZAGValue(int pos) {
     if (CopyBuffer(ZIGZAGHandle,2,0,lookBackBuffersSize,ZIGZAGBuffer2)==-1) printf("Error7");
     if (CopyBuffer(ZIGZAGHandle,3,0,lookBackBuffersSize,ZIGZAGBuffer3)==-1) printf("Error8");
 
-    printf("SIZE:%d",ArraySize(ZIGZAGBuffer2));
+    
 /*
     if (ZIGZAGBuffer0[pos]>0) {
         direction=_DOWN;

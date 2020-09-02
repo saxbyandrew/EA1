@@ -41,6 +41,7 @@ private:
    void     networkProperties();
    void     createNewNetwork();
    bool     saveNetwork();
+   bool     saveNetwork(string fileName);
    bool     loadNetwork();
    void     loadNetwork(int typeReference, EAInputsOutputs &io);
    void     trainNetwork();
@@ -48,6 +49,7 @@ private:
    CAlglib  *no;
    CMultilayerPerceptronShell *ps;
    CMatrixDouble  dataFrame;
+   
 
 //=========
 protected:
@@ -67,7 +69,7 @@ EANeuralNetwork(int typeReference, EAInputsOutputs &io);
 
    void     networkForcast(double &inputs[], double &outputs[]);
    void     buildDataFrame(EAInputsOutputs &io);
-
+   
 
 
 };
@@ -83,6 +85,11 @@ EANeuralNetwork::EANeuralNetwork(int typeReference, EAInputsOutputs &io) {
    #endif
    
    int fileHandle;
+   nnArray=new CArrayDouble;
+   if (CheckPointer(nnArray)==POINTER_INVALID) {
+      printf("EANeuralNetwork -> Error creating nnArrray");
+      ExpertRemove();
+   }
 
 
    // Load the size parameters for this NN
@@ -124,15 +131,12 @@ EANeuralNetwork::EANeuralNetwork(int typeReference, EAInputsOutputs &io) {
          ExpertRemove();
       }
    } else {
+      // No NN flat file exists so force the system to read and recreate one
       ss=StringFormat("EANeuralNetwork -> File %s does not exist yet, needs be created ",n.fileName);
+      writeLog
       pss
-      // Entry here should happen on after a refresh on optimization before a flat file for the
-      // networks exists
-      // This have been moved into the on bar section as for some reason if called from here 
-      // all values returned are EMPTYVALUES
-      //buildDataFrame(io);
-      //rebuild_DataFrame=true;
-      
+      usp.runMode=_RUN_STRATEGY_REBUILD_NN;
+         
    }
    
 
@@ -170,7 +174,6 @@ void EANeuralNetwork::addDataFrameValues(double &inputs[], double& outputs[]) {
 
    //int csvHandle1;
    static int rowCnt=0;
-
    // Insert input values
    // [row][in,in,in,in,etc]
    #ifdef _DEBUG_DATAFRAME
@@ -184,6 +187,7 @@ void EANeuralNetwork::addDataFrameValues(double &inputs[], double& outputs[]) {
    }
    // tack on output values at the end of the array
    // [row][in,in,in,in,etc,out,out,out,etc]
+
    for (int j=0; j<ArraySize(outputs);j++) {
       dataFrame[rowCnt].Set(j+ArraySize(inputs),outputs[j]);
       #ifdef _DEBUG_DATAFRAME
@@ -232,10 +236,14 @@ void EANeuralNetwork::buildDataFrame(EAInputsOutputs &io) {
       return;
    } 
 
-   
+   // Entry here if we are creating a new NN whicll is based of a optimization run
+   // and will be saved to disk
+
+   barCnt=n.dfSize-1;   
    while (barCnt>0) {
+
       #ifdef _DEBUG_NN  
-         ss=StringFormat(" buildDataFrame -> with bar:%d",barCnt);
+         ss=StringFormat(" _RUN_STRATEGY_REBUILD_NN buildDataFrame -> with bar:%d",barCnt);
          writeLog
          pss
       #endif
@@ -293,12 +301,16 @@ void EANeuralNetwork::loadNetwork(int typeReference, EAInputsOutputs &io) {
          n.fileName=StringFormat("%s%s.bin",IntegerToString(n.strategyNumber),IntegerToString(n.fileNumber));
    }
 
+   ss=StringFormat("EANeuralNetwork fileName:%s dfSize:%d",n.fileName,n.dfSize);
+   ip.updateInfoLabel(22,0,ss);
    #ifdef _DEBUG_NN
-      ss=StringFormat("EANeuralNetwork -> DB Read StrategyNumber:%d I:%d L1:%d L2:%d O:%d fileName:%s",n.strategyNumber,n.numInput,n.numHiddenLayer1,n.numHiddenLayer2,n.numOutput,n.fileName);
+      ss=StringFormat("EANeuralNetwork -> DB Read StrategyNumber:%d I:%d L1:%d L2:%d O:%d fileName:%s dfSize:%d",n.strategyNumber,n.numInput,n.numHiddenLayer1,n.numHiddenLayer2,n.numOutput,n.fileName,n.dfSize);
       writeLog
       pss
    #endif  
-
+/*
+ commented out as the outputs are getting set to 0, will need to fix as this will be part of teh dynamic side of 
+ changing teh number of inputs and outpus in teh inputoutput model without have to do major recoding
    // Check if the model has changed and we need to resize
    numInput=ArraySize(io.inputs);
    numOutput=ArraySize(io.outputs);
@@ -325,9 +337,9 @@ void EANeuralNetwork::loadNetwork(int typeReference, EAInputsOutputs &io) {
          #endif 
       }
    }
-
+*/
    // Create a DF based on new or loaded values
-   dataFrame.Resize(n.dfSize,numInput+numOutput); 
+   dataFrame.Resize(n.dfSize,n.numInput+n.numOutput); 
 
 }
 //+------------------------------------------------------------------+
@@ -342,7 +354,7 @@ void EANeuralNetwork::networkProperties()  {
    
    showPanel {
       string s1=StringFormat("I:%d L1:%d L2:%d O:%d W:%d",nInputs,n.numHiddenLayer1,n.numHiddenLayer2,nOutputs,nWeights);
-      ip.updateInfo2Label(20,s1);
+      ip.updateInfoLabel(21,0,s1);
    }
    
 
@@ -515,6 +527,7 @@ bool EANeuralNetwork::saveNetwork() {
    return true;
 } 
 
+
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
@@ -608,12 +621,12 @@ void EANeuralNetwork::networkForcast(double &inputs[], double &outputs[]) {
       for (int i=0;i<n.numInput;i++) {
          ss=ss+" "+StringFormat("%0.2f",inputs[i]);
       }
-      ip.updateInfo2Label(21,ss);
+      ip.updateInfoLabel(23,0,ss);
       ss="";
       for (int j=0;j<n.numOutput;j++) {
          ss=ss+" "+StringFormat("%0.2f",outputs[j]);
       }
-      ip.updateInfo2Label(22,ss);
+      ip.updateInfoLabel(24,0,ss);
    }
    
 
@@ -655,25 +668,32 @@ void EANeuralNetwork::trainNetwork() {
       printf("Training Response:%d",retCode);
    }
    
+   ss=StringFormat("#Gradient calculations:%d\n #Hessian calculations%d\n #Cholesky decompositions:%d\n Training error:%2.8f\n Restarts:%d\n Code Response:%d",
+   repShell.GetNGrad(),repShell.GetNHess(),repShell.GetNCholesky(),DoubleToString(trainingError, 8),restarts,retCode );
+   ip.updateInfoLabel(20,0,ss);
 
    #ifdef _DEBUG_NN
       et=TimeLocal();
-      ss=StringFormat("#Gradient calculations:%d\n #Hessian calculations%d\n #Cholesky decompositions:%d\n Training error:%2.8f\n Restarts:%d\n Code Response:%d",
-         repShell.GetNGrad(),repShell.GetNHess(),repShell.GetNCholesky(),DoubleToString(trainingError, 8),restarts,retCode );
+      
          writeLog
          pss
    #endif
 
    isTrained=true;
 
-   // if we are in optimization mode we don't need to save the trained network as
+   // if we are in optimization mode we don't need to save the trained network as flat file
    // each iteratoin will be different based on different IO inputs. Only after a choosen set
    // of inputs can we save a network for continued use as the IO input will have constant values
-   if (MQLInfoInteger(MQL_OPTIMIZATION)) return;
+   if (MQLInfoInteger(MQL_OPTIMIZATION)) {
+      return;
+   }
 
-   if (MQLInfoInteger(MQL_VISUAL_MODE) || MQLInfoInteger(MQL_TESTER)) {
+   // We save the network to disk if this is the first time a new set of parameters after a optimization run
+   // this occurs if there is no existing disk file or if a reload of the strategy was pressed.
+
+   if (usp.runMode==_RUN_STRATEGY_REBUILD_NN) {
       #ifdef _DEBUG_NN
-         ss=" -> In MQL_VISUAL_MODE or MQL_TESTER so save the trained network";
+         ss=" -> Save the trained network to disk";
          writeLog
          pss
       #endif
@@ -683,6 +703,8 @@ void EANeuralNetwork::trainNetwork() {
             writeLog
             pss
          #endif
+         usp.runMode=_RUN_NORMAL;
+
       } else {
          #ifdef _DEBUG_NN
             ss=" -> Nework saved error";
