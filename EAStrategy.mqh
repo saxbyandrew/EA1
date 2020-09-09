@@ -157,9 +157,9 @@ EAEnum EAStrategy::waitOnTriggers() {
    string s;
    double trigger;
 
-   //#ifdef _DEBUG_STRATEGY_TRIGGERS  
-      //Print(__FUNCTION__);
-   //#endif 
+   #ifdef _DEBUG_STRATEGY_TRIGGERS  
+      Print(__FUNCTION__);
+   #endif 
 
    // Pass in the live values into the trained model
    // Get the updated inputs from the input/output model and 
@@ -172,6 +172,10 @@ EAEnum EAStrategy::waitOnTriggers() {
    #endif
 
    // Inputs for the current bar Outputs are returned
+   io.getInputs(1);
+   io.getOutputs(1);
+
+
    nn.networkForcast(io.inputs,io.outputs);        // ask the NN to forcast a output(s)
    #ifdef _DEBUG_STRATEGY_TRIGGERS
       ss="Inputs: ";
@@ -179,11 +183,13 @@ EAEnum EAStrategy::waitOnTriggers() {
          ss=ss+DoubleToString(io.inputs[i]);
       }
       writeLog
+      pss
       ss="Outputs: ";
       for (int i=0;i<ArraySize(io.outputs);i++) {
          ss=ss+DoubleToString(io.outputs[i]);
       }
       writeLog
+      pss
    #endif
 
 
@@ -305,6 +311,14 @@ EAEnum EAStrategy::runOnBar() {
 
    // Check trading times first
    //if (t.sessionTimes()) return retValue;
+
+   if (LOAD_HISTORY) {
+      io.getInputs(1);
+      io.getOutputs(1);
+      io.getHistory(tech);
+      printf("System waiting to load history ....");
+      return _NO_ACTION;
+   }
 
 
    if (usp.runMode==_RUN_STRATEGY_REBUILD_NN) {

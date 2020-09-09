@@ -69,7 +69,8 @@ EAStrategyParameters();
       int               mgMultiplier;  
       double            longHLossamt;
       double            swapCosts;
-      EAEnum             runMode;    
+      EAEnum            runMode;    
+
       // Not stored in DB !
       unsigned          closingTypes;
       ENUM_ORDER_TYPE   orderTypeToOpen;           // LONG SHORT etc set by stategy once a trigger occurs !
@@ -175,6 +176,7 @@ void EAStrategyParameters::resetValues() {
       sb.swapCosts=0;
       sb.defaultRunMode=_RUN_NORMAL+_RUN_SHOW_PANEL+_RUN_SAVE_STATE;
 
+
 }
 
 //+------------------------------------------------------------------+
@@ -233,6 +235,7 @@ void EAStrategyParameters::loadSQLStrategy() {
       DatabaseColumnDouble    (request,27,sb.longHLossamt);
       DatabaseColumnDouble    (request,28,sb.swapCosts);
       DatabaseColumnInteger   (request,27,sb.runMode);
+
    
       #ifdef _DEBUG_PARAMETERS
          ss=StringFormat("Table STRATEGY -> StrategyNumber:%d brokerAdminPercent:%2.2f lotSize:%2.2f fptl:%2.2f maxLong:%d maxLongHedgeLoss:%2.2f ",sb.strategyNumber,sb.brokerAdminPercent,sb.lotSize,sb.fptl,sb.maxLong,sb.longHLossamt);
@@ -297,5 +300,7 @@ void EAStrategyParameters::loadSQLStrategy() {
    } else {
       tb.marketSessions[2]=_NO; 
    }  
+
+
 
 }

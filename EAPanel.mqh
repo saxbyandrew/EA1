@@ -206,7 +206,7 @@ void EAPanel::updateInfoLabel(int row, int col, string val) {
 
    for (int i=0;i<screenObjects.Total();i++) {
       EAScreenObject *s=screenObjects.At(i);
-      printf("Found %d %d",s.rowNumber,s.columnNumber);
+      //printf("Found %d %d",s.rowNumber,s.columnNumber);
       if (row==s.rowNumber && col==s.columnNumber) {
          s.infolabelObject.Text(val);
          return;

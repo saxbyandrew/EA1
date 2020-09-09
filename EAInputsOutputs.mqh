@@ -10,6 +10,7 @@
 
 #include "EAEnum.mqh"
 #include "EAModuleTechnicals.mqh"
+#include "EATechnicalsADX.mqh"
 
 class EATechnicalParameters;
 
@@ -22,10 +23,13 @@ class EAInputsOutputs  {
 private:
 //=========
    string               ss;
+
+   CIndicator  indicators[];
+
+
    EAModuleTechnicals   *shortTerm;
    EAModuleTechnicals   *mediumTerm;
    EAModuleTechnicals   *longTerm;
-
 
 //=========
 protected:
@@ -46,6 +50,7 @@ EAInputsOutputs(EATechnicalParameters &t);
 
    void  getInputs(int currentBar);
    void  getOutputs(int currentBar);
+   void  getHistory(EATechnicalParameters &t);
 
 
 };
@@ -210,6 +215,19 @@ void EAInputsOutputs::setupTechnicalParameters(EATechnicalParameters &tech) {
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
+void EAInputsOutputs::getHistory(EATechnicalParameters &tech) {
+
+   //shortTerm.ADXGetHistory(tech.adx.s_ADXperiod);
+   //shortTerm.ZIGZAGGetHistory(tech.zz.s_ZZperiod);
+
+
+   //mediumTerm.ADXGetHistory(tech.adx.m_ADXperiod);
+   //longTerm.ADXGetHistory(tech.adx.l_ADXperiod);
+
+}
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
 void EAInputsOutputs::getInputs(int currentBar) {
 
    #ifdef _DEBUG_NN_INPUTS_OUTPUTS
@@ -217,6 +235,7 @@ void EAInputsOutputs::getInputs(int currentBar) {
       writeLog
       pss
    #endif 
+
 
    double   i[100];
    int      j=0;
@@ -227,21 +246,21 @@ void EAInputsOutputs::getInputs(int currentBar) {
    // ADX 
    // ADXNormalizedValue(int start, int buffer) 0=Main 1=DI+ 2=DI-
    //if (tech.t.useADX) {
-      i[j++]=shortTerm.ADXNormalizedValue(currentBar,0);
-      i[j++]=shortTerm.ADXNormalizedValue(currentBar,0); // MAIN
-      i[j++]=shortTerm.ADXNormalizedValue(currentBar,1); // DI+
-      i[j++]=mediumTerm.ADXNormalizedValue(currentBar,0); // MAIN
-      i[j++]=mediumTerm.ADXNormalizedValue(currentBar,1); // DI+
-      i[j++]=longTerm.ADXNormalizedValue(currentBar,0); // MAIN
-      i[j++]=longTerm.ADXNormalizedValue(currentBar,1); // DI+
+      i[j++]=shortTerm.ADXGetValue(currentBar,0);
+      i[j++]=shortTerm.ADXGetValue(currentBar,0); // MAIN
+      i[j++]=shortTerm.ADXGetValue(currentBar,1); // DI+
+      i[j++]=mediumTerm.ADXGetValue(currentBar,0); // MAIN
+      i[j++]=mediumTerm.ADXGetValue(currentBar,1); // DI+
+      i[j++]=longTerm.ADXGetValue(currentBar,0); // MAIN
+      i[j++]=longTerm.ADXGetValue(currentBar,1); // DI+
       // ADX
    //}
    
    // RSI
    //if (tech.t.useRSI) {
-      i[j++]=shortTerm.RSINormalizedValue(currentBar);
-      i[j++]=mediumTerm.RSINormalizedValue(currentBar);
-      i[j++]=longTerm.RSINormalizedValue(currentBar);
+      i[j++]=shortTerm.RSIGetValue(currentBar);
+      i[j++]=mediumTerm.RSIGetValue(currentBar);
+      i[j++]=longTerm.RSIGetValue(currentBar);
    //}
 
 

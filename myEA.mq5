@@ -9,24 +9,24 @@
 
 #define  STATS_FRAME  1
 //#define _DEBUG_MYEA
-#define _DEBUG_PANEL
-#define _DEBUG_COMBOXBOX
-#define _DEBUG_EDIT
+//#define _DEBUG_PANEL
+//#define _DEBUG_COMBOXBOX
+//#define _DEBUG_EDIT
 //#define _DEBUG_CPANEL   // Blank panel NOT infoPanel !
 //#define _DEBUG_TAB_CONTROL
-#define _DEBUG_PARAMETERS
+//#define _DEBUG_PARAMETERS
 //#define _DEBUG_MAIN_LOOP
 //#define _DEBUG_STRATEGY_TIME
 //#define _DEBUG_TECHNICAL_PARAMETERS
 //#define _DEBUG_NN_INPUTS_OUTPUTS
 //#define _DEBUG_NN
-//#define _DEBUG_STRATEGY
-//#define _DEBUG_STRATEGY_TRIGGERS
+#define _DEBUG_STRATEGY
+#define _DEBUG_STRATEGY_TRIGGERS
 //#define _DEBUG_DATAFRAME
 //#define _DEBUG_LONG 
 //#define _DEBUG_LABEL
 
-//#define _DEBUG_ADX_MODULE
+#define _DEBUG_ADX_MODULE
 //#define _DEBUG_RVI_MODULE
 //#define _DEBUG_OSMA_MODULE
 //#define _DEBUG_STOC_MODULE
@@ -43,7 +43,7 @@
 //#define _DEBUG_QQE
 //#define _DEBUG_ZIGZAG
 
-//#define _DEBUG_OPTIMIZATION
+#define _DEBUG_OPTIMIZATION
 
 #include <Object.mqh>
 #include <Arrays\List.mqh>
@@ -77,7 +77,7 @@
 // GLOBALS
 //+------------------------------------------------------------------+
 double _x[100];
-bool                    ENABLE_EVENTS;
+bool                    ENABLE_EVENTS, LOAD_HISTORY;
 unsigned                ACTIVE_HEDGE;
 unsigned                TRADING_CIRCUIT_BREAKER;
 CList                   longPositions, shortPositions, martingalePositions, longHedgePositions;
@@ -87,6 +87,7 @@ EAPanel                 *infoPanel;
 EATabControlMenu        *tabControlMenu;
 EAStrategyParameters    *strategyParameters; 
 EAEnum                  _runMode;
+datetime                _historyStart;
 int                     _mainDBHandle, _txtHandle, _optimizeDBHandle;
 string                  _mainDBName="strategies.sqlite";
 string                  _optimizeDBName="optimization.sqlite";
@@ -105,6 +106,21 @@ int OnInit() {
     string ss;
     
     ENABLE_EVENTS=false;
+    LOAD_HISTORY=true;
+
+    _historyStart=(datetime)SeriesInfoInteger(Symbol(),Period(),SERIES_SERVER_FIRSTDATE); 
+
+    Print("Total number of bars for the symbol-period at this moment = ", 
+         SeriesInfoInteger(Symbol(),Period(),SERIES_BARS_COUNT)); 
+  
+   Print("The first date for the symbol-period at this moment = ", 
+         (datetime)SeriesInfoInteger(Symbol(),Period(),SERIES_FIRSTDATE)); 
+  
+   Print("The first date in the history for the symbol-period on the server = ", 
+         (datetime)SeriesInfoInteger(Symbol(),Period(),SERIES_SERVER_FIRSTDATE)); 
+  
+   Print("Symbol data are synchronized = ", 
+         (bool)SeriesInfoInteger(Symbol(),Period(),SERIES_SYNCHRONIZED)); 
 
     MqlDateTime t;
     TimeToStruct(TimeCurrent(),t);
