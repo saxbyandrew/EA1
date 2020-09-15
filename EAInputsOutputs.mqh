@@ -7,9 +7,10 @@
 #property link      "https://www.mql5.com"
 #property version   "1.00"
 
+#include <Arrays\ArrayObj.mqh>
 
 #include "EAEnum.mqh"
-#include "EAModuleTechnicals.mqh"
+//#include "EAModuleTechnicals.mqh"
 #include "EATechnicalsADX.mqh"
 
 class EATechnicalParameters;
@@ -24,12 +25,8 @@ private:
 //=========
    string               ss;
 
-   CIndicator  indicators[];
+   CArrayObj            *indicators;
 
-
-   EAModuleTechnicals   *shortTerm;
-   EAModuleTechnicals   *mediumTerm;
-   EAModuleTechnicals   *longTerm;
 
 //=========
 protected:
@@ -67,20 +64,17 @@ EAInputsOutputs::EAInputsOutputs(EATechnicalParameters &tech) {
       pss
    #endif 
 
-   shortTerm=new EAModuleTechnicals;
-   mediumTerm=new EAModuleTechnicals;
-   longTerm=new EAModuleTechnicals;
-
-   if (CheckPointer(shortTerm)==POINTER_INVALID||CheckPointer(mediumTerm)==POINTER_INVALID||CheckPointer(longTerm)==POINTER_INVALID) {
+   indicators=new CArrayObj;
+   if (CheckPointer(indicators)==POINTER_INVALID) {
       #ifdef _DEBUG_NN_INPUTS_OUTPUTS
-         ss="-> ERROR creating technical shortTerm mediumTerm longTerm objects";
+         ss="-> ERROR creating indicators store object";
          writeLog
       #endif
       pss
       ExpertRemove();
    } else {
       #ifdef _DEBUG_NN_INPUTS_OUTPUTS
-         ss="-> SUCCESS creating technical shortTerm mediumTerm longTerm objects";
+         ss="-> SUCCESS creating indicators store object";
          writeLog
          pss
       #endif
@@ -94,15 +88,21 @@ EAInputsOutputs::EAInputsOutputs(EATechnicalParameters &tech) {
 //+------------------------------------------------------------------+
 EAInputsOutputs::~EAInputsOutputs() {
 
-   delete shortTerm;
-   delete mediumTerm;
-   delete longTerm;
+   // Clean up
+   for (int i=0;i<indicators.Total();i++) {
+      delete(indicators.At(i));
+   }
+
+   delete indicators;
+
 }
 
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
 void EAInputsOutputs::setupTechnicalParameters(EATechnicalParameters &tech) {
+
+   EATechnicalsBase *i;
 
    #ifdef _DEBUG_NN_INPUTS_OUTPUTS
       ss="setupTechnicalParameters ->  ....";
@@ -118,6 +118,34 @@ void EAInputsOutputs::setupTechnicalParameters(EATechnicalParameters &tech) {
          pss
       #endif
       // ADX      ADXNormalizedValue(int start, int buffer) 0=Main 1=DI+ 2=DI-
+
+      i=new EATechnicalsADX();
+      if (CheckPointer(i)==POINTER_INVALID) {
+      if (indicators.Add(new EATechnicalsADX(tech.adx.s_ADXperiod,tech.adx.s_ADXma))) {
+         ss="ERROR adding indicator ";
+         writeLog
+         pss
+         ExpertRemove();
+      } else {
+         i.period=
+         indicators.Add(i);
+
+      }
+
+      if (indicators.Add(new EATechnicalsADX(tech.adx.m_ADXperiod,tech.adx.m_ADXma))) {
+         ss="ERROR adding indicator ";
+         writeLog
+         pss
+         ExpertRemove();
+      }
+      if (indicators.Add(new EATechnicalsADX(tech.adx.l_ADXperiod,tech.adx.l_ADXma))) {
+         ss="ERROR adding indicator ";
+         writeLog
+         pss
+         ExpertRemove();
+      }
+
+/*
       shortTerm.ADXSetParameters(tech.adx.s_ADXperiod,tech.adx.s_ADXma);
       mediumTerm.ADXSetParameters(tech.adx.m_ADXperiod,tech.adx.m_ADXma);
       longTerm.ADXSetParameters(tech.adx.l_ADXperiod,tech.adx.l_ADXma);
@@ -136,7 +164,8 @@ void EAInputsOutputs::setupTechnicalParameters(EATechnicalParameters &tech) {
       mediumTerm.RSISetParameters(tech.rsi.m_RSIperiod,tech.rsi.m_RSIma,tech.rsi.m_RSIap);
       longTerm.RSISetParameters(tech.rsi.l_RSIperiod, tech.rsi.l_RSIperiod, tech.rsi.l_RSIap);
    //}
-/*
+
+
    if (tech.t.useMFI) {
       // MFI MFINormalizedValue(int start) 
       shortTerm.MFISetParameters(tech.adx.s_MFIperiod,tech.adx.s_MFIma);
@@ -186,6 +215,8 @@ void EAInputsOutputs::setupTechnicalParameters(EATechnicalParameters &tech) {
       longTerm.MACDSetupParametersDivergence(tech.adx.l_MACDDperiod,tech.adx.l_MACDDfastEMA,tech.adx.l_MACDDslowEMA,tech.adx.l_MACDDsignalPeriod);
    }
 */
+
+/*
    //if (tech.t.useZZ) {
       #ifdef _DEBUG_NN_INPUTS_OUTPUTS
          ss=StringFormat(" Short ZZ Period:%s\n Medium ZZ Period:%s\n Long ZZ Period:%s\n",
@@ -210,6 +241,8 @@ void EAInputsOutputs::setupTechnicalParameters(EATechnicalParameters &tech) {
       ArrayPrint(outputs);
    #endif
 
+   */
+
 }
 
 //+------------------------------------------------------------------+
@@ -230,6 +263,7 @@ void EAInputsOutputs::getHistory(EATechnicalParameters &tech) {
 //+------------------------------------------------------------------+
 void EAInputsOutputs::getInputs(int currentBar) {
 
+
    #ifdef _DEBUG_NN_INPUTS_OUTPUTS
       ss=StringFormat("getInputs -> for bar number:%d",currentBar);
       writeLog
@@ -239,6 +273,13 @@ void EAInputsOutputs::getInputs(int currentBar) {
 
    double   i[100];
    int      j=0;
+
+   // Loop through all object and get the object to return the value as a input to the NN
+   for (int j=0;j<indicators.Total();j++) {
+      EATechnicalsBase *t=indicators.At(j);
+      i[j]=t.getValue(currentBar,0);
+
+   }
 
    // This is wehere the inputs to the NN are mapped at every tick or bar
    // simply comment out any lines to remove a input
@@ -284,6 +325,7 @@ void EAInputsOutputs::getInputs(int currentBar) {
 //|                                                                  |
 //+------------------------------------------------------------------+
 void EAInputsOutputs::getOutputs(int currentBar) {
+   /*
 
    #ifdef _DEBUG_NN_INPUTS_OUTPUTS
       ss=StringFormat("getOutputs ->for bar number:%d",currentBar);
@@ -320,6 +362,7 @@ void EAInputsOutputs::getOutputs(int currentBar) {
       writeLog
       pss
    #endif
+   */
 
 }
 

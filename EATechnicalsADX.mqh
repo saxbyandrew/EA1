@@ -9,18 +9,21 @@
 
 
 
-#include "EAEnum.mqh"
+
+#include "EATechnicalsBase.mqh"
 
 #include <Indicators\Trend.mqh>
 
 //=========
-class EATechnicalsADX : public CIndicator {
+class EATechnicalsADX : public EATechnicalsBase {
 //=========
 
 //=========
 private:
 //=========
-   string          ss;
+   string   ss;
+   int      getAbsoluteBarCount(ENUM_TIMEFRAMES period);
+   void     ADXGetHistory(ENUM_TIMEFRAMES period);
 
 //=========
 protected:
@@ -31,9 +34,10 @@ protected:
 //=========
 public:
 //=========
-   EATechnicalsADX();
+   EATechnicalsADX(ENUM_TIMEFRAMES period, int maperiod);
    ~EATechnicalsADX();
 
+   double              getValue(int lookBack, int buffer);                              // lookBack=index value to look at
 
     // ADX
     // ADX is plotted as a single line with values ranging from a low of zero to a high of 100.
@@ -42,18 +46,36 @@ public:
     // When the -DMI is above the +DMI, prices are moving down, and ADX measures the strength of the downtrend. 
     //void                ADXtest(ENUM_TIMEFRAMES period );
 
-   int                 getAbsoluteBarCount(ENUM_TIMEFRAMES period);
+   //int                 getAbsoluteBarCount(ENUM_TIMEFRAMES period);
 
-   void                ADXSetParameters(ENUM_TIMEFRAMES period);
-   void                ADXSetParameters(ENUM_TIMEFRAMES period, int maperiod);    
-   double              ADXNormalizedValue(int lookBack, int buffer);      // start=starting point to calc from. count=number number idxes 
-   double              ADXGetValue(int lookBack, int buffer);                              // lookBack=index value to look at
+   //void                ADXSetParameters(ENUM_TIMEFRAMES period);
+   //void                ADXSetParameters(ENUM_TIMEFRAMES period, int maperiod);    
+   //double              ADXNormalizedValue(int lookBack, int buffer);      // start=starting point to calc from. count=number number idxes 
+   //double              ADXGetValue(int lookBack, int buffer);                              // lookBack=index value to look at
     //void                ADXGetHistory(ENUM_TIMEFRAMES period);
 
-   //+------------------------------------------------------------------+
+};
+//+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-EATechnicalsADX::EATechnicalsADX() {
+EATechnicalsADX::EATechnicalsADX(ENUM_TIMEFRAMES p, int m) {
+
+   #ifdef _DEBUG_ADX_MODULE
+      Print(__FUNCTION__);
+      printf("Creating ADX with period:%s and maPeriod:%d",EnumToString(period),maperiod);
+      printf("BarsCalculated:%d",adx.BarsCalculated());
+   #endif  
+
+   if (!adx.Create(_Symbol,period,maperiod)) {
+      #ifdef _DEBUG_ADX_MODULE
+            printf("ADXSetParameters -> ERROR");
+            ExpertRemove();
+      #endif
+   } 
+
+   // Save values in public space
+   period=p;
+   ma=m;
 
 
 
@@ -64,11 +86,13 @@ EATechnicalsADX::EATechnicalsADX() {
 EATechnicalsADX::~EATechnicalsADX() {
 
 }
-/*
+
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
 int EATechnicalsADX::getAbsoluteBarCount(ENUM_TIMEFRAMES period) {
+
+   int dfSize=2000; //TEMP !!!!!!!!!!!!!
 
    int barNumber=iBarShift(_Symbol,period,_historyStart,false);
 
@@ -95,8 +119,7 @@ void EATechnicalsADX::ADXGetHistory(ENUM_TIMEFRAMES period) {
     // Determine the last/first bar number where history start based on the period interval. This will determine the absolute number of bars
     // that can be used in the GetData/ history
 
-   finalBar=getAbsoluteBarCount(ENUM_TIMEFRAMES period)
-
+   int barNumber=getAbsoluteBarCount(period);
 
    #ifdef _DEBUG_ADX_MODULE
       printf("--> bar history number:%d history start at %s on timeFrame:%s",barNumber,TimeToString(_historyStart),EnumToString(period));
@@ -114,8 +137,9 @@ void EATechnicalsADX::ADXGetHistory(ENUM_TIMEFRAMES period) {
    }
 
 }
-*/
 
+
+/*
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
@@ -157,7 +181,6 @@ double EATechnicalsADX::ADXGetValue(int lookBack, int buffer) {
             LOAD_HISTORY=false;
       }
    } else {
-*/
         // Getting real values ....
       #ifdef _DEBUG_ADX_MODULE
             printf("ADXGetValue --> getting real values ...");
@@ -263,32 +286,6 @@ void EATechnicalsADX::ADXSetParameters(ENUM_TIMEFRAMES period){
    } 
 
 } 
-//+------------------------------------------------------------------+
-//|                                                                  |
-//+------------------------------------------------------------------+
-void EATechnicalsADX::ADXSetParameters(ENUM_TIMEFRAMES period, int maperiod) {
-
-   #ifdef _DEBUG_ADX_MODULE
-      Print(__FUNCTION__);
-      printf("Creating ADX with period:%s and maPeriod:%d",EnumToString(period),maperiod);
-      printf("BarsCalculated:%d",adx.BarsCalculated());
-   #endif  
-
-   if (!adx.Create(_Symbol,period,maperiod)) {
-      #ifdef _DEBUG_ADX_MODULE
-            printf("ADXSetParameters -> ERROR");
-            ExpertRemove();
-      #endif
-   } 
 
 
-
-/*
-   adx.Refresh(OBJ_ALL_PERIODS);
-   printf("ADXSetParameters BarsCalculated:%d",adx.BarsCalculated());
-   printf("ADXSetParameters STATUS:%s",adx.Status());
-   adx.BufferResize(2000);
-   */
-} 
-
-
+*/

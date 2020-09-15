@@ -44,7 +44,7 @@ protected:
    bool              newPosition(double lotSize);
    //EANeuralNetwork        *dnn; 
    //EAModuleCustom    *custom;
-   EAModuleTechnicals       *rsi;
+   //EAModuleTechnicals       *rsi;
 
 //=========
 public:
@@ -108,8 +108,8 @@ EALongHedge::EALongHedge() {
    //custom=new EAModuleCustom;
    //custom.MACDSetParameters(PERIOD_D1,12,26,9);
    //void              RSISetParameters(ENUM_TIMEFRAMES period,int ma_period, int priceApplied);      
-   rsi=new EAModuleTechnicals;
-   rsi.RSISetParameters(PERIOD_D1,14,PRICE_CLOSE);
+   //rsi=new EAModuleTechnicals;
+   //rsi.RSISetParameters(PERIOD_D1,14,PRICE_CLOSE);
 
 }
 //+------------------------------------------------------------------+
