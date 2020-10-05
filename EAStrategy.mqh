@@ -42,7 +42,7 @@ protected:
 //=========
 public:
 //=========
-EAStrategy();
+EAStrategy(int strategyType);
 ~EAStrategy();
 
    virtual int Type() const {return _STRATEGY;};
@@ -54,7 +54,7 @@ EAStrategy();
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-EAStrategy::EAStrategy() {
+EAStrategy::EAStrategy(int strategyType) {
 
    #ifdef _DEBUG_STRATEGY
       Print(__FUNCTION__);
@@ -81,8 +81,9 @@ EAStrategy::EAStrategy() {
       #endif
    }
 
-   // 1/ Create the new Technincals object
-   tech=new EATechnicalParameters(usp.baseReference); // Using the base ref as this is the main strategy
+
+   // 1/ Create the new Technincals object(s)
+   tech=new EATechnicalParameters(strategyType); // Using the base ref as this is the main strategy
    if (CheckPointer(tech)==POINTER_INVALID) {
       ss="EAStrategy -> ERROR created technical object";
          #ifdef _DEBUG_STRATEGY
@@ -98,8 +99,8 @@ EAStrategy::EAStrategy() {
       #endif
    }
 
-   // 2/ Create a input/output object passing it the new technical values
-   io=new EAInputsOutputs(tech);
+   // 2/ Create a input/output object 
+   io=new EAInputsOutputs(strategyType);
    if (CheckPointer(io)==POINTER_INVALID) {
       ss="EAStrategy -> ERROR created input/output object";
          #ifdef _DEBUG_STRATEGY
@@ -116,7 +117,7 @@ EAStrategy::EAStrategy() {
    }
 
    // 3/ create a new network to train based on the dataframe if needed
-   nn=new EANeuralNetwork(usp.baseReference,io); // base refer here in the main NN number
+   nn=new EANeuralNetwork(strategyType,io); // base refer here in the main NN number
    if (CheckPointer(nn)==POINTER_INVALID) {
       ss="EAStrategy -> ERROR created neural network object";
          #ifdef _DEBUG_STRATEGY
@@ -126,7 +127,7 @@ EAStrategy::EAStrategy() {
       ExpertRemove();
    } else {
       #ifdef _DEBUG_STRATEGY  
-         ss=StringFormat("EAStrategy -> Using base strategy number:%d",usp.baseReference);
+         ss=StringFormat("EAStrategy -> Using base strategy number:%d",strategyType);
          writeLog
          pss
       #endif 
@@ -172,8 +173,8 @@ EAEnum EAStrategy::waitOnTriggers() {
    #endif
 
    // Inputs for the current bar Outputs are returned
-   io.getInputs(1);
-   io.getOutputs(1);
+   io.getInputs();
+   io.getOutputs();
 
 
    nn.networkForcast(io.inputs,io.outputs);        // ask the NN to forcast a output(s)
@@ -313,9 +314,9 @@ EAEnum EAStrategy::runOnBar() {
    //if (t.sessionTimes()) return retValue;
 
    if (LOAD_HISTORY) {
-      io.getInputs(1);
-      io.getOutputs(1);
-      io.getHistory(tech);
+      io.getInputs();
+      io.getOutputs();
+      //io.getHistory(tech);
       printf("System waiting to load history ....");
       return _NO_ACTION;
    }
@@ -326,8 +327,8 @@ EAEnum EAStrategy::runOnBar() {
          ss=StringFormat(" -> Building new DF first time %d",delay);
          printf(ss);
       #endif
-      io.getInputs(1);   
-      io.getOutputs(1); 
+      io.getInputs();   
+      io.getOutputs(); 
       if (delay>10) {
          nn.buildDataFrame(io);
       }

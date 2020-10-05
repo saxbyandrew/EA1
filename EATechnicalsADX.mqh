@@ -8,8 +8,6 @@
 #property version   "1.00"
 
 
-
-
 #include "EATechnicalsBase.mqh"
 
 #include <Indicators\Trend.mqh>
@@ -20,24 +18,24 @@ class EATechnicalsADX : public EATechnicalsBase {
 
 //=========
 private:
-//=========
    string   ss;
+
    int      getAbsoluteBarCount(ENUM_TIMEFRAMES period);
    void     ADXGetHistory(ENUM_TIMEFRAMES period);
+   CiADX    adx;  
 
 //=========
 protected:
 //=========
 
-   CiADX               adx;  
 
 //=========
 public:
 //=========
-   EATechnicalsADX(ENUM_TIMEFRAMES period, int maperiod);
+   EATechnicalsADX(technicals &tech);
    ~EATechnicalsADX();
 
-   double              getValue(int lookBack, int buffer);                              // lookBack=index value to look at
+   void              getValues();                              // lookBack=index value to look at
 
     // ADX
     // ADX is plotted as a single line with values ranging from a low of zero to a high of 100.
@@ -58,28 +56,26 @@ public:
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-EATechnicalsADX::EATechnicalsADX(ENUM_TIMEFRAMES p, int m) {
+EATechnicalsADX::EATechnicalsADX(technicals &tech) {
 
    #ifdef _DEBUG_ADX_MODULE
-      Print(__FUNCTION__);
-      printf("Creating ADX with period:%s and maPeriod:%d",EnumToString(period),maperiod);
-      printf("BarsCalculated:%d",adx.BarsCalculated());
-   #endif  
+      ss="EATechnicalsADX -> .... using input variables";
+      pss
+   #endif
 
-   if (!adx.Create(_Symbol,period,maperiod)) {
+   // Set the local instance struct variables
+   t.period=tech.period;
+   t.movingAverage=tech.movingAverage;
+
+   if (!adx.Create(_Symbol,t.period,t.movingAverage)) {
       #ifdef _DEBUG_ADX_MODULE
             printf("ADXSetParameters -> ERROR");
             ExpertRemove();
       #endif
    } 
 
-   // Save values in public space
-   period=p;
-   ma=m;
-
-
-
 }
+
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
@@ -139,16 +135,17 @@ void EATechnicalsADX::ADXGetHistory(ENUM_TIMEFRAMES period) {
 }
 
 
-/*
+
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-double EATechnicalsADX::ADXGetValue(int lookBack, int buffer) {
+void EATechnicalsADX::getValues() {
 
    #ifdef _DEBUG_ADX_MODULE
       Print(__FUNCTION__);
    #endif  
 
+   int finalBar;
    double mainVal, plusVal, minusVal;
    double main[];
    double plusDI[];
@@ -161,21 +158,21 @@ double EATechnicalsADX::ADXGetValue(int lookBack, int buffer) {
       printf("ADXGetValue --> iBars:%d ",iBars(_Symbol,adx.Period()));
    #endif
 
-/*
-   if (getting real values or history) {
+
+   if (0) {
         // Determine the last/first bar number where history start based on the period interval. This will determine the absolute number of bars
         // that can be used in the GetData/ history
-      finalBar=getAbsoluteBarCount(ENUM_TIMEFRAMES period);
+      finalBar=getAbsoluteBarCount(adx.Period());
 
-      if (adx.GetData(1,barNumber,0,main)>0 && 
-            adx.GetData(1,barNumber,1,plusDI)>0 && 
-            adx.GetData(1,barNumber,2,minusDI)>0) {
+      if (adx.GetData(1,1,0,main)>0 && 
+            adx.GetData(1,1,1,plusDI)>0 && 
+            adx.GetData(1,1,2,minusDI)>0) {
             #ifdef _DEBUG_ADX_MODULE
                printf("ADXGetHistory --> Success");
                for (int i=0;i<1999;i++) {
-                  printf("MAIN indx:%d Time %s value:%.2f",i,TimeToString(iTime(_Symbol,period,i)),main[i]);
-                  printf("PLUSDI indx:%d Time %s value:%.2f",i,TimeToString(iTime(_Symbol,period,i)),plusDI[i]);
-                  printf("MINUSDI indx:%d Time %s value:%.2f",i,TimeToString(iTime(_Symbol,period,i)),minusDI[i]);
+                  printf("MAIN indx:%d Time %s value:%.2f",i,TimeToString(iTime(_Symbol,adx.Period(),i)),main[i]);
+                  printf("PLUSDI indx:%d Time %s value:%.2f",i,TimeToString(iTime(_Symbol,adx.Period(),i)),plusDI[i]);
+                  printf("MINUSDI indx:%d Time %s value:%.2f",i,TimeToString(iTime(_Symbol,adx.Period(),i)),minusDI[i]);
                }
             #endif
             LOAD_HISTORY=false;
@@ -186,35 +183,26 @@ double EATechnicalsADX::ADXGetValue(int lookBack, int buffer) {
             printf("ADXGetValue --> getting real values ...");
       #endif
       adx.Refresh(-1);
-      mainVal=adx.Main(lookBack);
-      plusVal=adx.Plus(lookBack);
-      minusVal=adx.Minus(lookBack);
+      iOutputs[0]=adx.Main(1);
+      iOutputs[1]=adx.Plus(1);
+      iOutputs[2]=adx.Minus(1);
 
-      if (mainVal==EMPTY_VALUE || plusVal==EMPTY_VALUE || minusVal==EMPTY_VALUE) {       
-            ss=StringFormat("ADXGetValue --> ERROR bar time:%s period %s get value EMPTY VALUE main:%.4f plus:%.4f minus:%.4f",TimeToString(iTime(_Symbol,adx.Period(),lookBack)),EnumToString(adx.Period()),mainVal,plusVal,minusVal);
+      if (iOutputs[0]==EMPTY_VALUE || iOutputs[1]==EMPTY_VALUE || iOutputs[2]==EMPTY_VALUE) {       
+            ss=StringFormat("ADXGetValue --> ERROR bar time:%s period %s get value EMPTY VALUE main:%.4f plus:%.4f minus:%.4f",TimeToString(iTime(_Symbol,adx.Period(),1)),EnumToString(adx.Period()),iOutputs[0],iOutputs[1],iOutputs[2]);
             pss
             writeLog
-            return 0;
+            return;
       }
 
       #ifdef _DEBUG_ADX_MODULE
-            ss=StringFormat("ADXGetValue --> SUCCESS bar time:%s Main:%.5f Plus:%.5f Minus:%.5f Lookback:%d for Buffer:%d period:%s",TimeToString(iTime(_Symbol,adx.Period(),lookBack)),mainVal,plusVal,minusVal,lookBack,buffer,EnumToString(adx.Period()));
+            ss=StringFormat("ADXGetValue --> SUCCESS bar time:%s Main:%.5f Plus:%.5f Minus:%.5f period:%s",TimeToString(iTime(_Symbol,adx.Period(),1)),iOutputs[0],iOutputs[1],iOutputs[2],EnumToString(adx.Period()));
             writeLog
             pss
       #endif 
 
-      switch (buffer) {
-            case 0:  return mainVal;
-            break;
-            case 1:  return plusVal;
-            break;
-            case 2:  return minusVal;
-            break;
-      }
-
-      return 0;
-   // }
+   }
 }
+/*
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+

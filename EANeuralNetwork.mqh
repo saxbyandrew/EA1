@@ -22,7 +22,7 @@ private:
 //=========
    struct NeuralNetwork {
       int strategyNumber;
-      int typeReference;
+      int strategyType;
       int fileNumber;
       EAEnum networkType;
       int numInput;
@@ -43,7 +43,7 @@ private:
    void     createNewNetwork();
    bool     saveNetwork();
    bool     loadNetwork();
-   void     loadNetwork(int typeReference, EAInputsOutputs &io);
+   void     loadNetwork(int strategyType, EAInputsOutputs &io);
    void     trainNetwork();
 
    CAlglib  *no;
@@ -61,7 +61,7 @@ protected:
 //=========
 public:
 //=========
-EANeuralNetwork(int typeReference, EAInputsOutputs &io);
+EANeuralNetwork(int strategyType, EAInputsOutputs &io);
 ~EANeuralNetwork();
 
    CArrayDouble   *nnArray;
@@ -76,7 +76,7 @@ EANeuralNetwork(int typeReference, EAInputsOutputs &io);
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-EANeuralNetwork::EANeuralNetwork(int typeReference, EAInputsOutputs &io) {
+EANeuralNetwork::EANeuralNetwork(int strategyType, EAInputsOutputs &io) {
 
    #ifdef _DEBUG_NN
       ss="EANeuralNetwork -> Object Created ....";
@@ -94,7 +94,7 @@ EANeuralNetwork::EANeuralNetwork(int typeReference, EAInputsOutputs &io) {
 
 
    // Load the size parameters for this NN
-   loadNetwork(typeReference,io);
+   loadNetwork(strategyType,io);
 
    // OPTIMIZATION MODE
    // Check which mode we are executing in
@@ -248,8 +248,8 @@ void EANeuralNetwork::buildDataFrame(EAInputsOutputs &io) {
    if (MQLInfoInteger(MQL_OPTIMIZATION)) {  
       if (barCnt>0) {
          // Add a frame
-         io.getInputs(barCnt);
-         io.getOutputs(barCnt);
+         io.getInputs();
+         io.getOutputs();
          addDataFrameValues(io.inputs,io.outputs); 
          // Create a single line for the CSV file
          if (n.csvWriteDF) {
@@ -288,8 +288,8 @@ void EANeuralNetwork::buildDataFrame(EAInputsOutputs &io) {
          writeLog
          pss
       #endif
-      io.getInputs(barCnt);
-      io.getOutputs(barCnt);
+      io.getInputs();
+      io.getOutputs();
       addDataFrameValues(io.inputs,io.outputs); 
       barCnt--;
    }
@@ -303,12 +303,12 @@ void EANeuralNetwork::buildDataFrame(EAInputsOutputs &io) {
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-void EANeuralNetwork::loadNetwork(int typeReference, EAInputsOutputs &io) {
+void EANeuralNetwork::loadNetwork(int strategyType, EAInputsOutputs &io) {
 
    string sql;
    int request, fileHandle, numInput, numOutput;
 
-   sql=StringFormat("SELECT * FROM NNETWORKS WHERE strategyNumber=%d AND typeReference=%d",usp.strategyNumber,typeReference);
+   sql=StringFormat("SELECT * FROM NNETWORKS WHERE strategyNumber=%d AND strategyType=%d",usp.strategyNumber,strategyType);
    request=DatabasePrepare(_mainDBHandle,sql);
    if (request==INVALID_HANDLE) {
       #ifdef _DEBUG_NN
@@ -330,7 +330,7 @@ void EANeuralNetwork::loadNetwork(int typeReference, EAInputsOutputs &io) {
       #endif   
    } else {
          DatabaseColumnInteger(request,0,n.strategyNumber);
-         DatabaseColumnInteger(request,1,n.typeReference);
+         DatabaseColumnInteger(request,1,n.strategyType);
          DatabaseColumnInteger(request,2,n.fileNumber);
          DatabaseColumnInteger(request,3,n.networkType);
          DatabaseColumnInteger(request,4,n.numInput);
@@ -359,7 +359,7 @@ void EANeuralNetwork::loadNetwork(int typeReference, EAInputsOutputs &io) {
    if (numInput!=n.numInput || numOutput!=n.numOutput) {
       n.numInput=numInput;
       n.numOutput=numOutput;
-      sql=StringFormat("UPDATE NNETWORKS SET numInput=%d, numOutput=%d WHERE strategyNumber=%d AND typeReference=%d",n.numInput,n.numOutput,usp.strategyNumber,typeReference);
+      sql=StringFormat("UPDATE NNETWORKS SET numInput=%d, numOutput=%d WHERE strategyNumber=%d AND strategyType=%d",n.numInput,n.numOutput,usp.strategyNumber,strategyType);
       if (!DatabaseExecute(_mainDBHandle,sql)) { 
          ss=sql;
          #ifdef _DEBUG_NN

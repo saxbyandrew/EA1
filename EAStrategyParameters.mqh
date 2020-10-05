@@ -49,10 +49,10 @@ EAStrategyParameters();
       int               inLossClosePosition;
       int               inLossOpenMartingale;
       int               inLossOpenLongHedge;
-      int               baseReference;
-      int               longReference;
-      int               shortReference;
-      int               martingaleReference;
+      int               basestrategyType;
+      int               longstrategyType;
+      int               shortstrategyType;
+      int               martingalestrategyType;
       int               nnType;
       int               layer1;
       int               layer2;
@@ -162,10 +162,10 @@ void EAStrategyParameters::resetValues() {
       sb.fpts=0;                 // same
       sb.flts=0;                 // Dollar Values
       sb.nnType=0;
-      sb.baseReference=0;
-      sb.longReference=0;
-      sb.shortReference=0;
-      sb.martingaleReference=0;
+      sb.basestrategyType=0;
+      sb.longstrategyType=0;
+      sb.shortstrategyType=0;
+      sb.martingalestrategyType=0;
       sb.maxMg=0;          
       sb.longHLossamt=0;
       sb.mgMultiplier=0;  
@@ -217,10 +217,10 @@ void EAStrategyParameters::loadSQLStrategy() {
       DatabaseColumnInteger   (request,9,sb.inLossClosePosition);
       DatabaseColumnInteger   (request,10,sb.inLossOpenMartingale);
       DatabaseColumnInteger   (request,11,sb.inLossOpenLongHedge);
-      DatabaseColumnInteger   (request,12,sb.baseReference);
-      DatabaseColumnInteger   (request,13,sb.longReference);
-      DatabaseColumnInteger   (request,14,sb.shortReference);
-      DatabaseColumnInteger   (request,15,sb.martingaleReference);
+      DatabaseColumnInteger   (request,12,sb.basestrategyType);
+      DatabaseColumnInteger   (request,13,sb.longstrategyType);
+      DatabaseColumnInteger   (request,14,sb.shortstrategyType);
+      DatabaseColumnInteger   (request,15,sb.martingalestrategyType);
       DatabaseColumnDouble    (request,16,sb.lotSize);
       DatabaseColumnDouble    (request,17,sb.fptl);
       DatabaseColumnDouble    (request,18,sb.fltl);

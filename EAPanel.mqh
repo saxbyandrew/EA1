@@ -481,7 +481,7 @@ void EAPanel::mainInfoPanel() {
       string ss; 
    #endif 
 
-   printf("1111111");
+   //printf("1111111");
    updateInfoLabel(0,0, "Strategy Number"); 
 
 

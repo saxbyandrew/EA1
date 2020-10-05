@@ -18,10 +18,10 @@
 //#define _DEBUG_MAIN_LOOP
 //#define _DEBUG_STRATEGY_TIME
 //#define _DEBUG_TECHNICAL_PARAMETERS
-//#define _DEBUG_NN_INPUTS_OUTPUTS
+#define _DEBUG_NN_INPUTS_OUTPUTS
 //#define _DEBUG_NN
-#define _DEBUG_STRATEGY
-#define _DEBUG_STRATEGY_TRIGGERS
+//#define _DEBUG_STRATEGY
+//#define _DEBUG_STRATEGY_TRIGGERS
 //#define _DEBUG_DATAFRAME
 //#define _DEBUG_LONG 
 //#define _DEBUG_LABEL
@@ -43,10 +43,11 @@
 //#define _DEBUG_QQE
 //#define _DEBUG_ZIGZAG
 
-#define _DEBUG_OPTIMIZATION
+//#define _DEBUG_OPTIMIZATION
 
 #include <Object.mqh>
 #include <Arrays\List.mqh>
+#include <Arrays\ArrayObj.mqh>
 
 
 //Shortcuts / macros
@@ -81,6 +82,7 @@ bool                    ENABLE_EVENTS, LOAD_HISTORY;
 unsigned                ACTIVE_HEDGE;
 unsigned                TRADING_CIRCUIT_BREAKER;
 CList                   longPositions, shortPositions, martingalePositions, longHedgePositions;
+CArrayObj               indicators;
 
 EAMain                  *expertAdvisor; 
 EAPanel                 *infoPanel; 
@@ -111,16 +113,16 @@ int OnInit() {
     _historyStart=(datetime)SeriesInfoInteger(Symbol(),Period(),SERIES_SERVER_FIRSTDATE); 
 
     Print("Total number of bars for the symbol-period at this moment = ", 
-         SeriesInfoInteger(Symbol(),Period(),SERIES_BARS_COUNT)); 
-  
-   Print("The first date for the symbol-period at this moment = ", 
-         (datetime)SeriesInfoInteger(Symbol(),Period(),SERIES_FIRSTDATE)); 
-  
-   Print("The first date in the history for the symbol-period on the server = ", 
-         (datetime)SeriesInfoInteger(Symbol(),Period(),SERIES_SERVER_FIRSTDATE)); 
-  
-   Print("Symbol data are synchronized = ", 
-         (bool)SeriesInfoInteger(Symbol(),Period(),SERIES_SYNCHRONIZED)); 
+    SeriesInfoInteger(Symbol(),Period(),SERIES_BARS_COUNT)); 
+    
+    Print("The first date for the symbol-period at this moment = ", 
+        (datetime)SeriesInfoInteger(Symbol(),Period(),SERIES_FIRSTDATE)); 
+    
+    Print("The first date in the history for the symbol-period on the server = ", 
+        (datetime)SeriesInfoInteger(Symbol(),Period(),SERIES_SERVER_FIRSTDATE)); 
+    
+    Print("Symbol data are synchronized = ", 
+        (bool)SeriesInfoInteger(Symbol(),Period(),SERIES_SYNCHRONIZED)); 
 
     MqlDateTime t;
     TimeToStruct(TimeCurrent(),t);
@@ -162,6 +164,7 @@ int OnInit() {
         #endif 
     }
 
+
     showPanel {
         ip=new EAPanel;                                                                          
         if (CheckPointer(ip)==POINTER_INVALID) {
@@ -186,7 +189,7 @@ int OnInit() {
         }
         
     }
-    
+
     expertAdvisor=new EAMain;                                  // Instantiate the EA                                           
     if (CheckPointer(expertAdvisor)==POINTER_INVALID) {
         #ifdef _DEBUG_MYEA
@@ -220,11 +223,13 @@ void OnDeinit(const int reason) {
     delete(strategyParameters);
     showPanel {infoPanel.Destroy(reason);}
     EventKillTimer();
+    
 }
 //+------------------------------------------------------------------+
 //| Expert tick function                                             |
 //+------------------------------------------------------------------+
 void eaStrategyLoad() {
+
 
     strategyParameters=new EAStrategyParameters;
     if (CheckPointer(strategyParameters)==POINTER_INVALID) {
@@ -260,6 +265,7 @@ void eaStrategyLoad() {
             pss
         #endif 
     }
+    
 
 }
 
@@ -272,6 +278,7 @@ void eaStrategyUpdate() {
     delete strategyParameters;
 
     eaStrategyLoad();
+    
 
 }
 //+------------------------------------------------------------------+
@@ -349,6 +356,7 @@ void OnChartEvent(const int id,         // event ID
                   const string& sparam) // event parameter of the string type
 
 {
+    
 
     if (MQLInfoInteger(MQL_OPTIMIZATION)) return;
 
@@ -359,6 +367,7 @@ void OnChartEvent(const int id,         // event ID
     }
     
     ip.ChartEvent(id,lparam,dparam,sparam);
+    
 
 }
 //+------------------------------------------------------------------+
