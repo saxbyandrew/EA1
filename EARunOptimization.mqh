@@ -25,12 +25,12 @@ private:
 
    string   ss;
 
-   void     addValue(double val);
-   void     copyValuesToDatabase(int row);
+   void     copyValuesToDatabase(int row, ulong passNumber);
 
    struct results {
       double vp[32];          // Metrics Profit loss etc
       double vs[12];          // Strategy
+      double vn[10];          // Network
       double vv[20][14];      // Technicals
    };
    results v[1];
@@ -103,7 +103,8 @@ int EARunOptimization::OnTesterInit(void) {
    //--- create or open the database in the common terminal folder
    _optimizeDBHandle=DatabaseOpen(_optimizeDBName, DATABASE_OPEN_READWRITE | DATABASE_OPEN_COMMON| DATABASE_OPEN_CREATE);
    if (_optimizeDBHandle==INVALID_HANDLE) {
-      printf("OnTesterInit -> Optimization DB open failed with code %d",GetLastError());
+      ss=StringFormat("OnTesterInit -> Optimization DB open failed with code %d",GetLastError());
+      pss
       ExpertRemove();
    } else {
       ss="OnTesterInit -> Optimization DB open success";
@@ -112,7 +113,7 @@ int EARunOptimization::OnTesterInit(void) {
 
    // ----------------------------------------------------------------
 
-   string sql="DROP TABLE PASSES;DROP TABLE STRATEGY;DROP TABLE TECHNICALS;";
+   string sql="DROP TABLE PASSES; DROP TABLE STRATEGY; DROP TABLE TECHNICALS; DROP TABLE NNETWORK;";
    if(!DatabaseExecute(_optimizeDBHandle,sql)) {
       ss=StringFormat("OnTesterInit -> Failed to drop table PASSES with code %d", GetLastError());
       pss
@@ -133,8 +134,8 @@ void EARunOptimization::createSQLOptimizationTables(string sql) {
 
    if (!DatabaseExecute(_optimizeDBHandle, sql)) {
       ss=StringFormat("createSQLOptimizationTables -> create table failed with code %d", GetLastError());
+      ss=sql;
       pss
-      printf(sql);
       ExpertRemove();
    } else {
       #ifdef _DEBUG_OPTIMIZATION
@@ -149,10 +150,11 @@ void EARunOptimization::createSQLOptimizationTables(string sql) {
 //+------------------------------------------------------------------+
 void EARunOptimization::createSQLOptimizationTables() {
 
+   string sql;
+
    string ss="createSQLOptimizationTables -> ....";
    pss
    
-   string sql;
    // ----------------------------------------------------------------
    sql =   "CREATE TABLE PASSES ("
       "reloadStrategy INT,"
@@ -187,7 +189,7 @@ void EARunOptimization::createSQLOptimizationTables() {
       "statPROFITTRADESAVGCON REAL,"
       "statLOSSTRADESAVGCON REAL,"
       "onTester REAL,"
-      "IDX INT)";
+      "passNumber REAL)";
 
       createSQLOptimizationTables(sql);
 
@@ -204,17 +206,31 @@ void EARunOptimization::createSQLOptimizationTables() {
       "maxdailyhold        REAL,"
       "maxmg               REAL,"
       "mgmulti             REAL,"
-      "longHLossamt        REAL, IDX INT)";
+      "longHLossamt        REAL,"
+      "passNumber REAL)";
+
+      createSQLOptimizationTables(sql);
+
+   // ----------------------------------------------------------------
+   sql =   "CREATE TABLE NNETWORK ("
+      "networkType            REAL,"
+      "dfSize                 REAL," 
+      "triggerThreshold       REAL,"
+      "trainWeightsThreshold  REAL,"
+      "nnLayer1               REAL,"
+      "nnLayer2               REAL,"
+      "restarts               REAL,"
+      "decay                  REAL,"
+      "wStep                  REAL,"
+      "maxITS                 REAL,"
+      "passNumber REAL)";
 
       createSQLOptimizationTables(sql);
 
    // ----------------------------------------------------------------
    sql = "CREATE TABLE TECHNICALS ("
-      "strategyNumber	REAL,"
-      "strategyType	REAL,"
+      "passNumber	REAL,"
       "indicatorName	TEXT,"
-      "instanceNumber	REAL,"
-      "instanceType	REAL,"
       "period	REAL,"
       "movingAverage	REAL,"
       "slowMovingAverage	REAL,"
@@ -228,7 +244,12 @@ void EARunOptimization::createSQLOptimizationTables() {
       "kijunSen	REAL,"
       "spanB	REAL,"
       "kPeriod	REAL,"
-      "dPeriod	REAL)";
+      "dPeriod	REAL,"
+      "useBuffers REAL,"
+      "ttl REAL,"
+      "inputPrefix,"
+      "normalizationMin REAL,"
+      "normalizationMax REAL)";
 
       createSQLOptimizationTables(sql);
 
@@ -251,6 +272,8 @@ void EARunOptimization::OnTesterPass() {
          end of a single pass in the OnTester() handler.
    */
    string ss="OnTesterPass ->  ....";
+   pss
+   
 
 
       string name = "";  // Public name/frame label
@@ -259,63 +282,64 @@ void EARunOptimization::OnTesterPass() {
       double val  =0.0; // Single numerical value of the frame
       //---
       FrameNext(pass,name,id,val);
-      Print(" ---> Name: ",name," pass: "+IntegerToString(pass)+" frame:" +DoubleToString(val)); //DoubleToString(v[1].vp[2],2), "SHARPE: ",DoubleToString(v[1].vp[5],2));
+      //ss=StringFormat(" ---> Name: %s pass:%u",name,DoubleToString(pass));
+      //pss
+      
 
 }
+
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-void EARunOptimization::addValue(double val) {
-
-   static int row=0;
-   static int col=0;
-
-   // Bump the row counter and reset the col counter
-   if (val==EMPTY_VALUE) {
-      ++row;
-      col=0;
-      return;
-   }
-
-   // Save the value
-   v[0].vv[row][col++]=val;
-
-
-}
-//+------------------------------------------------------------------+
-//|                                                                  |
-//+------------------------------------------------------------------+
-void EARunOptimization::copyValuesToDatabase(int row) {
+void EARunOptimization::copyValuesToDatabase(int row, ulong passNumber) {
 
    string sql;
 
+
    #ifdef _USE_ADX
       // ----------------------------------------------------------------
-   if (v[0].vv[row][0]==1) {  // ADX
-      sql=StringFormat(
-         "INSERT INTO TECHNICALS (strategyNumber,strategyType,indicatorName,instanceNumber,instanceType,"
-         "period,movingAverage) VALUES (%d,%d,%s,%d,%d,%.5f,%.5f)",
-            usp.strategyNumber,0,"ADX",0,0,v[0].vv[row][1],v[0].vv[row][2]);
-   }
+      if (v[0].vv[row][0]==1) { // Check the indicator number to save a string indicator name
+      // ----------------------------------------------------------------
+      sql=StringFormat("INSERT INTO TECHNICALS (passNumber,indicatorName,"
+         "period,movingAverage) VALUES (%u,'%s',%.5f,%.5f)",
+            passNumber,"ADX",v[0].vv[row][1],v[0].vv[row][2]);
+            ss=sql;
+            pss
+      }
    #endif
 
    #ifdef _USE_RSI
       // ----------------------------------------------------------------
    if (v[0].vv[row][0]==2) {  // RSI
-      sql=StringFormat(
-         "INSERT INTO TECHNICALS (strategyNumber,strategyType,indicatorName,instanceNumber,instanceType,"
-         "period,movingAverage,appliedPrice) VALUES (%d,%d,%s,%d,%d,%.5f,%.5f,%.5f)",
-            usp.strategyNumber,0,"RSI",0,0,v[0].vv[row][1],v[0].vv[row][2],v[0].vv[row][3]);
-   }
+      // ----------------------------------------------------------------
+      sql=StringFormat("INSERT INTO TECHNICALS (passNumber,indicatorName,"
+         "period,movingAverage,appliedPrice) VALUES (%u,'%s',%.5f,%.5f,%.5f)",
+            passNumber,"RSI",v[0].vv[row][1],v[0].vv[row][2],v[0].vv[row][3]);
+            ss=sql;
+            pss
+      }
+   #endif
+
+
+   #ifdef _USE_MACD
+      // ----------------------------------------------------------------
+   if (v[0].vv[row][0]==9) {  // MACD
+      // ----------------------------------------------------------------
+      sql=StringFormat("INSERT INTO TECHNICALS (passNumber,indicatorName,"
+         "period,slowMovingAverage,fastMovingAverage,signalPeriod,appliedPrice) VALUES (%u,'%s',%.5f,%.5f,%.5f,%.5f,%.5f)",
+            passNumber,"MACD",v[0].vv[row][1],v[0].vv[row][2],v[0].vv[row][3],v[0].vv[row][4],v[0].vv[row][5]);
+            ss=sql;
+            pss
+      }
    #endif
 
       
    if (!DatabaseExecute(_optimizeDBHandle, sql)) {
-      ss=StringFormat("OnTesterDeinit -> Failed to insert ADX with code %d", GetLastError());
+      ss=StringFormat("OnTesterDeinit -> Failed to insert with code %d", GetLastError());
       pss
    } else {
       #ifdef _DEBUG_OPTIMIZATION
-         ss=" -> Insert into ADX succcess";
+         ss=" -> INSERT INTO TECHNICALS succcess";
          pss
       #endif
    }  
@@ -324,7 +348,8 @@ void EARunOptimization::copyValuesToDatabase(int row) {
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-void EARunOptimization::OnTester(const double onTesterValue) {
+void EARunOptimization::OnTester(const double val) {
+
 
    /*
       Tester - this event is generated after completion of Expert Advisor testing 
@@ -335,17 +360,18 @@ void EARunOptimization::OnTester(const double onTesterValue) {
       criterion for genetic optimization of input parameters.
    */
 
+   int row=0, col=0; // Counters for technical array
+
    #ifdef _DEBUG_OPTIMIZATION
       string ss="OnTester ->  ....";
-      writeLog;
       pss
    #endif
 
-   if (onTesterValue>0) { 
+   //if (onTesterValue>0) { 
       
 
   // ----------------------------------------------------------------
-      v[0].vp[0]=0;
+      v[0].vp[0]=0;  // Reserved to save the number of technical indicators used in the strategy/pass
       v[0].vp[1]=TesterStatistics(STAT_WITHDRAWAL);
       v[0].vp[2]=TesterStatistics(STAT_PROFIT);
       v[0].vp[3]=TesterStatistics(STAT_GROSS_PROFIT);
@@ -376,8 +402,8 @@ void EARunOptimization::OnTester(const double onTesterValue) {
       v[0].vp[28]=TesterStatistics(STAT_PROFIT_LONGTRADES);
       v[0].vp[29]=TesterStatistics(STAT_PROFITTRADES_AVGCON);
       v[0].vp[30]=TesterStatistics(STAT_LOSSTRADES_AVGCON);
-      v[0].vp[31]=onTesterValue;
-  // ----------------------------------------------------------------
+      v[0].vp[31]=val;
+   // ----------------------------------------------------------------
       v[0].vs[0]=ilsize;
       v[0].vs[1]=ifptl;
       v[0].vs[2]=ifltl;
@@ -391,37 +417,69 @@ void EARunOptimization::OnTester(const double onTesterValue) {
       v[0].vs[10]=imaxmg;
       v[0].vs[11]=imgmulti;
 
+   // ----------------------------------------------------------------
+      v[0].vn[0]=inetworkType;
+      v[0].vn[1]=idataFrameSize;
+      v[0].vn[2]=itriggerThreshold;
+      v[0].vn[3]=itrainWeightsThreshold;
+      v[0].vn[4]=innLayer1;
+      v[0].vn[5]=innLayer2;
+      v[0].vn[6]=irestarts;
+      v[0].vn[7]=idecay;
+      v[0].vn[8]=iwStep;
+      v[0].vn[9]=imaxITS;
+      
 
       #ifdef _USE_ADX
       // ----------------------------------------------------------------
       // v[0].vv[0][0,1,2]
-      addValue(i1a_indicatorNumber);
-      addValue(i1a_period);
-      addValue(i1a_movingAverage);
-      addValue(EMPTY_VALUE); // Bump row count
+         // Save the value
+      v[0].vv[row][col++]=i1a_indicatorNumber;
+      v[0].vv[row][col++]=i1a_period;
+      v[0].vv[row][col++]=i1a_movingAverage;
+      row++; col=0;
 
       // v[0].vv[1].[0,1,2]
-      addValue(i1b_indicatorNumber);
-      addValue(i1b_period);
-      addValue(i1b_movingAverage);
-      addValue(EMPTY_VALUE); // Bump row count
-
+      v[0].vv[row][col++]=i1b_indicatorNumber;
+      v[0].vv[row][col++]=i1b_period;
+      v[0].vv[row][col++]=i1b_movingAverage;
+      row++; col=0;
       #endif
 
       #ifdef _USE_RSI
       // ----------------------------------------------------------------
-      addValue(i2a_indicatorNumber);
-      addValue(i2a_period);
-      addValue(i2a_movingAverage);
-      addValue(i2a_appliedPrice);
-      addValue(EMPTY_VALUE); // Bump row count
+      v[0].vv[row][col++]=i2a_indicatorNumber;
+      v[0].vv[row][col++]=i2a_period;
+      v[0].vv[row][col++]=i2a_movingAverage;
+      v[0].vv[row][col++]=i2a_appliedPrice;
+      row++; col=0;
 
-      addValue(i2b_indicatorNumber);
-      addValue(i2b_period);
-      addValue(i2b_movingAverage);
-      addValue(i2b_appliedPrice);
-      addValue(EMPTY_VALUE); // Bump row count
+      v[0].vv[row][col++]=i2b_indicatorNumber;
+      v[0].vv[row][col++]=i2b_period;
+      v[0].vv[row][col++]=i2b_movingAverage;
+      v[0].vv[row][col++]=i2b_appliedPrice;
+      row++; col=0;
       #endif
+
+      #ifdef _USE_MACD
+      // ----------------------------------------------------------------
+      v[0].vv[row][col++]=i9a_indicatorNumber;
+      v[0].vv[row][col++]=i9a_period;
+      v[0].vv[row][col++]=i9a_slowMovingAverage;
+      v[0].vv[row][col++]=i9a_fastMovingAverage;
+      v[0].vv[row][col++]=i9a_signalPeriod;
+      v[0].vv[row][col++]=i9a_appliedPrice;
+      row++; col=0;
+
+      v[0].vv[row][col++]=i9b_indicatorNumber;
+      v[0].vv[row][col++]=i9b_period;
+      v[0].vv[row][col++]=i9b_slowMovingAverage;
+      v[0].vv[row][col++]=i9b_fastMovingAverage;
+      v[0].vv[row][col++]=i9b_signalPeriod;
+      v[0].vv[row][col++]=i9b_appliedPrice;
+      row++; col=0;
+      #endif
+      
 /*
       #ifdef _USE_MFI
       // ----------------------------------------------------------------
@@ -567,6 +625,8 @@ void EARunOptimization::OnTester(const double onTesterValue) {
       #endif
 */
 
+      v[0].vp[0]=row; // Save the number of indicators we have for this strategy, so it can be inserted to the DB
+
       //--- create a data frame and send it to the terminal
       if (!FrameAdd(MQLInfoString(MQL_PROGRAM_NAME)+"_stats", STATS_FRAME,v[0].vp[0], v)) {
          ss=StringFormat(" -> Stats Frame add error: ", GetLastError());
@@ -574,10 +634,11 @@ void EARunOptimization::OnTester(const double onTesterValue) {
       } else {
          #ifdef _DEBUG_OPTIMIZATION
             ss=StringFormat(" -> Stats Frame added:%.2f",v[0].vp[0]);  
+            writeLog
             pss
          #endif
       }
-   }
+   //}
 }
 
 //+------------------------------------------------------------------+
@@ -598,36 +659,45 @@ void EARunOptimization::OnTesterDeinit() {
    pss
 
    //--- variables for reading frames
-   string         name, sql;
-   ulong          idx;
+   string         name, sql, sql1, sql2;
+   ulong          passNumber;
    long           id;
    double         value;
+   int            row;
 
    //--- move the frame pointer to the beginning
-   FrameFirst();
+   if (FrameFirst()) {
+      Print("FrameFirst SUCCESS");
+   } else {
+      Print("FrameFirst ERROR");
+   };
    FrameFilter("", STATS_FRAME); // select frames with trading statistics for further work
 
-   while (FrameNext(idx, name, id,v[0].vp[0], v)) {
+   while (FrameNext(passNumber, name, id,v[0].vp[0], v)) {
 
-      ss="In FrameNext Loop ->  ....";
+      ss=StringFormat("In FrameNext Loop -> %u %s <%.5f> ....",passNumber,name,v[0].vp[1]);
       pss
+
 
       //if (v[0].vp[2]<100) continue;
       // ----------------------------------------------------------------
-      sql=StringFormat("INSERT INTO PASSES ("
+      sql1="INSERT INTO PASSES ("
       "reloadStrategy, statWITHDRAWAL, statPROFIT, statGROSSPROFIT, statGROSSLOSS, statMAXPROFITTRADE, statMAXLOSSTRADE, statCONPROFITMAX, statCONPROFITMAXTRADES,"
       "statMAXCONWINS, statMAXCONPROFITTRADES, statBALANCEMIN, statBALANCEDD, statEQUITYDDPERCENT, statEQUITYDDRELPERCENT, statEQUITYDDRELATIVE,"
       "statEXPECTEDPAYOFF, statRECOVERYFACTOR, statSHARPERATIO, statMINMARGINLEVEL, statCUSTOMONTESTER, statDEALS,"
       "statTRADES, statPROFITTRADES, statLOSSTRADES, statSHORTTRADES, statLONGTRADES, statPROFITSHORTTRADES, statPROFITLONGTRADES, statPROFITTRADESAVGCON, statLOSSTRADESAVGCON,"
-      "onTester, IDX"
-      ") VALUES (%d,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%d)",
+      "onTester, passNumber"
+      ")";
+      sql2=StringFormat(" VALUES (%d,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%u)",
       v[0].vp[0],v[0].vp[1],v[0].vp[2],v[0].vp[3],v[0].vp[4],v[0].vp[5],
       v[0].vp[6],v[0].vp[7],v[0].vp[8],v[0].vp[9],v[0].vp[10],v[0].vp[11],
       v[0].vp[12],v[0].vp[13],v[0].vp[14],v[0].vp[15],v[0].vp[16],v[0].vp[17],
       v[0].vp[18],v[0].vp[19],v[0].vp[20],v[0].vp[21],v[0].vp[22],v[0].vp[23],
       v[0].vp[24],v[0].vp[25],v[0].vp[26],v[0].vp[27],v[0].vp[28],v[0].vp[29],
       v[0].vp[30],v[0].vp[31],
-      idx);
+      passNumber);
+
+      sql=sql1+sql2;
    
       if (!DatabaseExecute(_optimizeDBHandle, sql)) {
          ss=StringFormat("OnTesterDeinit -> Failed to insert PASSES with code %d", GetLastError());
@@ -640,11 +710,45 @@ void EARunOptimization::OnTesterDeinit() {
          #endif
       }  
 
+
+ // ----------------------------------------------------------------
+   sql =   "CREATE TABLE NNETWORK ("
+      "networkType            REAL,"
+      "dfSize                 REAL," 
+      "triggerThreshold       REAL,"
+      "trainWeightsThreshold  REAL,"
+      "nnLayer1               REAL,"
+      "nnLayer2               REAL,"
+      "restarts               REAL,"
+      "decay                  REAL,"
+      "wStep                  REAL,"
+      "maxITS                 REAL,"
+      "passNumber REAL)";
+
+            // ----------------------------------------------------------------
+      sql=StringFormat("INSERT INTO NNETWORK ("
+      "networkType,dfSize,triggerThreshold,trainWeightsThreshold,nnLayer1,nnLayer2,restarts,decay,wStep,maxITS,passNumber "
+      ") VALUES (%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%u)",
+      v[0].vn[0],v[0].vn[1],v[0].vn[2],v[0].vn[3],v[0].vn[4],v[0].vn[5],v[0].vn[6],v[0].vn[7],v[0].vn[8],v[0].vn[9],passNumber);
+      
+      
+      if (!DatabaseExecute(_optimizeDBHandle, sql)) {
+         ss=StringFormat("OnTesterDeinit -> Failed to insert NNETWORK with code %d", GetLastError());
+         pss
+         break;
+      } else {
+         #ifdef _DEBUG_OPTIMIZATION
+            ss=" -> Insert into STRATEGY succcess";
+            pss
+         #endif
+      } 
+
       // ----------------------------------------------------------------
       sql=StringFormat("INSERT INTO STRATEGY ("
-      "lotSize,fptl,fltl,fpts,flts,maxlong,maxshort,maxdaily,maxdailyhold,maxmg,mgmulti,longHLossamt,IDX "
-      ") VALUES (%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%d)",
-      v[0].vs[0],v[0].vs[1],v[0].vs[2],v[0].vs[3],v[0].vs[4],v[0].vs[5],v[0].vs[6],v[0].vs[7],v[0].vs[8],v[0].vs[9],v[0].vs[10],v[0].vs[11],idx);
+      "lotSize,fptl,fltl,fpts,flts,maxlong,maxshort,maxdaily,maxdailyhold,maxmg,mgmulti,longHLossamt,passNumber "
+      ") VALUES (%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%u)",
+      v[0].vs[0],v[0].vs[1],v[0].vs[2],v[0].vs[3],v[0].vs[4],v[0].vs[5],v[0].vs[6],v[0].vs[7],v[0].vs[8],v[0].vs[9],v[0].vs[10],v[0].vs[11],passNumber);
+      
       
       if (!DatabaseExecute(_optimizeDBHandle, sql)) {
          ss=StringFormat("OnTesterDeinit -> Failed to insert STRATEGY with code %d", GetLastError());
@@ -657,10 +761,11 @@ void EARunOptimization::OnTesterDeinit() {
          #endif
       }  
 
+
       // ----------------------------------------------------------------
-      for (int row=0;row<20;row++) {
-         copyValuesToDatabase(row);
-      }
+      for (int row=0;row<v[0].vp[0];row++) copyValuesToDatabase(row,passNumber);
+
+   
    }
 }
 
@@ -733,7 +838,9 @@ int EARunOptimization::buildSQLTableRequest(string indicatorName, int idx) {
    #ifdef _DEBUG_OPTIMIZATION
       ss="buildSQLTableRequest -> ....";
       pss
-      printf(sql);
+      writeLog
+      ss=sql;
+      writeLog
    #endif
 
    int request=DatabasePrepare(_optimizeDBHandle,sql);
@@ -761,6 +868,7 @@ void EARunOptimization::reloadValues(double &theArray[], string indicatorName,in
       #ifdef _DEBUG_OPTIMIZATION
          ss=StringFormat("reloadValues -> Table:%s index:%d, failed with code %d",indicatorName,idx,GetLastError());
          pss
+         writeLog
          ExpertRemove();
       #endif   
    } else {
@@ -768,6 +876,7 @@ void EARunOptimization::reloadValues(double &theArray[], string indicatorName,in
       #ifdef _DEBUG_OPTIMIZATION
          ss="reloadValues -> success ....";
          pss
+         writeLog
       #endif
    }
 
@@ -777,6 +886,7 @@ void EARunOptimization::reloadValues(double &theArray[], string indicatorName,in
             #ifdef _DEBUG_OPTIMIZATION
                ss=StringFormat("reloadValues -> indicator type:%s was not selected active",indicatorName);
                pss
+               writeLog
             #endif
          return; // Not being used
       } else {
@@ -787,6 +897,7 @@ void EARunOptimization::reloadValues(double &theArray[], string indicatorName,in
             #ifdef _DEBUG_OPTIMIZATION
                ss=StringFormat("%s -> index:%d value:%1.2f",indicatorName,i,theArray[i]);
                pss
+               writeLog
             #endif
          }
       }

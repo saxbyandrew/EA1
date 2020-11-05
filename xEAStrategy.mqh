@@ -9,7 +9,7 @@
 
 
 #include "EAEnum.mqh"
-#include "EATimingBase.mqh"
+#include "EATiming.mqh"
 #include "EAStrategyBase.mqh"
 #include "EANeuralNetwork.mqh"
 #include "EAInputsOutputs.mqh"
@@ -27,7 +27,7 @@ private:
 //=========
 
    string                  ss;
-   EATimingBase            *t;          // Timing Module
+   EATiming            *t;          // Timing Module
    EATechnicalParameters   *tech;
    EAInputsOutputs         *io;        // NN Input Output Module
    EANeuralNetwork         *nn;        // The network 
@@ -65,7 +65,7 @@ EAStrategy::EAStrategy(int strategyType) {
    SymbolInfoTick(Symbol(),last_tick); // Also STD lib is RefreshRates()
 
    // 0/ Create the timing object
-   t=new EATimingBase();
+   t=new EATiming();
    if (CheckPointer(t)==POINTER_INVALID) {
       ss="EAStrategy -> ERROR created timing object";
          #ifdef _DEBUG_STRATEGY

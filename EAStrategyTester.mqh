@@ -11,7 +11,7 @@
 
 #include "EAEnum.mqh"
 #include "EAStrategyBase.mqh"
-#include "EATimingBase.mqh"
+#include "EATiming.mqh"
 //#include "EADNNOptimizationInputs.mqh"  // this not needed in this tester startegy just needed for compiler
 
 
@@ -23,7 +23,7 @@ private:
 
 protected:
 //=========
-   EATimingBase   t;
+   EATiming   t;
    void           updateOnTick();
    EAEnum         waitOnTriggers();
 

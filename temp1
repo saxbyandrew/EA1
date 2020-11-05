@@ -1,0 +1,45 @@
+  struct Strategy {
+      int               isActive;
+
+      yxint              strategyNumber;            // Name of strategy for comment 
+      yint               magicNumber;
+      yint               deviationInPoints;          
+      int               maxSpread;                 // Limit the spread to non stupid values
+      int               entryBars;
+      double            brokerAdminPercent;
+      double            interBankPercentage;
+      int               inProfitClosePosition;
+      int               inLossClosePosition;
+      int               inLossOpenMartingale;
+      int               inLossOpenLongHedge;
+      int               basestrategyType;
+      int               longstrategyType;
+      int               shortstrategyType;
+      int               martingalestrategyType;
+      int               nnType;
+      int               layer1;
+      int               layer2;
+      xdouble            lotSize; 
+      xdouble            fptl;       // Dollar Value
+      xdouble            fltl;       // same
+      double            fpts;       // same
+      double            flts;       // Dollar Value
+      xint               maxLong;
+      int               maxShort;
+      yint               maxDaily;
+      xint               maxDailyHold;        // 0 close today +1 close tomorrow etc
+      xint               maxMg;    
+      int               mgMultiplier;  
+      double            longHLossamt;
+      double            swapCosts;
+      yEAEnum            runMode;    
+
+      // Not stored in DB !
+      xunsigned          closingTypes;
+      ENUM_ORDER_TYPE   orderTypeToOpen;           // LONG SHORT etc set by stategy once a trigger occurs !
+      EAEnum            triggerReset;
+      int               triggerResetCounter; 
+      datetime          closingDateTime;
+               // !!!! not sure if i'll use this
+      int               defaultRunMode;
+   } sb;

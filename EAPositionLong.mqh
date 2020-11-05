@@ -7,18 +7,17 @@
 #property link      "https://www.mql5.com"
 #property version   "1.00"
 
-
-
 #include "EAEnum.mqh"
 #include "EAPosition.mqh"
 #include "EAPositionBase.mqh"
 
 
-class EALong : public EAPositionBase {
+class EAPositionLong : public EAPositionBase {
 
 //=========
 private:
 //=========
+    string ss;
 
 //=========
 protected:
@@ -33,46 +32,83 @@ protected:
 //=========
 public:
 //=========
-EALong();
-~EALong();
+EAPositionLong();
+~EAPositionLong();
 
-    virtual int Type() const {return _LONG;};
+    struct PositionLong {
+        int     strategyNumber;
+        double  lotSize; 
+        double  fptl;       // Dollar Value
+        double  fltl;       // same
+        int     maxLong;
+        int     maxDailyHold;        // 0 close today +1 close tomorrow etc
+        int     maxMg; 
+        int     longReference;
+        unsigned    closingTypes;
+    } pl;
 
-
-    virtual bool    execute(EAEnum action);  
+    virtual int     Type() const {return _LONG;};
+    virtual void    execute(EAEnum action);  
 
 };
 
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-EALong::EALong() {
+EAPositionLong::EAPositionLong() {
 
     #ifdef _DEBUG_LONG
-        string ss;
-        printf ("EALong ->  Object Created ....");
+        printf ("EAPositionLong ->  Object Created ....");
         writeLog
         pss
     #endif
 
+    int request=DatabasePrepare(_mainDBHandle,"SELECT strategyNumber,lotSize,fptl,fltl,maxLong,maxDailyHold,maxMg,longReference FROM STRATEGY WHERE isActive=1");
+    if (!DatabaseRead(request)) {
+        ss=StringFormat(" -> EAPositionLong DatabaseRead DB request failed code:%d",GetLastError()); 
+        pss
+        writeLog
+        ExpertRemove();
+    } else {
+        #ifdef _DEBUG_LONG
+        ss="  -> EAPositionLong DatabaseRead -> SUCCESS";
+        writeLog
+        pss
+        #endif 
+    }
 
-}
-//+------------------------------------------------------------------+
-//|                                                                  |
-//+------------------------------------------------------------------+
-EALong::~EALong() {
-
-
-}
-
-//+------------------------------------------------------------------+
-//|                                                                  |
-//+------------------------------------------------------------------+
-void EALong::updateOnInterval(EAEnum interval) {
+    DatabaseColumnInteger   (request,0,pl.strategyNumber);
+    DatabaseColumnDouble    (request,1,pl.lotSize);
+    DatabaseColumnDouble    (request,2,pl.fptl);
+    DatabaseColumnDouble    (request,3,pl.fltl);
+    DatabaseColumnInteger   (request,4,pl.maxLong);
+    DatabaseColumnInteger   (request,5,pl.maxDailyHold);
+    DatabaseColumnInteger   (request,6,pl.maxMg);
+    DatabaseColumnInteger   (request,7,pl.longReference);
 
     #ifdef _DEBUG_LONG
-        string ss;
-        printf ("updateOnInterval -> ....");
+        ss=StringFormat("EAPositionLong -> StrategyNumber:%d lotSize:%2.2f fptl:%2.2f maxLong:%d",pl.strategyNumber,pl.lotSize,pl.fptl,pl.maxLong);
+        writeLog
+        pss
+    #endif 
+
+
+}
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+EAPositionLong::~EAPositionLong() {
+
+
+}
+
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+void EAPositionLong::updateOnInterval(EAEnum interval) {
+
+    #ifdef _DEBUG_LONG
+        ss=StringFormat("EAPositionLong -> updateOnInterval -> %d",interval);
         writeLog
         pss
     #endif
@@ -83,7 +119,7 @@ void EALong::updateOnInterval(EAEnum interval) {
             glp;
             p.calcPositionPnL();
             #ifdef _DEBUG_LONG
-                ss=StringFormat("ONBAR and ONTICK -> %d,%g",p.ticket,p.currentPnL);
+                ss=StringFormat("EAPositionLong -> ONBAR and ONTICK -> %d,%g",p.ticket,p.currentPnL);
                 writeLog
                 pss
             #endif 
@@ -97,7 +133,7 @@ void EALong::updateOnInterval(EAEnum interval) {
             p.daysOpen++; 
             p.calcPositionSwapCost();
             #ifdef _DEBUG_LONG
-                ss=StringFormat("ONDAY -> %d,%d,%g",p.ticket,p.daysOpen,p.swapCosts);
+                ss=StringFormat("EAPositionLong -> ONDAY -> %d,%d,%g",p.ticket,p.daysOpen,p.swapCosts);
                 writeLog
                 pss
             #endif 
@@ -107,11 +143,11 @@ void EALong::updateOnInterval(EAEnum interval) {
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-void EALong::closeOnFixedTiming() {
+void EAPositionLong::closeOnFixedTiming() {
 
     #ifdef _DEBUG_LONG
         string ss;
-        printf ("closeOnFixedTiming -> ....");
+        printf ("EAPositionLong -> closeOnFixedTiming -> ....");
         writeLog
         pss
     #endif
@@ -122,19 +158,19 @@ void EALong::closeOnFixedTiming() {
 
         //----
         #ifdef _DEBUG_LONG
-            if (p.closingTypes&_CLOSE_AT_EOD&&usp.maxDailyHold>=0) {
-                ss=StringFormat("closeOnFixedTiming -> Long position flagged to close at a future date:%s",TimeToString(p.closingDateTime));
+            if (p.closingTypes&_CLOSE_AT_EOD&&pl.maxDailyHold>=0) {
+                ss=StringFormat("EAPositionLong -> closeOnFixedTiming -> Long position flagged to close at a future date:%s",TimeToString(p.closingDateTime));
                 writeLog
                 Print (ss);
             }
         #endif
         //----
 
-        if (p.closingDateTime<TimeCurrent() && usp.maxDailyHold>=0 && bool(p.closingTypes&_CLOSE_AT_EOD)) {    // Check when current date exceeded future date hence due date passed
+        if (p.closingDateTime<TimeCurrent() && pl.maxDailyHold>=0 && bool(p.closingTypes&_CLOSE_AT_EOD)) {    // Check when current date exceeded future date hence due date passed
             if (Trade.PositionClose(p.ticket,p.deviationInPoints)) {
                 //----
                 #ifdef _DEBUG_LONG 
-                    ss="closeOnFixedTiming -> Long Close EOD"; 
+                    ss="EAPositionLong -> closeOnFixedTiming -> Long Close EOD"; 
                     writeLog
                     pss
                 #endif
@@ -142,7 +178,7 @@ void EALong::closeOnFixedTiming() {
                 closeSQLPosition(p);
                 if (longPositions.Delete(i)) {
                     #ifdef _DEBUG_LONG 
-                        ss="closeOnFixedTiming -> Long Close at EOD removed from CList"; 
+                        ss="EAPositionLong -> closeOnFixedTiming -> Long Close at EOD removed from CList"; 
                         writeLog
                         pss
                     #endif                      
@@ -154,11 +190,11 @@ void EALong::closeOnFixedTiming() {
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-void EALong::closeOnStealthProfit() {
+void EAPositionLong::closeOnStealthProfit() {
 
     #ifdef _DEBUG_LONG
         string ss;
-        printf ("closeOnStealthProfit -> ....");
+        printf ("EAPositionLong -> closeOnStealthProfit -> ....");
         writeLog
         pss
     #endif
@@ -179,14 +215,14 @@ void EALong::closeOnStealthProfit() {
                 if (Trade.PositionClose(p.ticket,p.deviationInPoints)) {
                 //----
                     #ifdef _DEBUG_LONG 
-                        ss="closeOnStealthProfit -> Long Close in profit"; 
+                        ss="EAPositionLong -> closeOnStealthProfit -> Long Close in profit"; 
                         writeLog
                         pss
                     #endif
                         closeSQLPosition(p);
                     if (longPositions.Delete(i)) {
                         #ifdef _DEBUG_LONG 
-                            ss="closeOnStealthProfit -> Long Close in profit object removed from CList"; 
+                            ss="EAPositionLong -> closeOnStealthProfit -> Long Close in profit object removed from CList"; 
                             writeLog
                             pss
                         #endif 
@@ -201,11 +237,11 @@ void EALong::closeOnStealthProfit() {
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-void EALong::closeOnStealthLoss() {
+void EAPositionLong::closeOnStealthLoss() {
 
     #ifdef _DEBUG_LONG
         string ss;
-        printf ("closeOnStealthLoss -> ....");
+        printf ("EAPositionLong -> closeOnStealthLoss -> ....");
         writeLog
         pss
     #endif
@@ -222,17 +258,17 @@ void EALong::closeOnStealthLoss() {
 
         if (bool (p.closingTypes&_IN_LOSS_CLOSE_POSITION)) {
             if (inLoss) {
-                if (p.closingTypes&_IN_LOSS_OPEN_MARTINGALE&&martingalePositions.Total()<usp.maxMg) {                    // Martingale close in "loss"
+                if (p.closingTypes&_IN_LOSS_OPEN_MARTINGALE&&martingalePositions.Total()<pl.maxMg) {                    // Martingale close in "loss"
                     //Create a copy of the postion to be copied over to martingalePositions
                     // this method used because CList detach does not work as expected
                     EAPosition *np=new EAPosition(p);       // Create new with copy constructor called
                     martingalePositions.Add(np);            // add to mg list
                     longPositions.DeleteCurrent();          // delete from current lp list
                     #ifdef _DEBUG_LONG 
-                        ss=StringFormat("closeOnStealthLoss -> Total long after move:%d",longPositions.Total());
+                        ss=StringFormat("EAPositionLong -> closeOnStealthLoss -> Total long after move:%d",longPositions.Total());
                         writeLog
                         Print (ss);
-                        ss=StringFormat("closeOnStealthLoss -> Total mg after move:%d",martingalePositions.Total());
+                        ss=StringFormat("EAPositionLong -> closeOnStealthLoss -> Total mg after move:%d",martingalePositions.Total());
                         writeLog
                         Print (ss);
                     #endif
@@ -241,14 +277,14 @@ void EALong::closeOnStealthLoss() {
                     if (Trade.PositionClose(p.ticket,p.deviationInPoints)) {
                         //----
                         #ifdef _DEBUG_LONG 
-                            ss="closeOnStealthLoss -> Long Close in loss"; 
+                            ss="EAPositionLong -> closeOnStealthLoss -> Long Close in loss"; 
                             writeLog
                             pss
                         #endif
                         closeSQLPosition(p);
                         if (longPositions.Delete(i)) {
                             #ifdef _DEBUG_LONG 
-                                ss="closeOnStealthLoss -> Long Close in profit object removed from CList";
+                                ss="EAPositionLong -> closeOnStealthLoss -> Long Close in profit object removed from CList";
                                 writeLog
                                 pss 
                             #endif
@@ -264,50 +300,54 @@ void EALong::closeOnStealthLoss() {
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-bool EALong::newPosition() {
+bool EAPositionLong::newPosition() {
 
     #ifdef _DEBUG_LONG 
         string ss;
         for (int i=0;i<longPositions.Total();i++) {
             glp;
-            ss=StringFormat("newPosition -> T:%d S:%d",p.ticket,p.status);
+            ss=StringFormat("EAPositionLong -> newPosition -> T:%d S:%d",p.ticket,p.status);
             writeLog
             Print(ss);
         }
     #endif  
 
 
-        if (longPositions.Total()>=usp.maxLong) {
-            showPanel ip.updateInfoLabel(17,0,StringFormat("%d Maximum Reached",usp.maxLong));
+        if (longPositions.Total()>=pl.maxLong) {
+            #ifdef _RUN_PANEL
+                showPanel ip.updateInfoLabel(17,0,StringFormat("%d Maximum Reached",pl.maxLong));
+            #endif
             #ifdef _DEBUG_LONG
-                ss="newPosition -> Max number of LONG reached";
+                ss="EAPositionLong -> newPosition -> Max number of LONG reached";
                 writeLog
                 pss
             #endif 
             return false;
         } else {
-            showPanel ip.updateInfoLabel(17,0,"Open Long");
-            showPanel ip.updateInfoLabel(17,1,usp.maxLong);
+            #ifdef _RUN_PANEL
+                showPanel ip.updateInfoLabel(17,0,"Open Long");
+                showPanel ip.updateInfoLabel(17,1,pl.maxLong);
+            #endif
         }                    
 
         // Build a new position object based on defaults
         EAPosition *p=new EAPosition();                     // Create new position object
-        p.strategyNumber=usp.strategyNumber;              // copy over strategy defaults
-        p.lotSize=usp.lotSize;
+        p.strategyNumber=pl.strategyNumber;              // copy over strategy defaults
+        p.lotSize=pl.lotSize;
         p.status=_LONG;
         p.entryPrice=getUpdatedPrice(ORDER_TYPE_BUY,_TOOPEN);
         p.orderTypeToOpen=ORDER_TYPE_BUY;                   // type is a LONG
-        p.closingTypes=usp.closingTypes;
-        p.fixedProfitTargetLevel=p.entryPrice+usp.fptl;  
-        p.fixedLossTargetLevel=p.entryPrice+usp.fltl; 
+        p.closingTypes=pl.closingTypes;
+        p.fixedProfitTargetLevel=p.entryPrice+pl.fptl;  
+        p.fixedLossTargetLevel=p.entryPrice+pl.fltl; 
 
         if (openPosition(p)) {
             if (longPositions.Add(p)!=-1) {
                 #ifdef _DEBUG_LONG
-                    ss="newPosition -> New position opened and added to long positions list"; 
+                    ss="EAPositionLong -> newPosition -> New position opened and added to long positions list"; 
                     writeLog
                     pss
-                    ss=StringFormat("strategyNumber:%d lotSize:%.2f status:%s entryPrice:%.2f fixedProfitTargetLevel:%.2f fixedLossTargetLevel:%.2f",
+                    ss=StringFormat("EAPositionLong -> strategyNumber:%d lotSize:%.2f status:%s entryPrice:%.2f fixedProfitTargetLevel:%.2f fixedLossTargetLevel:%.2f",
                     p.strategyNumber,p.lotSize,EnumToString(p.status),p.entryPrice,p.fixedProfitTargetLevel,p.fixedLossTargetLevel);
                     writeLog
                     pss
@@ -316,7 +356,7 @@ bool EALong::newPosition() {
             }            
         } else {
             #ifdef _DEBUG_LONG
-                Print("newPosition -> New position opened failed"); 
+                Print("EAPositionLong -> newPosition -> New position opened failed"); 
                 writeLog
                 pss
             #endif 
@@ -328,24 +368,21 @@ bool EALong::newPosition() {
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-bool EALong::execute(EAEnum action) {
+void EAPositionLong::execute(EAEnum action) {
 
     #ifdef _DEBUG_LONG
-        string ss;
-        printf ("execute -> ....");
+        ss="EAPositionLong -> execute -> ....";
         writeLog
         pss
     #endif
 
-    bool retValue=false;
-
     if (ACTIVE_HEDGE==_YES) {
         #ifdef _DEBUG_LONG
-            ss="execute -> In L Hedge is active ....";
+            ss="EAPositionLong -> execute -> In L Hedge is active ....";
             writeLog
             pss
         #endif   
-        return retValue;
+        return;
     }
 
 
@@ -359,11 +396,16 @@ bool EALong::execute(EAEnum action) {
         break;
         case _RUN_ONDAY:    updateOnInterval(_RUN_ONDAY);
         break;
-        case _OPEN_LONG:    retValue=newPosition();
+        case _OPEN_LONG:    {
+                newPosition();
+                #ifdef _DEBUG_LONG
+                    ss="EAPositionLong -> execute -> _OPEN_LONG:";
+                    writeLog
+                    pss
+                #endif
+        }
         break;
     }
     
-    return retValue;
-
 }
 

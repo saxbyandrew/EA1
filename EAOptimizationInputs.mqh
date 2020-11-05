@@ -1,6 +1,34 @@
 
+#define _DEBUG_ADX_MODULE
 #define _USE_ADX
-//#define _USE_RSI
+#define _DEBUG_RSI_MODULE
+#define _USE_RSI
+#define _DEBUG_MACD_MODULE
+#define _USE_MACD
+
+
+
+
+//#define _DEBUG_RVI_MODULE
+
+
+//#define _DEBUG_OSMA_MODULE
+//#define _DEBUG_STOC_MODULE
+//#define _DEBUG_MACD_DIVERGENCE
+//#define _DEBUG_MACDPLAT_BULLISH
+//#define _DEBUG_MACDPLAT_BEARISH
+//#define _DEBUG_MACD_MODULE
+
+//#define _DEBUG_MFI_MODULE
+//#define _DEBUG_SAR_MODULE
+//#define _DEBUG_IICHIMOKU_MODULE
+//#define _DEBUG_QMP_BULLISH
+//#define _DEBUG_QMP_BEARISH
+//#define _DEBUG_QQE
+//#define _DEBUG_ZIGZAG
+
+
+
 //#define _USE_MFI
 //#define _USE_RVI
 //#define _USE_OSMA
@@ -10,9 +38,11 @@
 //#define _USE_MACD
 //#define _USE_MACDBULL
 //#define _USE_MACDBEAR
+#define _USE_ZIGZAG
 
 // INPUTS++++++++++++++++++++++++++++++++++++++
 input group "Strategy"
+sinput double istrategyGrossProfit=100;
 input double ilsize=0.1; 
 input double ifptl=20;     
 input double ifltl=-20;       
@@ -25,10 +55,19 @@ input int imaxdailyhold;
 input int imaxmg=4;          
 input int imgmulti=3; 
 input double ilongHLossamt=-500;
-input int idataFrameSize=500;
 input int ilookBackBars=1;
 
-sinput int numberOfInputs;
+sinput group "NETWORK"
+input int inetworkType=3;
+input int   idataFrameSize=1000;
+input double itriggerThreshold=0.5;  
+input int itrainWeightsThreshold=500;
+input int innLayer1=5;
+input int innLayer2=5;
+input int irestarts=2;
+input double idecay=0.001;
+input double iwStep=0.01;
+input int imaxITS=0;
 /*
 // =========================================
 // Duplicate this block for each input 
@@ -54,24 +93,33 @@ input ENUM_STO_PRICE i1a_STOCpa;
 */ 
 
 #ifdef _USE_ADX
-input group "ADX"
+// input group 1
+sinput group "ADX"
 sinput int i1a_indicatorNumber=1;                // ADX
 input ENUM_TIMEFRAMES i1a_period=PERIOD_CURRENT;
 input int i1a_movingAverage=14;
+input int i1a_useBuffers=7;
 
+
+// input group 2
 sinput int i1b_indicatorNumber=1;                // ADX
 input ENUM_TIMEFRAMES i1b_period=PERIOD_CURRENT;
 input int i1b_movingAverage=14;
+input int i1b_useBuffers=7;
 #endif
 // ----------------------------------------------------------------
 
 #ifdef _USE_RSI
-input group "RSI"
+sinput group "RSI"
+// input group 3
 sinput int i2a_indicatorNumber=2;                // RSI
 input ENUM_TIMEFRAMES i2a_period=PERIOD_CURRENT;
 input int i2a_movingAverage=14;
 input ENUM_APPLIED_PRICE i2a_appliedPrice=PRICE_CLOSE;
+input bool i2a_useBuffers=1;
 
+
+// input group 4
 sinput int i2b_indicatorNumber=2;                // RSI
 input ENUM_TIMEFRAMES i2b_period=PERIOD_CURRENT;
 input int i2b_movingAverage=14;
@@ -80,6 +128,7 @@ input ENUM_APPLIED_PRICE i2b_appliedPrice=PRICE_CLOSE;
 // ----------------------------------------------------------------
 
 #ifdef _USE_MFI
+// input group 5
 input group "MFI"
 sinput int i3a_indicatorNumber=3;                // MFI
 input ENUM_TIMEFRAMES i3a_period=PERIOD_CURRENT;
@@ -178,12 +227,14 @@ input ENUM_TIMEFRAMES i9a_period=PERIOD_CURRENT;
 input int i9a_slowMovingAverage=0;
 input int i9a_fastMovingAverage=0;
 input int i9a_signalPeriod=0;
+input ENUM_APPLIED_PRICE i9a_appliedPrice=PRICE_CLOSE;
 
 sinput int i9b_indicatorNumber=9;                // MACD
 input ENUM_TIMEFRAMES i9b_period=PERIOD_CURRENT;
 input int i9b_slowMovingAverage=0;
 input int i9b_fastMovingAverage=0;
 input int i9b_signalPeriod=0;
+input ENUM_APPLIED_PRICE i9b_appliedPrice=PRICE_CLOSE;
 #endif
 // ----------------------------------------------------------------
 
@@ -219,24 +270,12 @@ input int i11b_signalPeriod=0;
 #endif
 // ----------------------------------------------------------------
 
+#ifdef _USE_ZIGZAG
+input group "ZIG ZAG"
+sinput int i100a_indicatorNumber=100; 
+input ENUM_TIMEFRAMES i100a_ZZperiod=PERIOD_CURRENT;
+//input ENUM_TIMEFRAMES i100b_ZZperiod=PERIOD_H1;
+//input ENUM_TIMEFRAMES i100c_ZZperiod=PERIOD_H4;
+input int i100a_useBuffers=1;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-input int iuseZZ=1;
-input ENUM_TIMEFRAMES i_1_ZZperiod=PERIOD_CURRENT;
-input ENUM_TIMEFRAMES i_2_ZZperiod=PERIOD_H1;
-input ENUM_TIMEFRAMES i_3_ZZperiod=PERIOD_H4;
 

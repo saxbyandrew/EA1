@@ -7,11 +7,6 @@
 #property link      "https://www.mql5.com"
 #property version   "1.00"
 
-//#define _DEBUG_POSITION_LIST
-//#define _DEBUG_POSITION_BASE
-//#define _DEBUG_POSITION_ACC_CHECKS
-//#define _DEBUG_POSITION_ORDERS
-
 
 #include <Trade\Trade.mqh>
 #include <Trade\AccountInfo.mqh>
@@ -19,7 +14,7 @@
 
 #include "EAEnum.mqh"
 #include "EAPosition.mqh"
-#include "EATimingBase.mqh"
+#include "EATiming.mqh"
 
 
 class EAPositionBase : public CObject {
@@ -27,9 +22,8 @@ class EAPositionBase : public CObject {
 //=========
 private:
 //=========
-
-    EATimingBase t;
-
+    string ss;
+    EATiming *t;
 
 //=========
 protected:
@@ -41,7 +35,7 @@ protected:
     CPositionInfo       PositionInfo;
     CSymbolInfo         SymbolInfo;
 
-    
+    bool        checkMaxDailyOpenQty();
     bool        accountInfoChecks();
     double      getUpdatedPrice(ENUM_ORDER_TYPE orderType, EAEnum positionOpenClose);
     bool        openPosition(EAPosition *p);
@@ -54,8 +48,17 @@ public:
 //=========
 EAPositionBase();
 ~EAPositionBase();
+    struct PositionBaseParameters {
+        int strategyNumber;
+        int magicNumber;
+        int deviationInPoints; 
+        int maxDaily;
+        EAEnum  runMode; 
+    } pb;
 
-    virtual int Type() const {return _POSITION_BASE;};
+
+    virtual int     Type() const {return _POSITION_BASE;};
+    virtual void    execute(EAEnum action) {}; 
 
 
 };
@@ -70,10 +73,45 @@ EAPositionBase::EAPositionBase() {
         writeLog;
     #endif
     
+    int request=DatabasePrepare(_mainDBHandle,"SELECT strategyNumber,magicNumber,deviationInPoints,maxDaily,runMode FROM STRATEGY WHERE isActive=1");
+    if (!DatabaseRead(request)) {
+        ss=StringFormat("EAPositionBase -> DatabaseRead DB request failed code:%d",GetLastError()); 
+        pss
+        writeLog
+        ExpertRemove();
+    } else {
+        #ifdef _DEBUG_BASE
+        ss="EAPositionBase -> DatabaseRead -> SUCCESS";
+        writeLog
+        pss
+        #endif 
+    }
+
+    DatabaseColumnInteger   (request,0,pb.strategyNumber);
+    DatabaseColumnInteger   (request,1,pb.magicNumber);
+    DatabaseColumnInteger   (request,2,pb.deviationInPoints);
+    DatabaseColumnInteger   (request,3,pb.maxDaily);
+    
+    #ifdef _DEBUG_BASE
+        ss=StringFormat("EAPositionBase -> StrategyNumber:%d magicNumber:%2.2f deviationInPoints:%2.2f maxDaily:%d",pb.strategyNumber,pb.magicNumber,pb.deviationInPoints,pb.maxDaily);
+        writeLog
+        pss
+    #endif 
+
+    t=new EATiming(pb.strategyNumber);                                                                            
+    if (CheckPointer(t)==POINTER_INVALID) {
+        #ifdef _DEBUG_BASE
+            ss="EAPositionBase -> Error instantiating TIMING object";
+            writeLog
+            pss
+        #endif 
+        ExpertRemove();
+        
+    } 
 
     Trade.SetAsyncMode(false);     
-    Trade.SetExpertMagicNumber(usp.magicNumber);            
-    Trade.SetDeviationInPoints(usp.deviationInPoints);  
+    Trade.SetExpertMagicNumber(pb.magicNumber);            
+    Trade.SetDeviationInPoints(pb.deviationInPoints);  
 
 }
 //+------------------------------------------------------------------+
@@ -99,8 +137,8 @@ void EAPositionBase::closeSQLPosition(EAPosition *p) {
 void EAPositionBase::deleteSQLPosition(int ticket) {
 
 
-   if (bool (usp.runMode&_RUN_STRATEGY_OPTIMIZATION)) return;   // No state saving during optimizations
-   if (!bool (usp.runMode&_RUN_SAVE_STATE)) return;             // No state saving enabled
+   if (bool (pb.runMode&_RUN_OPTIMIZATION)) return;   // No state saving during optimizations
+   if (!bool (pb.runMode&_RUN_SAVE_STATE)) return;             // No state saving enabled
 
     string sql=StringFormat("DELETE FROM STATE WHERE ticket=%d",ticket);
     if (!DatabaseExecute(_mainDBHandle,sql)) {
@@ -116,14 +154,13 @@ void EAPositionBase::deleteSQLPosition(int ticket) {
 //+------------------------------------------------------------------+
 void EAPositionBase::updateSQLSwapCosts(EAPosition *p) {
 
-
     int request;
     double swapCosts;
     string sql;
 
     if (MQLInfoInteger(MQL_OPTIMIZATION))  return;   // No state saving during optimizations
 
-    sql=StringFormat("SELECT swapCosts FROM STRATEGIES WHERE strategyNumber=%d",usp.strategyNumber);
+    sql=StringFormat("SELECT swapCosts FROM STRATEGIES WHERE strategyNumber=%d",pb.strategyNumber);
     request=DatabasePrepare(_mainDBHandle,sql); 
     DatabaseRead(request);
     DatabaseColumnDouble(request,0,swapCosts); 
@@ -134,7 +171,7 @@ void EAPositionBase::updateSQLSwapCosts(EAPosition *p) {
     TesterWithdrawal(p.swapCosts);  // withdraw from account when testing
 
     // Update DB
-    sql=StringFormat("UPDATE STRATEGIES SET swapCosts=%g WHERE strategyNumber=%d",result, usp.strategyNumber);
+    sql=StringFormat("UPDATE STRATEGIES SET swapCosts=%g WHERE strategyNumber=%d",result, pb.strategyNumber);
     if (!DatabaseExecute(_mainDBHandle,sql)) {
         #ifdef _WRITELOG
             string ss=StringFormat(" -> DB request failed with code ", GetLastError());
@@ -143,15 +180,86 @@ void EAPositionBase::updateSQLSwapCosts(EAPosition *p) {
     }
 
 }
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+bool EAPositionBase::checkMaxDailyOpenQty() {
+
+    #ifdef _DEBUG_BASE 
+        ss="EAPositionBase -> checkMaxDailyOpenQty -> ...."; 
+        writeLog
+        pss
+    #endif 
+
+    MqlDateTime start, end;   
+    int sNumber, cnt=0;
+    string s;
+
+    //showPanel ip.updateInfoLabel(18,0, "Max Positions/Day");  
+    if (pb.maxDaily<=0) {
+        #ifdef _DEBUG_BASE 
+            ss="EAPositionBase -> checkMaxDailyOpenQty -> No max number of daily positions specfied";
+            writeLog
+            pss
+        #endif    
+        //showPanel ip.updateInfoLabel(18,1,"No Maximum");
+        return true;           // No max daily qty
+    }
+
+    TimeToStruct(TimeCurrent(),start);
+    TimeToStruct(TimeCurrent(),end);
+    // Modify the times
+    start.hour=0; start.min=0; end.hour=23; end.min=59;
+
+    #ifdef _DEBUG_BASE 
+        ss=StringFormat("EAPositionBase -> checkMaxDailyOpenQty -> Max number of daily positions specfied:",pb.maxDaily);
+                writeLog
+            pss
+    #endif  
+    //showPanel ip.updateInfoLabel(18,1,IntegerToString(usp.maxDaily));
+    // Get todays order history    
+    if (HistorySelect(StructToTime(start), StructToTime(end))) {   
+        for (int i=0;i<HistoryDealsTotal();i++) {         
+            sNumber=(int)HistoryDealGetString(HistoryDealGetTicket(i),DEAL_COMMENT);
+            if (pb.strategyNumber==sNumber) ++cnt;
+            #ifdef _DEBUG_BASE
+                ss=StringFormat("EAPositionBase ->checkMaxDailyOpenQty -> Number today %d %d %d",HistoryDealsTotal(),sNumber, HistoryDealGetTicket(i));
+                writeLog
+                pss
+            #endif
+            if (cnt>=pb.maxDaily) {
+                #ifdef _DEBUG_BASE
+                ss=StringFormat("EAPositionBase -> checkMaxDailyOpenQty => %d Max Reached",cnt);
+                writeLog
+                pss
+                #endif
+                //showPanel ip.updateInfoLabel(18,1,s);
+                return false;  
+            }  else {
+                #ifdef _DEBUG_BASE
+                ss=StringFormat("EAPositionBase -> checkMaxDailyOpenQty -> %d/%d",cnt,pb.maxDaily);
+                writeLog
+                pss
+                #endif
+                //showPanel ip.updateInfoLabel(18,1,s);
+            }                 
+        }
+    }
+
+    return true;
+}
+
 
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
 double EAPositionBase::getUpdatedPrice(ENUM_ORDER_TYPE orderType, EAEnum positionOpenClose) {
 
-    #ifdef _DEBUG_POSITION_BASE 
-        Print (__FUNCTION__); 
-    #endif
+    #ifdef _DEBUG_BASE 
+        ss="EAPositionBase -> getUpdatedPrice -> ...."; 
+        writeLog
+        pss
+    #endif 
 
     double thePrice=0.0;
     MqlTick last_tick;
@@ -216,11 +324,11 @@ bool EAPositionBase::accountInfoChecks() {
             c[2]=true;
         }
 
-        if (SymbolInfo.Spread()>usp.maxSpread) {
-            s[3]=StringFormat("%d/%d",SymbolInfo.Spread(),usp.maxSpread);
+        if (SymbolInfo.Spread()>pbp.maxSpread) {
+            s[3]=StringFormat("%d/%d",SymbolInfo.Spread(),pbp.maxSpread);
             c[3]=false;
         } else {
-            s[3]=s[3]=StringFormat("%d/%d",SymbolInfo.Spread(),usp.maxSpread);
+            s[3]=s[3]=StringFormat("%d/%d",SymbolInfo.Spread(),pbp.maxSpread);
             c[3]=true;
         }
     
@@ -238,7 +346,7 @@ bool EAPositionBase::accountInfoChecks() {
         if (AccountInfo.TradeAllowed()==false) return false;
         if (AccountInfo.TradeExpert()==false) return false;
         if (SymbolInfo.IsSynchronized()==false) return false;
-        if (SymbolInfo.Spread()>usp.maxSpread) return false;
+        if (SymbolInfo.Spread()>pbp.maxSpread) return false;
     }
 */
 
@@ -313,14 +421,14 @@ bool EAPositionBase::openPosition(EAPosition *p) {
         if (bool (p.closingTypes&_CLOSE_AT_EOD)) {              // Set EOD close value if being used
             p.closingDateTime=t.sessionTimes(_CLOSE_AT_EOD);
         //----
-        #ifdef _DEBUG_POSITION_ORDERS
+        #ifdef _DEBUG_BASE
             string ss=StringFormat(" -> Ticket:%d Using future Closing date of:%s",p.ticket,TimeToString(p.closingDateTime));
             Print(ss);
         #endif
          //----
         }
 
-        //if (bool (usp.runMode&_RUN_SAVE_STATE)) usp.saveSQLState(p);
+        //if (bool (pbp.runMode&_RUN_SAVE_STATE)) pbp.saveSQLState(p);
 
         return true;
     }

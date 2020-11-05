@@ -13,7 +13,7 @@
 
 #include "EAEnum.mqh"
 #include "EAStrategyBase.mqh"
-#include "EATimingBase.mqh"
+#include "EATiming.mqh"
 #include "EANeuralNetwork.mqh"
 #include "EAModelCandle.mqh"
 
@@ -45,7 +45,7 @@ protected:
 
    void              updateOnTick();
    EAEnum            waitOnTriggers();
-   EATimingBase      t;
+   EATiming      t;
 
 
 

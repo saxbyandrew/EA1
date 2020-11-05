@@ -89,8 +89,8 @@ void EAInputsOutputs::getInputs() {
       EATechnicalsBase *t=indicators.At(i);
       t.getValues();
       #ifdef _DEBUG_NN_INPUTS_OUTPUTS
-         for (int l=0;l<ArraySize(t.iOutputs);l++) {
-            ss=ss+' '+t.iOutputs[l];
+         for (int l=0;l<ArraySize(t.iValues);l++) {
+            ss=ss+' '+t.iValues[l];
          }
          writeLog
          pss
