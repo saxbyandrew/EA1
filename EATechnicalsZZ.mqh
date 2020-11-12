@@ -28,7 +28,7 @@ protected:
 //=========
 public:
 //=========
-   EATechnicalsZZ(technicals &tech);
+   EATechnicalsZZ(Technicals &tech);
    ~EATechnicalsZZ();
 
    void  getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs);   
@@ -38,19 +38,21 @@ public:
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-EATechnicalsZZ::EATechnicalsZZ(technicals &tech) {
+EATechnicalsZZ::EATechnicalsZZ(Technicals &tech) {
 
+   /*
    #ifdef _DEBUG_ZIGZAG
       ss="EATechnicalsZZ -> .... default constructor";
       pss
       writeLog
    #endif
+   */
 
    // Set the local instance struct variables
    EATechnicalsBase::copyValues(tech);
 
    if (ZIGZAGHandle==NULL) 
-      ZIGZAGHandle=iCustom(_Symbol,t.period,"deltazigzag",0,0,500,0.5,1);
+      ZIGZAGHandle=iCustom(_Symbol,tech.period,"deltazigzag",0,0,500,0.5,1);
 
 }
 
@@ -65,11 +67,13 @@ EATechnicalsZZ::~EATechnicalsZZ() {
 //+------------------------------------------------------------------+
 void EATechnicalsZZ::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,datetime barDateTime) {
 
+   /*
    #ifdef _DEBUG_ZIGZAG
       ss="EATechnicalsZZ -> getValues 2 -> ....";
       pss
       writeLog
    #endif 
+   */
 
       static double ZIGZAGBuffer0[];
       static double ZIGZAGBuffer1[];
@@ -95,7 +99,7 @@ void EATechnicalsZZ::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,d
       } 
 
       if (ZIGZAGBuffer0[0]>0) {
-         ttlCnt=t.ttl;
+         ttlCnt=tech.ttl;
          direction= (int) _DOWN;
          #ifdef _DEBUG_ZIGZAG
             ss="EATechnicalsZZ -> getValues -> DOWN";
@@ -105,7 +109,7 @@ void EATechnicalsZZ::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,d
       }
 
       if (ZIGZAGBuffer1[0]>0) {
-         ttlCnt=t.ttl;
+         ttlCnt=tech.ttl;
          direction= (int) _UP;
          #ifdef _DEBUG_ZIGZAG
             ss="EATechnicalsZZ -> getValues -> UP";
@@ -139,11 +143,13 @@ void EATechnicalsZZ::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,d
 //+------------------------------------------------------------------+
 void EATechnicalsZZ::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs) {
 
+   /*
    #ifdef _DEBUG_ZIGZAG
       ss="EATechnicalsZZ -> getValues 1 -> ....";
       pss
       writeLog
    #endif 
+   */
 
       static double ZIGZAGBuffer0[];
       static double ZIGZAGBuffer1[];
@@ -169,7 +175,7 @@ void EATechnicalsZZ::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs) 
       } 
 
       if (ZIGZAGBuffer0[0]>0) {
-         ttlCnt=t.ttl;
+         ttlCnt=tech.ttl;
          direction= (int) _DOWN;
          #ifdef _DEBUG_ZIGZAG
             ss="EATechnicalsZZ -> getValues -> DOWN";
@@ -179,7 +185,7 @@ void EATechnicalsZZ::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs) 
       }
 
       if (ZIGZAGBuffer1[0]>0) {
-         ttlCnt=t.ttl;
+         ttlCnt=tech.ttl;
          direction= (int) _UP;
          #ifdef _DEBUG_ZIGZAG
             ss="EATechnicalsZZ -> getValues -> UP";

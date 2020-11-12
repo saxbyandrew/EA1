@@ -57,7 +57,7 @@ EAPosition(EAPosition &cp);
     double            brokerAdminPercent;
     double            interBankPercentage;
 
-    int               positionExists(int ticket) {return (PositionInfo.SelectByTicket(ticket));};
+    int               positionExists(int t) {return (PositionInfo.SelectByTicket(t));};
     void              calcPositionPnL();
     void              calcPositionSwapCost();
 

@@ -35,17 +35,7 @@ public:
 EAPositionLong();
 ~EAPositionLong();
 
-    struct PositionLong {
-        int     strategyNumber;
-        double  lotSize; 
-        double  fptl;       // Dollar Value
-        double  fltl;       // same
-        int     maxLong;
-        int     maxDailyHold;        // 0 close today +1 close tomorrow etc
-        int     maxMg; 
-        int     longReference;
-        unsigned    closingTypes;
-    } pl;
+    Position position; // See EAStructures.mqh
 
     virtual int     Type() const {return _LONG;};
     virtual void    execute(EAEnum action);  
@@ -63,7 +53,7 @@ EAPositionLong::EAPositionLong() {
         pss
     #endif
 
-    int request=DatabasePrepare(_mainDBHandle,"SELECT strategyNumber,lotSize,fptl,fltl,maxLong,maxDailyHold,maxMg,longReference FROM STRATEGY WHERE isActive=1");
+    int request=DatabasePrepare(_mainDBHandle,"SELECT strategyNumber,lotSize,fpt,flt,maxPositions,maxDailyHold,maxMg FROM STRATEGY WHERE isActive=1");
     if (!DatabaseRead(request)) {
         ss=StringFormat(" -> EAPositionLong DatabaseRead DB request failed code:%d",GetLastError()); 
         pss
@@ -77,17 +67,16 @@ EAPositionLong::EAPositionLong() {
         #endif 
     }
 
-    DatabaseColumnInteger   (request,0,pl.strategyNumber);
-    DatabaseColumnDouble    (request,1,pl.lotSize);
-    DatabaseColumnDouble    (request,2,pl.fptl);
-    DatabaseColumnDouble    (request,3,pl.fltl);
-    DatabaseColumnInteger   (request,4,pl.maxLong);
-    DatabaseColumnInteger   (request,5,pl.maxDailyHold);
-    DatabaseColumnInteger   (request,6,pl.maxMg);
-    DatabaseColumnInteger   (request,7,pl.longReference);
+    DatabaseColumnInteger   (request,0,position.strategyNumber);
+    DatabaseColumnDouble    (request,1,position.lotSize);
+    DatabaseColumnDouble    (request,2,position.fpt);
+    DatabaseColumnDouble    (request,3,position.flt);
+    DatabaseColumnInteger   (request,4,position.maxPositions);
+    DatabaseColumnInteger   (request,5,position.maxDailyHold);
+    DatabaseColumnInteger   (request,6,position.maxMg);
 
     #ifdef _DEBUG_LONG
-        ss=StringFormat("EAPositionLong -> StrategyNumber:%d lotSize:%2.2f fptl:%2.2f maxLong:%d",pl.strategyNumber,pl.lotSize,pl.fptl,pl.maxLong);
+        ss=StringFormat("EAPositionLong -> StrategyNumber:%d lotSize:%2.2f fptl:%2.2f maxPositions:%d",position.strategyNumber,position.lotSize,position.fpt,position.maxPositions);
         writeLog
         pss
     #endif 
@@ -158,7 +147,7 @@ void EAPositionLong::closeOnFixedTiming() {
 
         //----
         #ifdef _DEBUG_LONG
-            if (p.closingTypes&_CLOSE_AT_EOD&&pl.maxDailyHold>=0) {
+            if (p.closingTypes&_CLOSE_AT_EOD&&position.maxDailyHold>=0) {
                 ss=StringFormat("EAPositionLong -> closeOnFixedTiming -> Long position flagged to close at a future date:%s",TimeToString(p.closingDateTime));
                 writeLog
                 Print (ss);
@@ -166,7 +155,7 @@ void EAPositionLong::closeOnFixedTiming() {
         #endif
         //----
 
-        if (p.closingDateTime<TimeCurrent() && pl.maxDailyHold>=0 && bool(p.closingTypes&_CLOSE_AT_EOD)) {    // Check when current date exceeded future date hence due date passed
+        if (p.closingDateTime<TimeCurrent() && position.maxDailyHold>=0 && bool(p.closingTypes&_CLOSE_AT_EOD)) {    // Check when current date exceeded future date hence due date passed
             if (Trade.PositionClose(p.ticket,p.deviationInPoints)) {
                 //----
                 #ifdef _DEBUG_LONG 
@@ -258,7 +247,7 @@ void EAPositionLong::closeOnStealthLoss() {
 
         if (bool (p.closingTypes&_IN_LOSS_CLOSE_POSITION)) {
             if (inLoss) {
-                if (p.closingTypes&_IN_LOSS_OPEN_MARTINGALE&&martingalePositions.Total()<pl.maxMg) {                    // Martingale close in "loss"
+                if (p.closingTypes&_IN_LOSS_OPEN_MARTINGALE&&martingalePositions.Total()<position.maxMg) {                    // Martingale close in "loss"
                     //Create a copy of the postion to be copied over to martingalePositions
                     // this method used because CList detach does not work as expected
                     EAPosition *np=new EAPosition(p);       // Create new with copy constructor called
@@ -313,9 +302,9 @@ bool EAPositionLong::newPosition() {
     #endif  
 
 
-        if (longPositions.Total()>=pl.maxLong) {
+        if (longPositions.Total()>=position.maxPositions) {
             #ifdef _RUN_PANEL
-                showPanel ip.updateInfoLabel(17,0,StringFormat("%d Maximum Reached",pl.maxLong));
+                showPanel ip.updateInfoLabel(17,0,StringFormat("%d Maximum Reached",position.maxPositions));
             #endif
             #ifdef _DEBUG_LONG
                 ss="EAPositionLong -> newPosition -> Max number of LONG reached";
@@ -326,20 +315,20 @@ bool EAPositionLong::newPosition() {
         } else {
             #ifdef _RUN_PANEL
                 showPanel ip.updateInfoLabel(17,0,"Open Long");
-                showPanel ip.updateInfoLabel(17,1,pl.maxLong);
+                showPanel ip.updateInfoLabel(17,1,position.maxPositions);
             #endif
         }                    
 
         // Build a new position object based on defaults
         EAPosition *p=new EAPosition();                     // Create new position object
-        p.strategyNumber=pl.strategyNumber;              // copy over strategy defaults
-        p.lotSize=pl.lotSize;
+        p.strategyNumber=position.strategyNumber;              // copy over strategy defaults
+        p.lotSize=position.lotSize;
         p.status=_LONG;
         p.entryPrice=getUpdatedPrice(ORDER_TYPE_BUY,_TOOPEN);
         p.orderTypeToOpen=ORDER_TYPE_BUY;                   // type is a LONG
-        p.closingTypes=pl.closingTypes;
-        p.fixedProfitTargetLevel=p.entryPrice+pl.fptl;  
-        p.fixedLossTargetLevel=p.entryPrice+pl.fltl; 
+        p.closingTypes=position.closingTypes;
+        p.fixedProfitTargetLevel=p.entryPrice+position.fpt;  
+        p.fixedLossTargetLevel=p.entryPrice+position.flt; 
 
         if (openPosition(p)) {
             if (longPositions.Add(p)!=-1) {

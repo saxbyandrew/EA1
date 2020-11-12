@@ -31,7 +31,7 @@ protected:
 //=========
 public:
 //=========
-   EATechnicalsADX(technicals &tech);
+   EATechnicalsADX(Technicals &tech);
    ~EATechnicalsADX();
 
    void  getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs);    
@@ -42,12 +42,14 @@ public:
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-EATechnicalsADX::EATechnicalsADX(technicals &tech) {
+EATechnicalsADX::EATechnicalsADX(Technicals &tech) {
 
+   /*
    #ifdef _DEBUG_ADX_MODULE
       ss="EATechnicalsADX -> .... Default Constructor";
       pss
    #endif
+   */
 
    // Set the local instance struct variables
    EATechnicalsBase::copyValues(tech);
@@ -73,13 +75,15 @@ EATechnicalsADX::~EATechnicalsADX() {
 //+------------------------------------------------------------------+
 void EATechnicalsADX::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,datetime barDateTime) {
 
+   /*
    #ifdef _DEBUG_ADX_MODULE
       ss="EATechnicalsADX -> getValues -> Entry 2....";
       pss
       writeLog
    #endif 
-
-   int      barNumber=iBarShift(_Symbol,t.period,barDateTime,false); // Adjust the bar number based on PERIOD and TIME
+   */
+//ss=StringFormat("EATechnicalsADX  -> getValues -> PLUSDI Time %s value:%.2f barNumber:%d",TimeToString(barDateTime),plusDI[0],barNumber);  
+   int      barNumber=iBarShift(_Symbol,tech.period,barDateTime,false); // Adjust the bar number based on PERIOD and TIME
    double   main[1], plusDI[1], minusDI[1];
 
    // Refresh the indicator and get all the buffers
@@ -87,13 +91,13 @@ void EATechnicalsADX::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,
 
    if (adx.GetData(barDateTime,1,0,main)>0 && adx.GetData(barDateTime,1,1,plusDI)>0 && adx.GetData(barDateTime,1,2,minusDI)>0) {
       #ifdef _DEBUG_ADX_MODULE
-         ss=StringFormat("EATechnicalsADX -> getValues 3 MAIN Time %s value:%.2f barNumber:%d",TimeToString(barDateTime),main[0],barNumber);        
+         ss=StringFormat("EATechnicalsADX  -> getValues -> MAIN:%.2f",main[0]);        
          writeLog
          pss
-         ss=StringFormat("EATechnicalsADX -> getValues 3 PLUSDI Time %s value:%.2f barNumber:%d",TimeToString(barDateTime),plusDI[0],barNumber);    
+         ss=StringFormat("EATechnicalsADX  -> getValues -> PLUSDI:%.2f",plusDI[0]);    
          writeLog
          pss
-         ss=StringFormat("EATechnicalsADX -> getValues 3 MINUSDI Time %s value:%.2f barNumber:%d",TimeToString(barDateTime),minusDI[0],barNumber);  
+         ss=StringFormat("EATechnicalsADX  -> getValues -> MINUSDI:%.2f",minusDI[0]);  
          writeLog
          pss
       #endif
@@ -106,24 +110,24 @@ void EATechnicalsADX::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,
       Input data are automatically scaled prior to feeding network, and network outputs are automatically unscaled after processing. 
       Preprocessing is done transparently to user, you don't have to worry about it - just feed data to training algorithm!
       */
-      //if (t.useBuffers&_BUFFER1) nnInputs.Add(normalizedValue(main[0]));
-      //if (t.useBuffers&_BUFFER2) nnInputs.Add(normalizedValue(plusDI[0]));
-      //if (t.useBuffers&_BUFFER3) nnInputs.Add(normalizedValue(minusDI[0]));
-      if (t.useBuffers&_BUFFER1) nnInputs.Add(main[0]);
-      if (t.useBuffers&_BUFFER2) nnInputs.Add(plusDI[0]);
-      if (t.useBuffers&_BUFFER3) nnInputs.Add(minusDI[0]);
-      //if (t.useBuffers&_BUFFER4) nnInputs.Add(??);
-      //if (t.useBuffers&_BUFFER5) nnInputs.Add(??);
+      //if (tech.useBuffers&_BUFFER1) nnInputs.Add(normalizedValue(main[0]));
+      //if (tech.useBuffers&_BUFFER2) nnInputs.Add(normalizedValue(plusDI[0]));
+      //if (tech.useBuffers&_BUFFER3) nnInputs.Add(normalizedValue(minusDI[0]));
+      if (tech.useBuffers&_BUFFER1) nnInputs.Add(main[0]);
+      if (tech.useBuffers&_BUFFER2) nnInputs.Add(plusDI[0]);
+      if (tech.useBuffers&_BUFFER3) nnInputs.Add(minusDI[0]);
+      //if (tech.useBuffers&_BUFFER4) nnInputs.Add(??);
+      //if (tech.useBuffers&_BUFFER5) nnInputs.Add(??);
 
    } else {
       #ifdef _DEBUG_ADX_MODULE
-         ss="EATechnicalsADX -> getValues -> ERROR will return zeros"; 
+         ss="EATechnicalsADX   -> getValues -> ERROR will return zeros"; 
          writeLog
          pss
       #endif
-      if (t.useBuffers&_BUFFER1) nnInputs.Add(0);
-      if (t.useBuffers&_BUFFER2) nnInputs.Add(0);
-      if (t.useBuffers&_BUFFER3) nnInputs.Add(0);
+      if (tech.useBuffers&_BUFFER1) nnInputs.Add(0);
+      if (tech.useBuffers&_BUFFER2) nnInputs.Add(0);
+      if (tech.useBuffers&_BUFFER3) nnInputs.Add(0);
    }
 
 }
@@ -133,11 +137,14 @@ void EATechnicalsADX::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,
 //+------------------------------------------------------------------+
 void EATechnicalsADX::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs) {
 
+   /*
    #ifdef _DEBUG_ADX_MODULE
       ss="EATechnicalsADX -> getValues -> Entry 1....";
       pss
       writeLog
-   #endif 
+   #endif
+   */
+   
 
    double main[1], plusDI[1], minusDI[1];
 
@@ -146,22 +153,22 @@ void EATechnicalsADX::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs)
 
    if (adx.GetData(1,1,0,main)>0 && adx.GetData(1,1,1,plusDI)>0 && adx.GetData(1,1,2,minusDI)>0) {
       #ifdef _DEBUG_ADX_MODULE
-         ss=StringFormat("EATechnicalsADX -> getValues 3 MAIN:%.2f",main[0]);        
+         ss=StringFormat("EATechnicalsADX  -> getValues -> MAIN:%.2f",main[0]);        
          writeLog
          pss
-         ss=StringFormat("EATechnicalsADX -> getValues 3 PLUSDI:%.2f",plusDI[0]);    
+         ss=StringFormat("EATechnicalsADX  -> getValues -> PLUSDI:%.2f",plusDI[0]);    
          writeLog
          pss
-         ss=StringFormat("EATechnicalsADX -> getValues 3 MINUSDI:%.2f",minusDI[0]);  
+         ss=StringFormat("EATechnicalsADX  -> getValues -> MINUSDI:%.2f",minusDI[0]);  
          writeLog
          pss
       #endif
 
-      if (t.useBuffers&_BUFFER1) nnInputs.Add(main[0]);
-      if (t.useBuffers&_BUFFER2) nnInputs.Add(plusDI[0]);
-      if (t.useBuffers&_BUFFER3) nnInputs.Add(minusDI[0]);
-      //if (t.useBuffers&_BUFFER4) nnInputs.Add(??);
-      //if (t.useBuffers&_BUFFER5) nnInputs.Add(??);
+      if (tech.useBuffers&_BUFFER1) nnInputs.Add(main[0]);
+      if (tech.useBuffers&_BUFFER2) nnInputs.Add(plusDI[0]);
+      if (tech.useBuffers&_BUFFER3) nnInputs.Add(minusDI[0]);
+      //if (tech.useBuffers&_BUFFER4) nnInputs.Add(??);
+      //if (tech.useBuffers&_BUFFER5) nnInputs.Add(??);
 
    } else {
       #ifdef _DEBUG_ADX_MODULE
@@ -169,9 +176,9 @@ void EATechnicalsADX::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs)
          writeLog
          pss
       #endif
-      if (t.useBuffers&_BUFFER1) nnInputs.Add(0);
-      if (t.useBuffers&_BUFFER2) nnInputs.Add(0);
-      if (t.useBuffers&_BUFFER3) nnInputs.Add(0);
+      if (tech.useBuffers&_BUFFER1) nnInputs.Add(0);
+      if (tech.useBuffers&_BUFFER2) nnInputs.Add(0);
+      if (tech.useBuffers&_BUFFER3) nnInputs.Add(0);
    }
 }
 

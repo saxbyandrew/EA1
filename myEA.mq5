@@ -25,13 +25,14 @@
 //#define _DEBUG_PARAMETERS
 //#define _DEBUG_MAIN_LOOP
 //#define _DEBUG_TIME
-#define _DEBUG_TECHNICAL_PARAMETERS
-#define _DEBUG_NN_INPUTS_OUTPUTS
-#define _DEBUG_NN
+//#define _DEBUG_TECHNICAL_PARAMETERS
+//#define _DEBUG_NN_INPUTS_OUTPUTS
+//#define _DEBUG_NN
 //#define _DEBUG_NN_LOADSAVE
 //#define _DEBUG_NN_FORCAST
 //#define _DEBUG_NN_TRAINING
 //#define _DEBUG_STRATEGY
+#define _DEBUG_STRATEGY_UPDATE
 //#define _DEBUG_STRATEGY_TRIGGERS
 //#define _DEBUG_DATAFRAME
 //#define _DEBUG_BASE
@@ -61,7 +62,9 @@
 
 
 #include "EAEnum.mqh"
+#include "EAStructures.mqh"
 #include "EARunOptimization.mqh"
+#include "EAStrategyUpdate.mqh"
 
 #ifdef _RUN_LONG_STRATEGY
     #include "EAStrategyLong.mqh"
@@ -97,7 +100,7 @@ CArrayObj               indicators, strategies;
 
 EAEnum                  _runMode;
 datetime                _historyStart;
-int                     _mainDBHandle, _txtHandle, _optimizeDBHandle;
+int                     _mainDBHandle, _txtHandle, _optimizeDBHandle, _strategyNumber;
 string                  _mainDBName="strategies.sqlite";
 string                  _optimizeDBName="optimization.sqlite";
 
@@ -114,6 +117,7 @@ EARunOptimization       optimization;
 int OnInit() {
 
     string ss;
+    MqlDateTime t;
 
 
 
@@ -122,46 +126,36 @@ int OnInit() {
     // and positions are open/closed
     if (MQLInfoInteger(MQL_OPTIMIZATION)) {   
         _runMode=_RUN_OPTIMIZATION; 
-    }
-  
- /*
-    _historyStart=(datetime)SeriesInfoInteger(Symbol(),Period(),SERIES_SERVER_FIRSTDATE); 
+    } else {
+        // if we are not optimizing remove there optimization code
 
-    Print("Total number of bars for the symbol-period at this moment = ", 
-    SeriesInfoInteger(Symbol(),Period(),SERIES_BARS_COUNT)); 
-    
-    Print("The first date for the symbol-period at this moment = ", 
-        (datetime)SeriesInfoInteger(Symbol(),Period(),SERIES_FIRSTDATE)); 
-    
-    Print("The first date in the history for the symbol-period on the server = ", 
-        (datetime)SeriesInfoInteger(Symbol(),Period(),SERIES_SERVER_FIRSTDATE)); 
-    
-    Print("Symbol data are synchronized = ", 
-        (bool)SeriesInfoInteger(Symbol(),Period(),SERIES_SYNCHRONIZED)); 
-*/
-    MqlDateTime t;
+    }
+
+
     TimeToStruct(TimeCurrent(),t);
     string fn=StringFormat("%d%d%d%d%d%d%d%d.log",t.year,t.mon,t.day,t.hour,t.min,t.sec);
     _txtHandle=FileOpen(fn,FILE_COMMON|FILE_READ|FILE_WRITE|FILE_TXT);  
 
     EventSetTimer(60);
 
-    // Open the database in the common terminal folder
-    _mainDBHandle=DatabaseOpen(_mainDBName, DATABASE_OPEN_READWRITE | DATABASE_OPEN_COMMON);
-    if (_mainDBHandle==INVALID_HANDLE) {
-        #ifdef _DEBUG_MYEA
-            ss=StringFormat("OnInit ->  Failed to open Main DB with errorcode:%d",GetLastError());
-            writeLog
-            pss
-        #endif
-        ExpertRemove();
-    } else {
-        #ifdef _DEBUG_MYEA
-            ss="OnInit -> Open Main DB success";
-            writeLog
-            pss
-        #endif
+    if (_mainDBHandle==NULL) {
+        _mainDBHandle=DatabaseOpen(_mainDBName, DATABASE_OPEN_READWRITE | DATABASE_OPEN_COMMON);
+        if (_mainDBHandle==INVALID_HANDLE) {
+            #ifdef _DEBUG_MYEA
+                ss=StringFormat("OnInit ->  Failed to open Main DB with errorcode:%d",GetLastError());
+                writeLog
+                pss
+            #endif
+            ExpertRemove();
+        } else {
+            #ifdef _DEBUG_MYEA
+                ss="OnInit -> Open Main DB success";
+                writeLog
+                pss
+            #endif
+        }
     }
+
 
 
     #ifdef _RUN_PANEL
@@ -191,7 +185,8 @@ int OnInit() {
     #endif
 
     #ifdef _RUN_LONG_STRATEGY
-        strategyLong=new EAStrategyLong;                                                                            
+        // Hard coded strategy Number to match strategy number in the DB
+        strategyLong=new EAStrategyLong(1234);                                                                            
         if (CheckPointer(strategyLong)==POINTER_INVALID) {
             #ifdef _DEBUG_LONG
                 ss="OnInit  -> Error instantiating LONG EA strategy";
@@ -285,20 +280,41 @@ void eaStrategyLoad() {
 
 }
 */
-/*
-//+------------------------------------------------------------------+
-//| Expert tick function                                             |
-//+------------------------------------------------------------------+
-void eaStrategyUpdate() {
 
-    delete expertAdvisor;
-    delete strategyParameters;
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+void updateStrategy() {
 
-    eaStrategyLoad();
+    string ss;
+    EAStrategyUpdate *updateStrategy;
+
+    // pause all trading while startegy is updated
+    // do we wait till there are no open positions
+    // read flagged record from passed and read other records from technicals, networks etc
+    // update the current startegy with values from flagged optimization record, but remember
+    // that each strategy is tied to a strategy number and a strategy type, the strategy number may have 
+    // multiple strategy types one for long one for shore one for stoploss etc etc, and each optimiztion run 
+    // a optimization run will only optimize against on of these types. 
+
+    updateStrategy=new EAStrategyUpdate;
+    if (CheckPointer(updateStrategy)==POINTER_INVALID) {
+        #ifdef _DEBUG_MYEA
+            ss="OnInit -> Error instantiating strategy update";
+            writeLog;
+            pss
+        #endif 
+        ExpertRemove();
+    } else {
+        //#ifdef _DEBUG_MYEA
+            ss="OnInit -> Success instantiating strategy update";
+            writeLog;
+            pss
+        //#endif 
+    }
     
-
 }
-*/
+
 //+------------------------------------------------------------------+
 //| Expert tick function                                             |
 //+------------------------------------------------------------------+
@@ -307,6 +323,7 @@ void OnTick() {
     EAEnum  action;
     string  ss;
     static  datetime lastBar, lastDay;
+    static int testFlag=1;
 
    //=========
    // ON TICK!
@@ -325,12 +342,7 @@ void OnTick() {
 
         action=_RUN_ONBAR;
 
-        //=========
-        // ON RELOAD
-        //=========
-        //if (usp.runMode==_RUN_STRATEGY_UPDATE) {
-            //eaStrategyUpdate();
-        //}
+
         #ifdef _RUN_PANEL   
             showPanel ip.accountInfoUpdate();  
         #endif
@@ -345,6 +357,17 @@ void OnTick() {
             Print(__FUNCTION__," -> In OnTick fire OnDay");
         #endif 
         action=_RUN_ONDAY;
+
+        //==========
+        // ON RELOAD
+        //==========
+        //if (testFlag==1) {
+        //if (_runMode==_RUN_UPDATE) {
+            //ss="TESTFLAG=1";
+            //pss
+            //updateStrategy();
+            //testFlag=0;
+        //}
                         
     } 
 
@@ -413,9 +436,10 @@ void OnChartEvent(const int id,         // event ID
 //+------------------------------------------------------------------+
 int OnTesterInit() {
 
+    
 
-    string ss=StringFormat("OnTesterInit --> %s",TimeToString(iTime(_Symbol,PERIOD_CURRENT,1000)));
-    writeLog
+    _strategyNumber=1234;
+
 
     return(optimization.OnTesterInit());
 

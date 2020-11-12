@@ -31,7 +31,7 @@ protected:
 //=========
 public:
 //=========
-   EATechnicalsRSI(technicals &tech);
+   EATechnicalsRSI(Technicals &tech);
    ~EATechnicalsRSI();
 
    void  getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs);    
@@ -42,13 +42,15 @@ public:
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-EATechnicalsRSI::EATechnicalsRSI(technicals &tech) {
+EATechnicalsRSI::EATechnicalsRSI(Technicals &tech) {
 
+   /*
    #ifdef _DEBUG_RSI_MODULE
       ss="EATechnicalsRSI -> .... Default Constructor";
       pss
       writeLog
    #endif
+   */
 
    // Set the local instance struct variables
    EATechnicalsBase::copyValues(tech);
@@ -76,13 +78,15 @@ EATechnicalsRSI::~EATechnicalsRSI() {
 //+------------------------------------------------------------------+
 void EATechnicalsRSI::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,datetime barDateTime) {
 
+   /*
    #ifdef _DEBUG_RSI_MODULE
       ss="EATechnicalsRSI -> getValues -> Entry 2....";
       pss
       writeLog
    #endif 
+   */
 
-   int      barNumber=iBarShift(_Symbol,t.period,barDateTime,false); // Adjust the bar number based on PERIOD and TIME
+   int      barNumber=iBarShift(_Symbol,tech.period,barDateTime,false); // Adjust the bar number based on PERIOD and TIME
    double   main[1];
 
    // Refresh the indicator and get all the buffers
@@ -90,23 +94,23 @@ void EATechnicalsRSI::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,
 
    if (rsi.GetData(barDateTime,1,0,main)>0) {
       #ifdef _DEBUG_RSI_MODULE
-         ss=StringFormat("EATechnicalsRSI -> getValues 3 MAIN Time %s value:%.2f barNumber:%d",TimeToString(barDateTime),main[0],barNumber);        
+         ss=StringFormat("EATechnicalsRSI  -> getValues -> MAIN:%.2f",main[0]);        
          writeLog
          pss
 
       #endif
 
-      if (t.useBuffers&_BUFFER1) nnInputs.Add(main[0]);
-      //if (t.useBuffers&_BUFFER4) nnInputs.Add(??);
-      //if (t.useBuffers&_BUFFER5) nnInputs.Add(??);
+      if (tech.useBuffers&_BUFFER1) nnInputs.Add(main[0]);
+      //if (tech.useBuffers&_BUFFER4) nnInputs.Add(??);
+      //if (tech.useBuffers&_BUFFER5) nnInputs.Add(??);
 
    } else {
       #ifdef _DEBUG_RSI_MODULE
-         ss="EATechnicalsRSI -> getValues -> ERROR will return zeros"; 
+         ss="EATechnicalsRSI  -> getValues -> ERROR will return zeros"; 
          writeLog
          pss
       #endif
-      if (t.useBuffers&_BUFFER1) nnInputs.Add(0);
+      if (tech.useBuffers&_BUFFER1) nnInputs.Add(0);
    }
    
 
@@ -117,11 +121,13 @@ void EATechnicalsRSI::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,
 //+------------------------------------------------------------------+
 void EATechnicalsRSI::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs) {
 
+   /*
    #ifdef _DEBUG_RSI_MODULE
       ss="EATechnicalsRSI -> getValues -> Entry 1....";
       pss
       writeLog
    #endif 
+   */
 
    double main[1];
 
@@ -130,15 +136,15 @@ void EATechnicalsRSI::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs)
 
    if (rsi.GetData(1,1,0,main)>0) {
       #ifdef _DEBUG_RSI_MODULE
-         ss=StringFormat("EATechnicalsRSI -> getValues 3 MAIN:%.2f",main[0]);        
+         ss=StringFormat("EATechnicalsRSI  -> getValues -> MAIN:%.2f",main[0]);        
          writeLog
          pss
 
       #endif
 
-      if (t.useBuffers&_BUFFER1) nnInputs.Add(main[0]);
-      //if (t.useBuffers&_BUFFER4) nnInputs.Add(??);
-      //if (t.useBuffers&_BUFFER5) nnInputs.Add(??);
+      if (tech.useBuffers&_BUFFER1) nnInputs.Add(main[0]);
+      //if (tech.useBuffers&_BUFFER4) nnInputs.Add(??);
+      //if (tech.useBuffers&_BUFFER5) nnInputs.Add(??);
 
    } else {
       #ifdef _DEBUG_RSI_MODULE
@@ -146,7 +152,7 @@ void EATechnicalsRSI::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs)
          writeLog
          pss
       #endif
-      if (t.useBuffers&_BUFFER1) nnInputs.Add(0);
+      if (tech.useBuffers&_BUFFER1) nnInputs.Add(0);
    }
 
 

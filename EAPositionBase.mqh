@@ -48,14 +48,8 @@ public:
 //=========
 EAPositionBase();
 ~EAPositionBase();
-    struct PositionBaseParameters {
-        int strategyNumber;
-        int magicNumber;
-        int deviationInPoints; 
-        int maxDaily;
-        EAEnum  runMode; 
-    } pb;
 
+    PositionBase positionbase; // See EAStructures.mqh
 
     virtual int     Type() const {return _POSITION_BASE;};
     virtual void    execute(EAEnum action) {}; 
@@ -87,18 +81,18 @@ EAPositionBase::EAPositionBase() {
         #endif 
     }
 
-    DatabaseColumnInteger   (request,0,pb.strategyNumber);
-    DatabaseColumnInteger   (request,1,pb.magicNumber);
-    DatabaseColumnInteger   (request,2,pb.deviationInPoints);
-    DatabaseColumnInteger   (request,3,pb.maxDaily);
+    DatabaseColumnInteger   (request,0,positionbase.strategyNumber);
+    DatabaseColumnInteger   (request,1,positionbase.magicNumber);
+    DatabaseColumnInteger   (request,2,positionbase.deviationInPoints);
+    DatabaseColumnInteger   (request,3,positionbase.maxDaily);
     
     #ifdef _DEBUG_BASE
-        ss=StringFormat("EAPositionBase -> StrategyNumber:%d magicNumber:%2.2f deviationInPoints:%2.2f maxDaily:%d",pb.strategyNumber,pb.magicNumber,pb.deviationInPoints,pb.maxDaily);
+        ss=StringFormat("EAPositionBase -> StrategyNumber:%d magicNumber:%2.2f deviationInPoints:%2.2f maxDaily:%d",positionbase.strategyNumber,positionbase.magicNumber,positionbase.deviationInPoints,positionbase.maxDaily);
         writeLog
         pss
     #endif 
 
-    t=new EATiming(pb.strategyNumber);                                                                            
+    t=new EATiming(positionbase.strategyNumber);                                                                            
     if (CheckPointer(t)==POINTER_INVALID) {
         #ifdef _DEBUG_BASE
             ss="EAPositionBase -> Error instantiating TIMING object";
@@ -110,8 +104,8 @@ EAPositionBase::EAPositionBase() {
     } 
 
     Trade.SetAsyncMode(false);     
-    Trade.SetExpertMagicNumber(pb.magicNumber);            
-    Trade.SetDeviationInPoints(pb.deviationInPoints);  
+    Trade.SetExpertMagicNumber(positionbase.magicNumber);            
+    Trade.SetDeviationInPoints(positionbase.deviationInPoints);  
 
 }
 //+------------------------------------------------------------------+
@@ -137,8 +131,8 @@ void EAPositionBase::closeSQLPosition(EAPosition *p) {
 void EAPositionBase::deleteSQLPosition(int ticket) {
 
 
-   if (bool (pb.runMode&_RUN_OPTIMIZATION)) return;   // No state saving during optimizations
-   if (!bool (pb.runMode&_RUN_SAVE_STATE)) return;             // No state saving enabled
+   if (bool (positionbase.runMode&_RUN_OPTIMIZATION)) return;   // No state saving during optimizations
+   if (!bool (positionbase.runMode&_RUN_SAVE_STATE)) return;             // No state saving enabled
 
     string sql=StringFormat("DELETE FROM STATE WHERE ticket=%d",ticket);
     if (!DatabaseExecute(_mainDBHandle,sql)) {
@@ -160,7 +154,7 @@ void EAPositionBase::updateSQLSwapCosts(EAPosition *p) {
 
     if (MQLInfoInteger(MQL_OPTIMIZATION))  return;   // No state saving during optimizations
 
-    sql=StringFormat("SELECT swapCosts FROM STRATEGIES WHERE strategyNumber=%d",pb.strategyNumber);
+    sql=StringFormat("SELECT swapCosts FROM STRATEGIES WHERE strategyNumber=%d",positionbase.strategyNumber);
     request=DatabasePrepare(_mainDBHandle,sql); 
     DatabaseRead(request);
     DatabaseColumnDouble(request,0,swapCosts); 
@@ -171,7 +165,7 @@ void EAPositionBase::updateSQLSwapCosts(EAPosition *p) {
     TesterWithdrawal(p.swapCosts);  // withdraw from account when testing
 
     // Update DB
-    sql=StringFormat("UPDATE STRATEGIES SET swapCosts=%g WHERE strategyNumber=%d",result, pb.strategyNumber);
+    sql=StringFormat("UPDATE STRATEGIES SET swapCosts=%g WHERE strategyNumber=%d",result, positionbase.strategyNumber);
     if (!DatabaseExecute(_mainDBHandle,sql)) {
         #ifdef _WRITELOG
             string ss=StringFormat(" -> DB request failed with code ", GetLastError());
@@ -196,7 +190,7 @@ bool EAPositionBase::checkMaxDailyOpenQty() {
     string s;
 
     //showPanel ip.updateInfoLabel(18,0, "Max Positions/Day");  
-    if (pb.maxDaily<=0) {
+    if (positionbase.maxDaily<=0) {
         #ifdef _DEBUG_BASE 
             ss="EAPositionBase -> checkMaxDailyOpenQty -> No max number of daily positions specfied";
             writeLog
@@ -212,7 +206,7 @@ bool EAPositionBase::checkMaxDailyOpenQty() {
     start.hour=0; start.min=0; end.hour=23; end.min=59;
 
     #ifdef _DEBUG_BASE 
-        ss=StringFormat("EAPositionBase -> checkMaxDailyOpenQty -> Max number of daily positions specfied:",pb.maxDaily);
+        ss=StringFormat("EAPositionBase -> checkMaxDailyOpenQty -> Max number of daily positions specfied:",positionbase.maxDaily);
                 writeLog
             pss
     #endif  
@@ -221,13 +215,13 @@ bool EAPositionBase::checkMaxDailyOpenQty() {
     if (HistorySelect(StructToTime(start), StructToTime(end))) {   
         for (int i=0;i<HistoryDealsTotal();i++) {         
             sNumber=(int)HistoryDealGetString(HistoryDealGetTicket(i),DEAL_COMMENT);
-            if (pb.strategyNumber==sNumber) ++cnt;
+            if (positionbase.strategyNumber==sNumber) ++cnt;
             #ifdef _DEBUG_BASE
                 ss=StringFormat("EAPositionBase ->checkMaxDailyOpenQty -> Number today %d %d %d",HistoryDealsTotal(),sNumber, HistoryDealGetTicket(i));
                 writeLog
                 pss
             #endif
-            if (cnt>=pb.maxDaily) {
+            if (cnt>=positionbase.maxDaily) {
                 #ifdef _DEBUG_BASE
                 ss=StringFormat("EAPositionBase -> checkMaxDailyOpenQty => %d Max Reached",cnt);
                 writeLog
@@ -237,7 +231,7 @@ bool EAPositionBase::checkMaxDailyOpenQty() {
                 return false;  
             }  else {
                 #ifdef _DEBUG_BASE
-                ss=StringFormat("EAPositionBase -> checkMaxDailyOpenQty -> %d/%d",cnt,pb.maxDaily);
+                ss=StringFormat("EAPositionBase -> checkMaxDailyOpenQty -> %d/%d",cnt,positionbase.maxDaily);
                 writeLog
                 pss
                 #endif

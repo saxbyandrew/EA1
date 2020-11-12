@@ -3,7 +3,7 @@
 //|                        Copyright 2019, MetaQuotes Software Corp. |
 //|                                             https://www.mql5.com |
 //+------------------------------------------------------------------+
-#property copyright "Copyright 2019, MetaQuotes Software Corp."
+#property copyright "Copyright 2019 Andrew Saxby"
 #property link      "https://www.mql5.com"
 #property version   "1.00"
 
@@ -28,7 +28,6 @@ protected:
 //=========
    EATechnicalParameters   *tech;
 
-
    void runOnTick();
    void runOnBar();
    void runOnDay();
@@ -36,7 +35,7 @@ protected:
 //=========
 public:
 //=========
-EAStrategyLong();
+EAStrategyLong(int strategyNumber);
 ~EAStrategyLong();
 
    virtual void   execute(EAEnum action);
@@ -46,16 +45,16 @@ EAStrategyLong();
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-EAStrategyLong::EAStrategyLong() {
+EAStrategyLong::EAStrategyLong(int strategyNumber) {
+
    #ifdef _DEBUG_LONG
-      printf (" constructor -> EAStrategyLong....");
+      ss=StringFormat("EAStrategyLong -> default constructor .... %d",strategyNumber);
       writeLog
       pss
    #endif
 
-   
    // Create the new Technincals object(s)
-   tech=new EATechnicalParameters(pl.strategyNumber,pl.longReference); // Using the base ref as this is the main strategy
+   tech=new EATechnicalParameters(strategyNumber); // Using the base ref as this is the main strategy
    if (CheckPointer(tech)==POINTER_INVALID) {
       ss="EAStrategyLong -> ERROR created technical object";
          #ifdef _DEBUG_LONG
@@ -78,6 +77,8 @@ EAStrategyLong::EAStrategyLong() {
 //+------------------------------------------------------------------+
 EAStrategyLong::~EAStrategyLong() {
 
+   delete tech;
+
 }
 
 //+------------------------------------------------------------------+
@@ -85,7 +86,7 @@ EAStrategyLong::~EAStrategyLong() {
 //+------------------------------------------------------------------+
 void EAStrategyLong::runOnTick() {
       #ifdef _DEBUG_LONG
-      printf ("runOnTick -> EAStrategyLong....");
+      ss="runOnTick -> EAStrategyLong....";
       writeLog
       pss
    #endif
@@ -108,7 +109,7 @@ void EAStrategyLong::runOnBar() {
 
    if (tech.execute(_RUN_ONBAR)==_OPEN_NEW_POSITION) {
       #ifdef _DEBUG_LONG
-         printf ("EAStrategyLong -> runOnBar -> received _OPEN_NEW_POSITION");
+         ss="EAStrategyLong -> runOnBar -> received _OPEN_NEW_POSITION";
          writeLog
          pss
       #endif

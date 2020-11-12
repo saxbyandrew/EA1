@@ -14,39 +14,11 @@
 #include <Arrays\ArrayDouble.mqh>
 
 
-//class EAInputsOutputs;
-
 class EANeuralNetwork  {
 
 //=========
 private:
 //=========
-   struct NeuralNetwork {
-      int strategyNumber;
-      int strategyType;
-      int fileNumber;
-      EAEnum networkType; 
-      int numHiddenLayer1;
-      int numHiddenLayer2;
-      int year;
-      int month;
-      int day;
-      int hour;
-      int minute;
-      int dfSize;
-      int csvWriteDF;
-      int restarts;
-      double decay;
-      double wStep;
-      int maxITS;
-      int trainWeightsThreshold;
-      double triggerThreshold;
-
-      // not in database
-      int numInput;
-      int numOutput;
-      int numWeights;
-   } n;
 
    string   ss;
    
@@ -54,7 +26,7 @@ private:
    void     createNewNetwork();
    bool     saveNetwork();
    void     loadNetwork();
-   void     copyValuesFromDatabase(int strategyNumber, int strategyType);
+   void     copyValuesFromDatabase(int strategyNumber);
    void     copyValuesFromOptimizationInputs();
    void     trainNetwork();
 
@@ -68,18 +40,17 @@ private:
 protected:
 //=========
       
-   //void     setDataFrameSize(int x, int y) {dataFrame.Resize(x,y); };
-   //void     addDataFrameValues(CArrayDouble &nnIn, CArrayDouble &nnOut);
+   Network nnetwork;
 
 //=========
 public:
 //=========
-EANeuralNetwork(int strategyNumber, int strategyType);
+EANeuralNetwork(int strategyNumber);
 ~EANeuralNetwork();
 
    CArrayDouble   *nnStore;
    datetime getOptimizationStartDateTime();
-   int      getDataFrameSize() {return n.dfSize;};
+   int      getDataFrameSize() {return nnetwork.dfSize;};
    void     setDataFrameArraySizes(int nnIn, int nnOut);
    EAEnum   networkForcast(CArrayDouble &nnIn, CArrayDouble &nnOut, double &prediction[]);
    void     buildDataFrame(CArrayDouble &nnIn, CArrayDouble &nnOut);
@@ -88,10 +59,10 @@ EANeuralNetwork(int strategyNumber, int strategyType);
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-EANeuralNetwork::EANeuralNetwork(int strategyNumber, int strategyType) {
+EANeuralNetwork::EANeuralNetwork(int strategyNumber) {
 
    #ifdef _DEBUG_NN
-      ss=StringFormat("EANeuralNetwork -> Constructor strategyNumber:%d strategyType:%d....",strategyNumber, strategyType);
+      ss=StringFormat("EANeuralNetwork -> Constructor strategyNumber:%d ....",strategyNumber);
       writeLog
       pss
    #endif
@@ -103,7 +74,7 @@ EANeuralNetwork::EANeuralNetwork(int strategyNumber, int strategyType) {
    }
 
    // Load the property parameters for this NN regardless of runmode
-   copyValuesFromDatabase(strategyNumber, strategyType);
+   copyValuesFromDatabase(strategyNumber);
 
    // OPTIMIZATION MODE
    // Check which mode we are executing in
@@ -137,14 +108,14 @@ EANeuralNetwork::~EANeuralNetwork() {
 //+------------------------------------------------------------------+
 void EANeuralNetwork::setDataFrameArraySizes(int nnIn, int nnOut) {
 
-   n.numInput=nnIn;
-   n.numOutput=nnOut;
+   nnetwork.numInput=nnIn;
+   nnetwork.numOutput=nnOut;
 
    // Change the dataFrame size based on the iputs and outputs
-   dataFrame.Resize(n.dfSize,n.numInput+n.numOutput);
+   dataFrame.Resize(nnetwork.dfSize,nnetwork.numInput+nnetwork.numOutput);
 
    // Change the double [] used for networkforcasts
-   ArrayResize(inputs,n.numInput);
+   ArrayResize(inputs,nnetwork.numInput);
 
 
    #ifdef _DEBUG_DATAFRAME  
@@ -161,94 +132,15 @@ datetime EANeuralNetwork::getOptimizationStartDateTime() {
 
    MqlDateTime osdt; // optimization Start Date and Time
 
-   osdt.year=n.year;
-   osdt.mon=n.month;
-   osdt.day=n.day;
-   osdt.hour=n.hour;
-   osdt.min=n.minute;
+   osdt.year=nnetwork.year;
+   osdt.mon=nnetwork.month;
+   osdt.day=nnetwork.day;
+   osdt.hour=nnetwork.hour;
+   osdt.min=nnetwork.minute;
 
    return (StructToTime(osdt));
-
 }
 
-
-//+------------------------------------------------------------------+
-//|                                                                  |
-//+------------------------------------------------------------------+
-/*
-void EANeuralNetwork::addDataFrameValues(CArrayDouble &nnIn, CArrayDouble &nnOut) {
-
-   string csvString;
-
-   #ifdef _DEBUG_DATAFRAME
-      pline
-      ss=StringFormat("EANeuralNetwork -> addDataFrameValues -> inputs  -> size:%d Values: ",nnIn.Total());
-      for (int i=0;i<nnIn.Total();i++) {
-         ss=ss+":"+DoubleToString(nnIn.At(i));
-      }
-      writeLog
-      pss
-
-      ss=StringFormat("EANeuralNetwork -> addDataFrameValues -> outputs -> size:%d Values:",nnOut.Total());
-      for (int i=0;i<nnOut.Total();i++) {
-         ss=ss+":"+DoubleToString(nnOut.At(i));
-      }
-      writeLog
-      pss
-      pline
-   #endif  
-
-   static int rowCnt=0;
-
-   #ifdef _DEBUG_DATAFRAME
-      ss="EANeuralNetwork -> addDataFrameValues -> creating dataFrame row:"+rowCnt+" ";
-   #endif
-
-   // Create a single line for the CSV file
-   if (n.csvWriteDF) {
-      csvString=TimeToString(iTime(_Symbol,PERIOD_CURRENT,1))+",";
-      csvString=csvString+rowCnt+",";
-   }
-
-   // Insert input values
-   // [row][in,in,in,in,etc]
-   for (int i=0;i<nnIn.Total();i++) {
-      dataFrame[rowCnt].Set(i,nnIn.At(i));
-      if (n.csvWriteDF) {
-         csvString=csvString+DoubleToString(nnIn.At(i))+",";
-      }
-      #ifdef _DEBUG_DATAFRAME
-         ss=ss+" "+DoubleToString(dataFrame[rowCnt][i],2);
-      #endif
-   }
-   // tack on output values at the end of the array
-   // [row][in,in,in,in,etc,out,out,out,etc]
-
-   for (int j=0; j<nnOut.Total();j++) {
-      dataFrame[rowCnt].Set(j+nnIn.Total(),nnOut.At(j));
-      if (n.csvWriteDF) {
-         csvString=csvString+DoubleToString(nnOut.At(j))+",";
-      }
-      #ifdef _DEBUG_DATAFRAME
-         ss=ss+" "+DoubleToString(dataFrame[rowCnt][j+nnIn.Total()],2);
-      #endif
-   }
-   
-   if (n.csvWriteDF) {
-      FileWrite(dfFileHandle,csvString);
-      FileFlush(dfFileHandle);
-   }
-
-   #ifdef _DEBUG_DATAFRAME
-      writeLog
-      pss
-   #endif 
-
-   rowCnt++;
-   
-
-}
-*/
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
@@ -256,7 +148,7 @@ void EANeuralNetwork::buildDataFrame(CArrayDouble &nnIn, CArrayDouble &nnOut) {
 
    static int csvFileHandle;
    static int rowCnt=0;
-   static int barCnt=n.dfSize;
+   static int barCnt=nnetwork.dfSize;
    string csvFileName, csvString;
    
    datetime barTime;
@@ -271,9 +163,9 @@ void EANeuralNetwork::buildDataFrame(CArrayDouble &nnIn, CArrayDouble &nnOut) {
 
    #ifdef _DEBUG_WRITE_CSV
       // Create a single line for the CSV file
-      if (n.csvWriteDF) {
+      if (nnetwork.csvWriteDF) {
          if (csvFileHandle==NULL) {
-            csvFileName=StringFormat("%s%s.csv",IntegerToString(n.strategyNumber),IntegerToString(n.fileNumber));
+            csvFileName=StringFormat("%s%s.csv",IntegerToString(nnetwork.strategyNumber),IntegerToString(nnetwork.fileNumber));
             csvFileHandle=FileOpen(csvFileName,FILE_COMMON|FILE_READ|FILE_WRITE|FILE_ANSI|FILE_CSV,","); 
          }
          csvString=TimeToString(iTime(_Symbol,PERIOD_CURRENT,1))+",";
@@ -292,7 +184,7 @@ void EANeuralNetwork::buildDataFrame(CArrayDouble &nnIn, CArrayDouble &nnOut) {
       for (int i=0;i<nnIn.Total();i++) {
          dataFrame[rowCnt].Set(i,nnIn.At(i));
          #ifdef _DEBUG_WRITE_CSV
-            if (n.csvWriteDF) {
+            if (nnetwork.csvWriteDF) {
                csvString=csvString+DoubleToString(nnIn.At(i))+",";
             }
          #endif
@@ -306,7 +198,7 @@ void EANeuralNetwork::buildDataFrame(CArrayDouble &nnIn, CArrayDouble &nnOut) {
       for (int j=0; j<nnOut.Total();j++) {
          dataFrame[rowCnt].Set(j+nnIn.Total(),nnOut.At(j));
          #ifdef _DEBUG_WRITE_CSV
-            if (n.csvWriteDF) {
+            if (nnetwork.csvWriteDF) {
                csvString=csvString+DoubleToString(nnOut.At(j))+",";
             }
          #endif
@@ -315,7 +207,7 @@ void EANeuralNetwork::buildDataFrame(CArrayDouble &nnIn, CArrayDouble &nnOut) {
          #endif
       }
       #ifdef _DEBUG_WRITE_CSV
-      if (n.csvWriteDF) {
+      if (nnetwork.csvWriteDF) {
          FileWrite(csvFileHandle,csvString);
          FileFlush(csvFileHandle);
       }
@@ -338,13 +230,12 @@ void EANeuralNetwork::buildDataFrame(CArrayDouble &nnIn, CArrayDouble &nnOut) {
    #endif
    trainNetwork();
 
-
 }
 
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-void EANeuralNetwork::copyValuesFromDatabase(int strategyNumber, int strategyType) {
+void EANeuralNetwork::copyValuesFromDatabase(int strategyNumber) {
 
    #ifdef _DEBUG_NN
       ss="EANeuralNetwork -> copyValuesFromDatabase -> ...";
@@ -355,7 +246,7 @@ void EANeuralNetwork::copyValuesFromDatabase(int strategyNumber, int strategyTyp
    int request, dfFileHandle;
    // numInput, numOutput;
 
-   sql=StringFormat("SELECT * FROM NNETWORKS WHERE strategyNumber=%d AND strategyType=%d",strategyNumber,strategyType);
+   sql=StringFormat("SELECT * FROM NNETWORKS WHERE strategyNumber=%d",strategyNumber);
    request=DatabasePrepare(_mainDBHandle,sql);
    #ifdef _DEBUG_NN
          ss=sql;
@@ -372,27 +263,26 @@ void EANeuralNetwork::copyValuesFromDatabase(int strategyNumber, int strategyTyp
          pss
       #endif  
    } else {
-
       DatabaseRead(request);
-      DatabaseColumnInteger(request,0,n.strategyNumber);
-      DatabaseColumnInteger(request,1,n.strategyType);
-      DatabaseColumnInteger(request,2,n.fileNumber);
-      DatabaseColumnInteger(request,3,n.networkType);
-      DatabaseColumnInteger(request,4,n.numHiddenLayer1);
-      DatabaseColumnInteger(request,5,n.numHiddenLayer2);
-      DatabaseColumnInteger(request,6,n.year);
-      DatabaseColumnInteger(request,7,n.month);
-      DatabaseColumnInteger(request,8,n.day);
-      DatabaseColumnInteger(request,9,n.hour);
-      DatabaseColumnInteger(request,10,n.minute);
-      DatabaseColumnInteger(request,11,n.dfSize);
-      DatabaseColumnInteger(request,12,n.csvWriteDF);
-      DatabaseColumnInteger(request,13,n.restarts);
-      DatabaseColumnDouble (request,14,n.decay);
-      DatabaseColumnDouble (request,15,n.wStep);
-      DatabaseColumnInteger(request,16,n.maxITS);
-      DatabaseColumnInteger(request,17,n.trainWeightsThreshold);
-      DatabaseColumnDouble (request,18,n.triggerThreshold);
+
+      DatabaseColumnInteger(request,0,nnetwork.strategyNumber);
+      DatabaseColumnInteger(request,1,nnetwork.fileNumber);
+      DatabaseColumnInteger(request,2,nnetwork.networkType);
+      DatabaseColumnInteger(request,3,nnetwork.numHiddenLayer1);
+      DatabaseColumnInteger(request,4,nnetwork.numHiddenLayer2);
+      DatabaseColumnInteger(request,5,nnetwork.year);
+      DatabaseColumnInteger(request,6,nnetwork.month);
+      DatabaseColumnInteger(request,7,nnetwork.day);
+      DatabaseColumnInteger(request,8,nnetwork.hour);
+      DatabaseColumnInteger(request,9,nnetwork.minute);
+      DatabaseColumnInteger(request,10,nnetwork.dfSize);
+      DatabaseColumnInteger(request,11,nnetwork.csvWriteDF);
+      DatabaseColumnInteger(request,12,nnetwork.restarts);
+      DatabaseColumnDouble (request,13,nnetwork.decay);
+      DatabaseColumnDouble (request,14,nnetwork.wStep);
+      DatabaseColumnInteger(request,15,nnetwork.maxITS);
+      DatabaseColumnInteger(request,16,nnetwork.trainWeightsThreshold);
+      DatabaseColumnDouble (request,17,nnetwork.triggerThreshold);
 
       // Over write with values given to us during optimization
       if (_runMode==_RUN_OPTIMIZATION) {
@@ -406,14 +296,14 @@ void EANeuralNetwork::copyValuesFromDatabase(int strategyNumber, int strategyTyp
 
 
       #ifdef _DEBUG_NN
-         ss=StringFormat("EANeuralNetwork -> DB Read StrategyNumber:%d L1:%d L2:%d dfSize:%d",n.strategyNumber,n.numHiddenLayer1,n.numHiddenLayer2,n.dfSize);
+         ss=StringFormat("EANeuralNetwork -> DB Read StrategyNumber:%d L1:%d L2:%d dfSize:%d",nnetwork.strategyNumber,nnetwork.numHiddenLayer1,nnetwork.numHiddenLayer2,nnetwork.dfSize);
          writeLog
          pss
       #endif 
    }
 
    #ifdef _RUN_PANEL
-      ss=StringFormat("EANeuralNetwork fileName:%s dfSize:%d",n.fileName,n.dfSize);
+      ss=StringFormat("EANeuralNetwork fileName:%s dfSize:%d",nnetwork.fileName,nnetwork.dfSize);
       showPanel ip.updateInfoLabel(22,0,ss);
    #endif
 
@@ -429,12 +319,12 @@ void EANeuralNetwork::copyValuesFromOptimizationInputs() {
       pss
    #endif
 
-   n.numHiddenLayer1=innLayer1;
-   n.numHiddenLayer2=innLayer2;
-   n.triggerThreshold=itriggerThreshold;
+   nnetwork.numHiddenLayer1=innLayer1;
+   nnetwork.numHiddenLayer2=innLayer2;
+   nnetwork.triggerThreshold=itriggerThreshold;
 
    #ifdef _DEBUG_TECHNICAL_PARAMETERS
-      ss=StringFormat("EANeuralNetwork -> copyValuesFromOptimizationInputs -> L1:%d L2:%d Threshold:%.5f",n.numHiddenLayer1,n.numHiddenLayer2,n.triggerThreshold);
+      ss=StringFormat("EANeuralNetwork -> copyValuesFromOptimizationInputs -> L1:%d L2:%d Threshold:%.5f",nnetwork.numHiddenLayer1,nnetwork.numHiddenLayer2,nnetwork.triggerThreshold);
       writeLog
       pss
    #endif
@@ -457,19 +347,19 @@ void EANeuralNetwork::networkProperties()  {
 
    #ifdef _RUN_PANEL
    showPanel {
-      string s1=StringFormat("EANeuralNetwork -> networkProperties -> I:%d L1:%d L2:%d O:%d W:%d",nInputs,n.numHiddenLayer1,n.numHiddenLayer2,nOutputs,nWeights);
+      string s1=StringFormat("EANeuralNetwork -> networkProperties -> I:%d L1:%d L2:%d O:%d W:%d",nInputs,nnetwork.numHiddenLayer1,nnetwork.numHiddenLayer2,nOutputs,nWeights);
       ip.updateInfoLabel(21,0,s1);
    }
    #endif
    
    #ifdef _DEBUG_NN
-      ss=StringFormat("EANeuralNetwork -> networkProperties -> I:%d L1:%d L2:%d O:%d W:%d ",nInputs,n.numHiddenLayer1,n.numHiddenLayer2,nOutputs,nWeights);
+      ss=StringFormat("EANeuralNetwork -> networkProperties -> I:%d L1:%d L2:%d O:%d W:%d ",nInputs,nnetwork.numHiddenLayer1,nnetwork.numHiddenLayer2,nOutputs,nWeights);
       writeLog
    #endif
 
-   n.numInput=nInputs;
-   n.numOutput=nOutputs;
-   n.numWeights=nWeights;
+   nnetwork.numInput=nInputs;
+   nnetwork.numOutput=nOutputs;
+   nnetwork.numWeights=nWeights;
 
 }
 //+------------------------------------------------------------------+
@@ -538,12 +428,12 @@ void EANeuralNetwork::createNewNetwork()  {
    */
 
 
-      switch (n.networkType) {
-         case _NN_2: no.MLPCreateC2(n.numInput,n.numHiddenLayer1,n.numHiddenLayer2,n.numOutput,ps);
+      switch (nnetwork.networkType) {
+         case _NN_2: no.MLPCreateC2(nnetwork.numInput,nnetwork.numHiddenLayer1,nnetwork.numHiddenLayer2,nnetwork.numOutput,ps);
          break;
-         case _NN_C2:no.MLPCreate2(n.numInput,n.numHiddenLayer1,n.numHiddenLayer2,n.numOutput,ps);
+         case _NN_C2:no.MLPCreate2(nnetwork.numInput,nnetwork.numHiddenLayer1,nnetwork.numHiddenLayer2,nnetwork.numOutput,ps);
          break;
-         case _NN_R2:no.MLPCreateR2(n.numInput,n.numHiddenLayer1,n.numHiddenLayer2,n.numOutput,0,1,ps);
+         case _NN_R2:no.MLPCreateR2(nnetwork.numInput,nnetwork.numHiddenLayer1,nnetwork.numHiddenLayer2,nnetwork.numOutput,0,1,ps);
          break;
       }
       #ifdef _DEBUG_NN
@@ -581,13 +471,13 @@ bool EANeuralNetwork::saveNetwork() {
    double threshold=0, weights=0, media=0, sigma=0;
    string binFileName, csvFileName;
 
-      nnStore.Add(n.numInput);
-      nnStore.Add(n.numOutput);
+      nnStore.Add(nnetwork.numInput);
+      nnStore.Add(nnetwork.numOutput);
       numLayers=no.MLPGetLayersCount(ps);
       nnStore.Add(numLayers);     
 
       #ifdef _DEBUG_NN_LOADSAVE
-         ss=StringFormat("EANeuralNetwork -> saveNetwork -> Inputs:%d Outputs:%d Layers:%d",n.numInput,n.numOutput,numLayers);
+         ss=StringFormat("EANeuralNetwork -> saveNetwork -> Inputs:%d Outputs:%d Layers:%d",nnetwork.numInput,nnetwork.numOutput,numLayers);
          writeLog
          pss
       #endif                                                                                                                     
@@ -643,8 +533,8 @@ bool EANeuralNetwork::saveNetwork() {
 
    #ifdef _DEBUG_WRITE_CSV
       // Create a single line for the CSV file
-      if (n.csvWriteDF) {
-         csvFileName=StringFormat("%s%s_saved.csv",IntegerToString(n.strategyNumber),IntegerToString(n.fileNumber));
+      if (nnetwork.csvWriteDF) {
+         csvFileName=StringFormat("%s%s_saved.csv",IntegerToString(nnetwork.strategyNumber),IntegerToString(nnetwork.fileNumber));
          csvFileHandle=FileOpen(csvFileName,FILE_COMMON|FILE_READ|FILE_WRITE|FILE_ANSI|FILE_CSV,","); 
          csvString=TimeToString(iTime(_Symbol,PERIOD_CURRENT,1))+",";
          csvString=csvString+"Saved Network";
@@ -652,21 +542,21 @@ bool EANeuralNetwork::saveNetwork() {
       }
       for (int i=0;i<nnStore.Total();i++) {
          ss=StringFormat(" -> idx:%d Val:%.5f ",i,nnStore.At(i));
-         if (n.csvWriteDF) {
+         if (nnetwork.csvWriteDF) {
             csvString=DoubleToString(nnStore.At(i));
             FileWrite(csvFileHandle,csvString);
          }
          writeLog
          pss
       }
-      if (n.csvWriteDF) {
+      if (nnetwork.csvWriteDF) {
          FileFlush(csvFileHandle);
          FileClose(csvFileHandle);
       }
    
    #endif
 
-   binFileName=StringFormat("%s%s.bin",IntegerToString(n.strategyNumber),IntegerToString(n.fileNumber));
+   binFileName=StringFormat("%s%s.bin",IntegerToString(nnetwork.strategyNumber),IntegerToString(nnetwork.fileNumber));
    // Now create it
    if (binFileHandle=FileOpen(binFileName,FILE_WRITE|FILE_BIN|FILE_ANSI|FILE_COMMON)) {
       if (nnStore.Save(binFileHandle)) {
@@ -717,7 +607,7 @@ void EANeuralNetwork::loadNetwork() {
    // created and the network trained using parameters choosen after optimization
    // 2 every other time the EA is started where the existing .bin file will be reread
    // NORMAL RUN MODE
-   binFileName=StringFormat("%s%s.bin",IntegerToString(n.strategyNumber),IntegerToString(n.fileNumber));
+   binFileName=StringFormat("%s%s.bin",IntegerToString(nnetwork.strategyNumber),IntegerToString(nnetwork.fileNumber));
    if (FileIsExist(binFileName,FILE_COMMON)) {
       pline  
       ss=StringFormat("* EANeuralNetwork -> loadNetwork ->  attempting to open a existing bin file ... %s",binFileName);
@@ -725,8 +615,8 @@ void EANeuralNetwork::loadNetwork() {
       pline
 
       #ifdef _DEBUG_WRITE_CSV
-         if (n.csvWriteDF) {
-            csvFileName=StringFormat("%s%s_loaded.csv",IntegerToString(n.strategyNumber),IntegerToString(n.fileNumber));
+         if (nnetwork.csvWriteDF) {
+            csvFileName=StringFormat("%s%s_loaded.csv",IntegerToString(nnetwork.strategyNumber),IntegerToString(nnetwork.fileNumber));
             csvFileHandle=FileOpen(csvFileName,FILE_COMMON|FILE_READ|FILE_WRITE|FILE_ANSI|FILE_CSV,","); 
             csvString=csvFileName+" Loaded Network";
             FileWrite(csvFileHandle,csvString);
@@ -741,25 +631,25 @@ void EANeuralNetwork::loadNetwork() {
             // Load the network using a previous save to disk of the bin file which is read into
             // the array nnStore
             
-            n.numInput=nnStore.At(idx++);
-            n.numOutput=nnStore.At(idx++);
+            nnetwork.numInput=nnStore.At(idx++);
+            nnetwork.numOutput=nnStore.At(idx++);
             numLayers=nnStore.At(idx++);
             #ifdef _DEBUG_WRITE_CSV 
-               if (n.csvWriteDF) {
-                  FileWrite(csvFileHandle,DoubleToString(n.numInput,5)); 
-                  FileWrite(csvFileHandle,DoubleToString(n.numOutput,5)); 
+               if (nnetwork.csvWriteDF) {
+                  FileWrite(csvFileHandle,DoubleToString(nnetwork.numInput,5)); 
+                  FileWrite(csvFileHandle,DoubleToString(nnetwork.numOutput,5)); 
                   FileWrite(csvFileHandle,DoubleToString(numLayers,5)); 
                }
             #endif
             ArrayResize(network, numLayers);
             #ifdef _DEBUG_NN_LOADSAVE
-               ss=StringFormat("EANeuralNetwork -> loadNetwork -> Inputs:%d Outputs:%d Layers:%d",n.numInput,n.numOutput,numLayers);
+               ss=StringFormat("EANeuralNetwork -> loadNetwork -> Inputs:%d Outputs:%d Layers:%d",nnetwork.numInput,nnetwork.numOutput,numLayers);
                writeLog
                pss
             #endif  
             for(k= 0; k<numLayers; k++) {
                network[k]= (int)nnStore.At(idx++); 
-                  #ifdef _DEBUG_WRITE_CSV if (n.csvWriteDF) FileWrite(csvFileHandle,IntegerToString(network[k]));  #endif
+                  #ifdef _DEBUG_WRITE_CSV if (nnetwork.csvWriteDF) FileWrite(csvFileHandle,IntegerToString(network[k]));  #endif
             }
             createNewNetwork();
 
@@ -775,8 +665,8 @@ void EANeuralNetwork::loadNetwork() {
                      #endif
                      no.MLPSetInputScaling(ps, i, media, sigma);
                      #ifdef _DEBUG_WRITE_CSV
-                        if (n.csvWriteDF) FileWrite(csvFileHandle,DoubleToString(media,5));  
-                        if (n.csvWriteDF) FileWrite(csvFileHandle,DoubleToString(sigma,5));  
+                        if (nnetwork.csvWriteDF) FileWrite(csvFileHandle,DoubleToString(media,5));  
+                        if (nnetwork.csvWriteDF) FileWrite(csvFileHandle,DoubleToString(sigma,5));  
                      #endif
                   }
                   else if(k==numLayers-1) {
@@ -790,20 +680,20 @@ void EANeuralNetwork::loadNetwork() {
                      no.MLPSetInputScaling(ps, i, media, sigma);
                      no.MLPSetOutputScaling(ps, i, media, sigma);
                      #ifdef _DEBUG_WRITE_CSV
-                        if (n.csvWriteDF) FileWrite(csvFileHandle,DoubleToString(media,5));  
-                        if (n.csvWriteDF) FileWrite(csvFileHandle,DoubleToString(sigma,5));  
+                        if (nnetwork.csvWriteDF) FileWrite(csvFileHandle,DoubleToString(media,5));  
+                        if (nnetwork.csvWriteDF) FileWrite(csvFileHandle,DoubleToString(sigma,5));  
                      #endif
                   }
                   functionType= (int)nnStore.At(idx++);
                   threshold= nnStore.At(idx++);
                   #ifdef _DEBUG_WRITE_CSV
-                     if (n.csvWriteDF) FileWrite(csvFileHandle,IntegerToString(functionType));     
-                     if (n.csvWriteDF) FileWrite(csvFileHandle,DoubleToString(threshold,5));       
+                     if (nnetwork.csvWriteDF) FileWrite(csvFileHandle,IntegerToString(functionType));     
+                     if (nnetwork.csvWriteDF) FileWrite(csvFileHandle,DoubleToString(threshold,5));       
                   #endif
                   no.MLPSetNeuronInfo(ps, k, i, functionType, threshold);
                   for (j= 0; k<(numLayers-1) && j<network[k+1]; j++) {
                      weights= nnStore.At(idx++);
-                     #ifdef _DEBUG_WRITE_CSV if (n.csvWriteDF) FileWrite(csvFileHandle,DoubleToString(weights,5));  #endif
+                     #ifdef _DEBUG_WRITE_CSV if (nnetwork.csvWriteDF) FileWrite(csvFileHandle,DoubleToString(weights,5));  #endif
                      #ifdef _DEBUG_NN_LOADSAVE
                         ss=StringFormat("EANeuralNetwork ->  loadNetwork -> Loading weight:%2.5f",weights);
                         writeLog
@@ -819,7 +709,7 @@ void EANeuralNetwork::loadNetwork() {
             ExpertRemove();
          }
          FileClose(binFileHandle);
-         #ifdef _DEBUG_WRITE_CSV if (n.csvWriteDF) FileClose(csvFileHandle);  #endif
+         #ifdef _DEBUG_WRITE_CSV if (nnetwork.csvWriteDF) FileClose(csvFileHandle);  #endif
       }
 
       // network created based on bin file with weights and biaes, now ready to be used via calls to 
@@ -835,7 +725,6 @@ void EANeuralNetwork::loadNetwork() {
       _runMode=_RUN_REBUILD_NN;
       
    }
-      
 }
 
 //+------------------------------------------------------------------+
@@ -844,21 +733,22 @@ void EANeuralNetwork::loadNetwork() {
 EAEnum EANeuralNetwork::networkForcast(CArrayDouble &nnIn, CArrayDouble &nnOut, double &prediction[]) {
 
    static int csvFileHandle;
-   string csvFileName, csvString;
+   string csvFileName, csvString, s1;
    
-
+   /*
    #ifdef _DEBUG_NN_FORCAST
-      string s1;
+      
       ss="EANeuralNetwork -> networkForcast -> ";
       pss
       writeLog
    #endif
+   */
 
    #ifdef _DEBUG_WRITE_CSV
       // Create a single line for the CSV file
-      if (n.csvWriteDF) {
+      if (nnetwork.csvWriteDF) {
          if (csvFileHandle==NULL) {
-            csvFileName=StringFormat("%s%sforcast.csv",IntegerToString(n.strategyNumber),IntegerToString(n.fileNumber));
+            csvFileName=StringFormat("%s%sforcast.csv",IntegerToString(nnetwork.strategyNumber),IntegerToString(nnetwork.fileNumber));
             csvFileHandle=FileOpen(csvFileName,FILE_COMMON|FILE_READ|FILE_WRITE|FILE_ANSI|FILE_CSV,","); 
          }
          csvString=TimeToString(iTime(_Symbol,PERIOD_CURRENT,1))+",";
@@ -866,12 +756,13 @@ EAEnum EANeuralNetwork::networkForcast(CArrayDouble &nnIn, CArrayDouble &nnOut, 
       }
    #endif
 
-
+   /*
    #ifdef _DEBUG_NN_FORCAST
-      ss=StringFormat("EANeuralNetwork -> networkForcast -> Array Sizes %d %d %d",nnIn.Total(), ArraySize(inputs), ArraySize(prediction));
+      ss=StringFormat("EANeuralNetwork -> networkForcast -> Array Sizes Total:%d Inputs:%d Output:%d",nnIn.Total(), ArraySize(inputs), ArraySize(prediction));
       writeLog
       pss
    #endif
+   */
 
    // Convert to normal double [] for inputs
    for (int i=0;i<nnIn.Total();i++) inputs[i]=nnIn.At(i);
@@ -879,7 +770,7 @@ EAEnum EANeuralNetwork::networkForcast(CArrayDouble &nnIn, CArrayDouble &nnOut, 
    // Ask the network for a prediction note we are also passing back the prediction[] for now
    no.MLPProcess(ps, inputs, prediction);   
 
-   if (prediction[0]>=n.triggerThreshold) {
+   if (prediction[0]>=nnetwork.triggerThreshold) {
       #ifdef _DEBUG_NN_FORCAST
          ss=StringFormat("EANeuralNetwork -> networkForcast -> _OPEN_NEW_POSITION %0.5f",prediction[0]);
          pss
@@ -890,12 +781,12 @@ EAEnum EANeuralNetwork::networkForcast(CArrayDouble &nnIn, CArrayDouble &nnOut, 
    }
 
    #ifdef _DEBUG_WRITE_CSV
-      if (n.csvWriteDF) {
+      if (nnetwork.csvWriteDF) {
          for (int l=0;l<ArraySize(inputs);l++) {
-            csvString=csvString+","+DoubleToString(inputs[l])+",";
+            csvString=csvString+","+l+","+DoubleToString(inputs[l])+",";
          }
          for (int m=0;m<nnOut.Total();m++) {
-            csvString=csvString+","+DoubleToString(nnOut[m])+","+prediction[0];
+            csvString=csvString+","+DoubleToString(nnOut[m])+","+DoubleToString(prediction[0]);
          }
       }
 
@@ -921,15 +812,14 @@ EAEnum EANeuralNetwork::networkForcast(CArrayDouble &nnIn, CArrayDouble &nnOut, 
       writeLog
    #endif
 
-
    #ifdef _RUN_PANEL
    showPanel {
-      for (int i=0;i<n.numInput;i++) {
+      for (int i=0;i<nnetwork.numInput;i++) {
          ss=ss+" "+StringFormat("%0.2f",inputs[i]);
       }
       ip.updateInfoLabel(23,0,ss);
       ss="";
-      for (int j=0;j<n.numOutput;j++) {
+      for (int j=0;j<nnetwork.numOutput;j++) {
          ss=ss+" "+StringFormat("%0.2f",nnOut[j]);
       }
       ip.updateInfoLabel(24,0,ss);
@@ -938,8 +828,6 @@ EAEnum EANeuralNetwork::networkForcast(CArrayDouble &nnIn, CArrayDouble &nnOut, 
 
    return _NO_ACTION;
    
-
-
 }
 //+------------------------------------------------------------------+
 //|                                                                  |
@@ -980,10 +868,10 @@ void EANeuralNetwork::trainNetwork() {
    Algorithm  is  well  suited  for  problems  of  any dimensionality (memory
    requirements and step complexity are linear by weights number).
    */
-   if (n.numWeights<n.trainWeightsThreshold) {
-      no.MLPTrainLM(ps,dataFrame,nPoints,n.decay,n.restarts,retCode,repShell);
+   if (nnetwork.numWeights<nnetwork.trainWeightsThreshold) {
+      no.MLPTrainLM(ps,dataFrame,nPoints,nnetwork.decay,nnetwork.restarts,retCode,repShell);
       #ifdef _DEBUG_NN_TRAINING
-         ss=StringFormat("EANeuralNetwork -> MLPTrainLM weights:%d  Threshold:%d - Points:%d Decay:%.5f restarts:%d",n.numWeights, n.trainWeightsThreshold, nPoints,n.decay,n.restarts);
+         ss=StringFormat("EANeuralNetwork -> MLPTrainLM weights:%d  Threshold:%d - Points:%d Decay:%.5f restarts:%d",nnetwork.numWeights, nnetwork.trainWeightsThreshold, nPoints,nnetwork.decay,nnetwork.restarts);
          writeLog
       #endif
       if (retCode==-9) ss="EANeuralNetwork -> internal matrix inverse subroutine failed (-9)";                    writeLog
@@ -991,9 +879,9 @@ void EANeuralNetwork::trainNetwork() {
       if (retCode==-1) ss="EANeuralNetwork -> if wrong parameters specified (NPoints<0, Restarts<1) (-1)";        writeLog
       if (retCode==2)  ss="EANeuralNetwork -> Success task has been solved (2)";                                  writeLog
    } else {
-      no.MLPTrainLBFGS(ps,dataFrame,nPoints,n.decay,n.restarts,n.wStep,n.maxITS,retCode,repShell);
+      no.MLPTrainLBFGS(ps,dataFrame,nPoints,nnetwork.decay,nnetwork.restarts,nnetwork.wStep,nnetwork.maxITS,retCode,repShell);
       #ifdef _DEBUG_NN_TRAINING
-         ss=StringFormat("EANeuralNetwork -> MLPTrainLBFGS Points:%d Decay:%.5f restarts:%d WStep:%.5f maxITS:%d",nPoints,n.decay,n.restarts,n.wStep,n.maxITS);
+         ss=StringFormat("EANeuralNetwork -> MLPTrainLBFGS Points:%d Decay:%.5f restarts:%d WStep:%.5f maxITS:%d",nPoints,nnetwork.decay,nnetwork.restarts,nnetwork.wStep,nnetwork.maxITS);
          writeLog
       #endif
       if (retCode==-8) ss="EANeuralNetwork -> if both WStep=0 and MaxIts=0 (-8)";                                 writeLog
@@ -1010,12 +898,11 @@ void EANeuralNetwork::trainNetwork() {
       ExpertRemove();
    }
 
-
    if (retCode==2||retCode==6) {
       #ifdef _DEBUG_NN_TRAINING
          rmsError= no.MLPRMSError(ps, dataFrame, nPoints);
          ss=StringFormat("EANeuralNetwork ->\n #Gradient calculations:%d\n #Hessian calculations%d\n #Cholesky decompositions:%d\n Training error:%2.8f\n Restarts:%d\n Code Response:%d",
-            repShell.GetNGrad(),repShell.GetNHess(),repShell.GetNCholesky(),DoubleToString(rmsError, 8),n.restarts,retCode );
+            repShell.GetNGrad(),repShell.GetNHess(),repShell.GetNCholesky(),DoubleToString(rmsError, 8),nnetwork.restarts,retCode );
          writeLog
       #endif
    }  
@@ -1053,5 +940,4 @@ void EANeuralNetwork::trainNetwork() {
       }
    }  
 
-   
 }

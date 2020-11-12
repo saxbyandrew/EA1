@@ -43,3 +43,148 @@
                // !!!! not sure if i'll use this
       int               defaultRunMode;
    } sb;
+
+   /*
+      #ifdef _USE_MFI
+      // ----------------------------------------------------------------
+      addValue(i3a_indicatorNumber);
+      addValue(i3a_period);
+      addValue(i3a_movingAverage);
+      addValue(EMPTY_VALUE); // Bump row count
+
+      addValue(i3b_indicatorNumber);
+      addValue(i3b_period);
+      addValue(i3b_movingAverage);
+      addValue(EMPTY_VALUE); // Bump row count
+      #endif
+      // ----------------------------------------------------------------
+
+      #ifdef _USE_SAR
+      addValue(i4a_indicatorNumber);
+      addValue(i4a_stepValue);
+      addValue(i4a_maxValue);
+      addValue(EMPTY_VALUE); // Bump row count
+
+      addValue(i4b_indicatorNumber);
+      addValue(i4b_stepValue);
+      addValue(i4b_maxValue);
+      addValue(EMPTY_VALUE); // Bump row count
+      #endif
+
+      #ifdef _USE_ICH
+      // ----------------------------------------------------------------
+      addValue(i5a_indicatorNumber);
+      addValue(i5a_tenkanSen);
+      addValue(i5a_kijunSen);
+      addValue(i5a_spanB);
+      addValue(EMPTY_VALUE); // Bump row count
+
+      addValue(i5b_indicatorNumber);
+      addValue(i5b_tenkanSen);
+      addValue(i5b_kijunSen);
+      addValue(i5b_spanB);
+      addValue(EMPTY_VALUE); // Bump row count
+      #endif
+
+      #ifdef _USE_RVI
+      // ----------------------------------------------------------------
+      addValue(i6a_indicatorNumber);
+      addValue(i6a_period);
+      addValue(i6a_movingAverage);
+      addValue(EMPTY_VALUE); // Bump row count
+
+      addValue(i6b_indicatorNumber);
+      addValue(i6b_period);
+      addValue(i6b_movingAverage);
+      addValue(EMPTY_VALUE); // Bump row count
+      #endif
+
+      #ifdef _USE_STOC
+      // ----------------------------------------------------------------
+      addValue(i7a_indicatorNumber);
+      addValue(i7a_period);
+      addValue(i7a_kPeriod);
+      addValue(i7a_dPeriod);
+      addValue(i7a_movingAverageMethod);
+      addValue(i7a_STOCpa);
+      addValue(EMPTY_VALUE); // Bump row count
+
+      addValue(i7b_indicatorNumber);
+      addValue(i7b_period);
+      addValue(i7b_kPeriod);
+      addValue(i7b_dPeriod);
+      addValue(i7b_movingAverageMethod);
+      addValue(i7b_STOCpa);
+      addValue(EMPTY_VALUE); // Bump row count
+      #endif
+
+      #ifdef _USE_OSMA
+      // ----------------------------------------------------------------
+      addValue(i8a_indicatorNumber);
+      addValue(i8a_period);
+      addValue(i8a_slowMovingAverage);
+      addValue(i8a_fastMovingAverage);
+      addValue(i8a_signalPeriod);
+      addValue(i8a_appliedPrice);
+      addValue(EMPTY_VALUE); // Bump row count
+
+      addValue(i8b_indicatorNumber);
+      addValue(i8b_period);
+      addValue(i8b_slowMovingAverage);
+      addValue(i8b_fastMovingAverage);
+      addValue(i8b_signalPeriod);
+      addValue(i8b_appliedPrice);
+      addValue(EMPTY_VALUE); // Bump row count
+      #endif
+
+      #ifdef _USE_MACD
+      // ----------------------------------------------------------------
+      addValue(i9a_indicatorNumber);
+      addValue(i9a_period);
+      addValue(i9a_slowMovingAverage);
+      addValue(i9a_fastMovingAverage);
+      addValue(i9a_signalPeriod);
+      addValue(EMPTY_VALUE); // Bump row count
+
+      addValue(i9b_indicatorNumber);
+      addValue(i9b_period);
+      addValue(i9b_slowMovingAverage);
+      addValue(i9b_fastMovingAverage);
+      addValue(i9b_signalPeriod);
+      addValue(EMPTY_VALUE); // Bump row count
+      #endif
+
+      #ifdef _USE_MACDBULL
+      // ----------------------------------------------------------------
+      addValue(i10a_indicatorNumber);
+      addValue(i10a_period);
+      addValue(i10a_slowMovingAverage);
+      addValue(i10a_fastMovingAverage);
+      addValue(i10a_signalPeriod);
+      addValue(EMPTY_VALUE); // Bump row count
+
+      addValue(i10b_indicatorNumber);
+      addValue(i10b_period);
+      addValue(i10b_slowMovingAverage);
+      addValue(i10b_fastMovingAverage);
+      addValue(i10b_signalPeriod);
+      addValue(EMPTY_VALUE); // Bump row count
+      #endif
+
+      #ifdef _USE_MACDBEAR
+      // ----------------------------------------------------------------
+      addValue(i11a_indicatorNumber);
+      addValue(i11a_period);
+      addValue(i11a_slowMovingAverage);
+      addValue(i11a_fastMovingAverage);
+      addValue(i11a_signalPeriod);
+      addValue(EMPTY_VALUE); // Bump row count
+
+      addValue(i11b_indicatorNumber);
+      addValue(i11b_period);
+      addValue(i11b_slowMovingAverage);
+      addValue(i11b_fastMovingAverage);
+      addValue(i11b_signalPeriod);
+      addValue(EMPTY_VALUE); // Bump row count
+      #endif
+*/
