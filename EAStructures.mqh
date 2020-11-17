@@ -85,7 +85,7 @@ struct Position {
       int               maxPositions;
       int               maxDailyHold;        // 0 close today +1 close tomorrow etc
       int               maxMg; 
-      double            maxMulti;
+      double            mgMultiplier;
       double            hedgeLossAmount;
       unsigned          closingTypes;
 };

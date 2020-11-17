@@ -359,16 +359,10 @@ void OnTick() {
         action=_RUN_ONDAY;
 
         //==========
-        // ON RELOAD
+        // CHECK FOR STRATEGY RELOAD
         //==========
-        //if (testFlag==1) {
-        //if (_runMode==_RUN_UPDATE) {
-            //ss="TESTFLAG=1";
-            //pss
-            //updateStrategy();
-            //testFlag=0;
-        //}
-                        
+        updateStrategy();
+
     } 
 
     // Loop through all strategies and send a action

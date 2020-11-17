@@ -83,7 +83,7 @@ EAStrategyUpdate::EAStrategyUpdate() {
    // optimization row of values to be used in a copy into the main DB. NOTE the strategyType value refers to the long / short etc number and
    // is equal to the optimizationRefNumber which was initially chosen to filter which strategy needs to be optimized
 
-   string sql="SELECT strategyNumber, passNumber FROM OPTIMIZATION WHERE reload=1";
+   string sql="SELECT COUNT(), strategyNumber, passNumber FROM OPTIMIZATION WHERE reload=1";
    ss=sql;
    pss
    writeLog
@@ -96,15 +96,15 @@ EAStrategyUpdate::EAStrategyUpdate() {
       //ExpertRemove();
    } else {
       #ifdef _DEBUG_STRATEGY_UPDATE
-      ss="  -> EAStrategyUpdate DatabaseRead -> SUCCESS";
+      ss=" -> EAStrategyUpdate DatabaseRead -> SUCCESS";
       writeLog
       pss
       #endif 
    }
 
    DatabaseRead(request);
-   DatabaseColumnInteger    (request,0,strategyNumber);
-   DatabaseColumnInteger    (request,1,passNumber);
+   DatabaseColumnInteger    (request,1,strategyNumber);
+   DatabaseColumnInteger    (request,2,passNumber);
 
    #ifdef _DEBUG_STRATEGY_UPDATE
       ss=StringFormat("EAStrategyUpdate -> StrategyNumber:%d Pass Number:%d",strategyNumber,passNumber);
@@ -112,8 +112,8 @@ EAStrategyUpdate::EAStrategyUpdate() {
       pss
    #endif 
 
-   strategyUpdate();
-   networkUpdate();
+   //strategyUpdate();
+   //networkUpdate();
    technicalsUpdate();
 
 }
@@ -215,7 +215,7 @@ void EAStrategyUpdate::strategyUpdate() {
    DatabaseColumnInteger   (request,5,base.maxDaily);
    DatabaseColumnInteger   (request,6,position.maxDailyHold);
    DatabaseColumnInteger   (request,7,position.maxMg);
-   DatabaseColumnDouble    (request,8,position.maxMulti);
+   DatabaseColumnDouble    (request,8,position.mgMultiplier);
    DatabaseColumnDouble    (request,9,position.hedgeLossAmount);
 
    #ifdef _DEBUG_STRATEGY_UPDATE
@@ -235,13 +235,11 @@ void EAStrategyUpdate::strategyUpdate() {
 
    } else {
       #ifdef _DEBUG_STRATEGY_UPDATE
-         ss=StringFormat("EAStrategyUpdate -> strategyUpdate -> will update passnumber:%d %.2f %.2f %.2f",passNumber,position.lotSize,position.fpt,position.maxMulti);
+         ss=StringFormat("EAStrategyUpdate -> strategyUpdate -> will update passnumber:%d %.2f %.2f %.2f",passNumber,position.lotSize,position.fpt,position.mgMultiplier);
          writeLog
          pss
       #endif 
 
-      // Update each of the field names for the main over arching strategy.
-      // NOTE that the strategyTpe much = the optimizationRefNumber field
 
       // INT
       databaseUpdate("STRATEGY","maxPositions",position.maxPositions);
@@ -252,7 +250,7 @@ void EAStrategyUpdate::strategyUpdate() {
       databaseUpdate("STRATEGY","lotSize",position.lotSize);
       databaseUpdate("STRATEGY","fpt",position.fpt);
       databaseUpdate("STRATEGY","flt",position.flt);
-      databaseUpdate("STRATEGY","maxMulti",position.maxMulti);
+      databaseUpdate("STRATEGY","mgMultiplier",position.mgMultiplier);
       databaseUpdate("STRATEGY","hedgeLossAmount",position.hedgeLossAmount);
 
    }
@@ -294,11 +292,11 @@ void EAStrategyUpdate::networkUpdate() {
    DatabaseColumnInteger   (request,7,nnetwork.restarts);
    DatabaseColumnDouble    (request,8,nnetwork.decay);
    DatabaseColumnDouble    (request,9,nnetwork.wStep);
-   DatabaseColumnInteger   (request,9,nnetwork.maxITS);
+   DatabaseColumnInteger   (request,10,nnetwork.maxITS);
 
 
    #ifdef _DEBUG_STRATEGY_UPDATE
-      ss=StringFormat("EAStrategyUpdate -> StrategyNumber:%d Pass Number:%d",strategyNumber,passNumber);
+      ss=StringFormat("EAStrategyUpdate -> networkUpdate -> StrategyNumber:%d Pass Number:%d",strategyNumber,passNumber);
       writeLog
       pss
    #endif 
@@ -314,26 +312,25 @@ void EAStrategyUpdate::networkUpdate() {
 
    } else {
       #ifdef _DEBUG_STRATEGY_UPDATE
-         ss=StringFormat("EAStrategyUpdate -> will update passnumber:%d %d %d %d",passNumber,nnetwork.networkType,nnetwork.dfSize,nnetwork.triggerThreshold);
+         ss=StringFormat("EAStrategyUpdate -> will update passnumber:%d %d %d %.5f",passNumber,nnetwork.networkType,nnetwork.dfSize,nnetwork.triggerThreshold);
          writeLog
          pss
       #endif 
 
 
       // INT
-      databaseUpdate("NNETWORK","networkType",(int) nnetwork.networkType);
-      databaseUpdate("NNETWORK","dfSize",nnetwork.dfSize);
-      databaseUpdate("NNETWORK","trainWeightsThreshold",nnetwork.trainWeightsThreshold);
-      databaseUpdate("NNETWORK","numHiddenLayer1",nnetwork.numHiddenLayer1);
-      databaseUpdate("NNETWORK","numHiddenLayer2",nnetwork.numHiddenLayer2);
-      databaseUpdate("NNETWORK","restarts",nnetwork.restarts);
-      databaseUpdate("NNETWORK","maxITS",nnetwork.maxITS);
+      databaseUpdate("NNETWORKS","networkType",(int) nnetwork.networkType);
+      databaseUpdate("NNETWORKS","dfSize",nnetwork.dfSize);
+      databaseUpdate("NNETWORKS","trainWeightsThreshold",nnetwork.trainWeightsThreshold);
+      databaseUpdate("NNETWORKS","numHiddenLayer1",nnetwork.numHiddenLayer1);
+      databaseUpdate("NNETWORKS","numHiddenLayer2",nnetwork.numHiddenLayer2);
+      databaseUpdate("NNETWORKS","restarts",nnetwork.restarts);
+      databaseUpdate("NNETWORKS","maxITS",nnetwork.maxITS);
 
       // DOUBLES
-      databaseUpdate("NNETWORK","triggerThreshold",nnetwork.triggerThreshold);
-      databaseUpdate("NNETWORK","decay",nnetwork.decay);
-      databaseUpdate("NNETWORK","wStep",nnetwork.wStep);
-      databaseUpdate("NNETWORK","maxITS",nnetwork.maxITS);
+      databaseUpdate("NNETWORKS","triggerThreshold",nnetwork.triggerThreshold);
+      databaseUpdate("NNETWORKS","decay",nnetwork.decay);
+      databaseUpdate("NNETWORKS","wStep",nnetwork.wStep);
 
 
    }
@@ -345,7 +342,7 @@ void EAStrategyUpdate::networkUpdate() {
 void EAStrategyUpdate::technicalsUpdate() {
 
    string sql;
-   int request1, request2, request3;
+   int request;
 
    #ifdef _DEBUG_TECHNICAL_PARAMETERS
       ss="EAStrategyUpdate -> technicalsUpdate -> .... ";
@@ -353,9 +350,9 @@ void EAStrategyUpdate::technicalsUpdate() {
       writeLog
    #endif
 
-   sql=StringFormat("SELECT inputPrefix FROM TECHNICALS where strategyNumber=%d",strategyNumber);
-   request1=DatabasePrepare(_mainDBHandle,sql);
-   if (request1==INVALID_HANDLE) {
+   sql=StringFormat("SELECT * FROM TECHNICALS where passNumber=%d",passNumber);  
+   request=DatabasePrepare(_optimizeDBHandle,sql);
+   if (request==INVALID_HANDLE) {
       ss=StringFormat(" -> EAStrategyUpdate -> technicalsUpdate DB request failed %d with code:%d",passNumber, GetLastError()); 
       writeLog
       pss
@@ -365,66 +362,50 @@ void EAStrategyUpdate::technicalsUpdate() {
       ExpertRemove();
    } else {
 
-      // Loop thru all values for this strategyNumber / strategyType pair
-      while (DatabaseRead(request1)) {
 
-         // Using the inputPrefix get the new values from the optimization DB 
-         DatabaseColumnText         (request1,0,tech.inputPrefix);
+      while (DatabaseRead(request)) {
 
-         sql=StringFormat("SELECT * FROM TECHNICALS where inputPrefix=%s AND passNumber=%d",tech.inputPrefix,passNumber);  
-         request2=DatabasePrepare(_optimizeDBHandle,sql);
-         if (request2==INVALID_HANDLE) {
-            ss=StringFormat(" -> EAStrategyUpdate -> technicalsUpdate DB request ERROR code:%d",GetLastError()); 
-            writeLog
+         DatabaseColumnText         (request,1,tech.indicatorName);
+         DatabaseColumnInteger      (request,2,tech.period);
+         DatabaseColumnInteger      (request,3,tech.movingAverage);
+         DatabaseColumnInteger      (request,4,tech.slowMovingAverage);
+         DatabaseColumnInteger      (request,5,tech.fastMovingAverage);
+         DatabaseColumnInteger      (request,6,tech.movingAverageMethod);
+         DatabaseColumnInteger      (request,7,tech.appliedPrice);
+         DatabaseColumnDouble       (request,8,tech.stepValue);
+         DatabaseColumnDouble       (request,9,tech.maxValue);
+         DatabaseColumnInteger      (request,10,tech.signalPeriod);
+         DatabaseColumnInteger      (request,11,tech.tenkanSen);
+         DatabaseColumnInteger      (request,12,tech.kijunSen);
+         DatabaseColumnInteger      (request,13,tech.spanB);
+         DatabaseColumnInteger      (request,14,tech.kPeriod);
+         DatabaseColumnInteger      (request,15,tech.dPeriod);
+         DatabaseColumnInteger      (request,16,tech.useBuffers);
+         DatabaseColumnInteger      (request,17,tech.ttl);
+         DatabaseColumnText         (request,18,tech.inputPrefix); 
+         DatabaseColumnDouble       (request,19,tech.lowerLevel);
+         DatabaseColumnDouble       (request,20,tech.upperLevel);
+
+         // Create a update string for the main database
+         sql=StringFormat("UPDATE TECHNICALS SET period=%d, movingAverage=%d, slowMovingAverage=%d, fastMovingAverage=%d, movingAverageMethod=%d,"
+         "appliedPrice=%d, stepValue=%.5f, maxValue=%.5f, signalPeriod=%d, tenkanSen=%d, kijunSen=%d, spanB=%d, kPeriod=%d, dPeriod=%d"
+         " WHERE strategyNumber=%d AND inputPrefix='%s'",tech.period,tech.movingAverage,tech.slowMovingAverage,tech.fastMovingAverage,tech.movingAverageMethod,
+         tech.appliedPrice,tech.stepValue,tech.maxValue,tech.signalPeriod,tech.tenkanSen,tech.kijunSen,tech.spanB,tech.kPeriod,tech.dPeriod,strategyNumber,tech.inputPrefix);
+         if (!DatabaseExecute(_mainDBHandle, sql)) {
+            ss=StringFormat(" -> Failed to insert NEW values with code %d",GetLastError());
             pss
+            writeLog
             ss=sql;
-            writeLog
             pss
+            writeLog
          } else {
-            DatabaseRead(request2);
-
-            DatabaseColumnText         (request2,1,tech.indicatorName);
-            DatabaseColumnInteger      (request2,2,tech.period);
-            DatabaseColumnInteger      (request2,3,tech.movingAverage);
-            DatabaseColumnInteger      (request2,4,tech.slowMovingAverage);
-            DatabaseColumnInteger      (request2,5,tech.fastMovingAverage);
-            DatabaseColumnInteger      (request2,6,tech.movingAverageMethod);
-            DatabaseColumnInteger      (request2,7,tech.appliedPrice);
-            DatabaseColumnDouble       (request2,8,tech.stepValue);
-            DatabaseColumnDouble       (request2,9,tech.maxValue);
-            DatabaseColumnInteger      (request2,10,tech.signalPeriod);
-            DatabaseColumnInteger      (request2,11,tech.tenkanSen);
-            DatabaseColumnInteger      (request2,12,tech.kijunSen);
-            DatabaseColumnInteger      (request2,13,tech.spanB);
-            DatabaseColumnInteger      (request2,14,tech.kPeriod);
-            DatabaseColumnInteger      (request2,15,tech.dPeriod);
-            DatabaseColumnInteger      (request2,16,tech.useBuffers);
-            DatabaseColumnInteger      (request2,17,tech.ttl);
-            //DatabaseColumnText         (request,18,tech.inputPrefix); 
-            DatabaseColumnDouble       (request2,19,tech.lowerLevel);
-            DatabaseColumnDouble       (request2,20,tech.upperLevel);
-
-            // Create a update string for the main database
-            sql=StringFormat("UPDATE TECHNICALS SET period=%d, movingAverage=%d, slowMovingAverage=%d, fastMovingAverage=%d, movingAverageMethod=%d,"
-            "appliedPrice=%d, stepValue=.5f, maxValue=%.5f, signalPeriod=%d, tenkanSen=%d, kijunSen=%d, spanB=%d, kPeriod=%d, dPeriod=%d"
-            " WHERE strategyNumber=%d AND inputPrefix='%s'",tech.period,tech.movingAverage,tech.slowMovingAverage,tech.fastMovingAverage,tech.movingAverageMethod,
-            tech.appliedPrice,tech.stepValue,tech.maxValue,tech.signalPeriod,tech.tenkanSen,tech.kijunSen,tech.spanB,tech.kPeriod,tech.dPeriod,strategyNumber,tech.inputPrefix);
-            if (!DatabaseExecute(_mainDBHandle, sql)) {
-               ss=StringFormat(" -> Failed to insert NEW values with code %d",GetLastError());
-               pss
-               writeLog
-               ss=sql;
-               pss
-               writeLog
-            } else {
-            #ifdef _DEBUG_OPTIMIZATION
-               ss="-> EAStrategyUpdate -> technicalsUpdate DB request SUCCESS";
-               pss
-               writeLog
-            #endif
-            }
-         
+         #ifdef _DEBUG_OPTIMIZATION
+            ss="-> EAStrategyUpdate -> technicalsUpdate DB request SUCCESS";
+            pss
+            writeLog
+         #endif
          }
+         
       }
    }
 
