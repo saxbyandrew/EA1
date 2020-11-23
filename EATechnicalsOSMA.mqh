@@ -10,17 +10,17 @@
 
 #include "EATechnicalsBase.mqh"
 
-#include <Indicators\Trend.mqh>
+#include <Indicators\Oscilators.mqh>
 
 //=========
-class EATechnicalsADX : public EATechnicalsBase {
+class EATechnicalsOSMA : public EATechnicalsBase {
 //=========
 
 //=========
 private:
 
    string   ss;
-   CiADX    adx;  
+   CiOsMA   osma;  
 
 
 //=========
@@ -31,8 +31,8 @@ protected:
 //=========
 public:
 //=========
-   EATechnicalsADX(Technicals &t);
-   ~EATechnicalsADX();
+   EATechnicalsOSMA(Technicals &tech);
+   ~EATechnicalsOSMA();
 
    void  getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs);    
    void  getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,datetime barDateTime);                    
@@ -42,55 +42,62 @@ public:
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-EATechnicalsADX::EATechnicalsADX(Technicals &t) {
+EATechnicalsOSMA::EATechnicalsOSMA(Technicals &tech) {
 
-   EATechnicalsBase::copyValues(t);
+   /*
+   #ifdef _DEBUG_OSMA_MODULE
+      ss="EATechnicalsOSMA -> .... Default Constructor";
+      pss
+   #endif
+   */
 
-   if (!adx.Create(_Symbol,t.period,t.movingAverage)) {
-      #ifdef _DEBUG_ADX_MODULE
-            printf("ADXSetParameters -> ERROR");
+   // Set the local instance struct variables
+   EATechnicalsBase::copyValues(tech);
+
+   if (!osma.Create(_Symbol,tech.period,tech.fastMovingAverage,tech.slowMovingAverage,tech.signalPeriod,tech.appliedPrice)) {
+      #ifdef _DEBUG_OSMA_MODULE
+            ss="OSMASetParameters -> ERROR";
+            pss
+            writeLog
             ExpertRemove();
       #endif
    } 
-}
-
-//+------------------------------------------------------------------+
-//|                                                                  |
-//+------------------------------------------------------------------+
-EATechnicalsADX::~EATechnicalsADX() {
 
 }
 
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-void EATechnicalsADX::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,datetime barDateTime) {
+EATechnicalsOSMA::~EATechnicalsOSMA() {
+
+}
+
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+void EATechnicalsOSMA::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,datetime barDateTime) {
 
    /*
-   #ifdef _DEBUG_ADX_MODULE
-      ss="EATechnicalsADX -> getValues -> Entry 2....";
+   #ifdef _DEBUG_OSMA_MODULE
+      ss="EATechnicalsOSMA -> getValues -> Entry 2....";
       pss
       writeLog
    #endif 
    */
-//ss=StringFormat("EATechnicalsADX  -> getValues -> PLUSDI Time %s value:%.2f barNumber:%d",TimeToString(barDateTime),plusDI[0],barNumber);  
+//ss=StringFormat("EATechnicalsOSMA  -> getValues -> PLUSDI Time %s value:%.2f barNumber:%d",TimeToString(barDateTime),plusDI[0],barNumber);  
    int      barNumber=iBarShift(_Symbol,tech.period,barDateTime,false); // Adjust the bar number based on PERIOD and TIME
-   double   main[1], plusDI[1], minusDI[1];
+   double   main[1];
 
    // Refresh the indicator and get all the buffers
-   adx.Refresh(-1);
+   osma.Refresh(-1);
 
-   if (adx.GetData(barDateTime,1,0,main)>0 && adx.GetData(barDateTime,1,1,plusDI)>0 && adx.GetData(barDateTime,1,2,minusDI)>0) {
-      #ifdef _DEBUG_ADX_MODULE
-         ss=StringFormat("EATechnicalsADX  -> getValues -> MAIN:%.2f",main[0]);        
+   if (osma.GetData(barDateTime,1,0,main)>0) {
+      #ifdef _DEBUG_OSMA_MODULE
+         ss=StringFormat("EATechnicalsOSMA  -> getValues -> MAIN:%.2f",main[0]);        
          writeLog
          pss
-         ss=StringFormat("EATechnicalsADX  -> getValues -> PLUSDI:%.2f",plusDI[0]);    
-         writeLog
-         pss
-         ss=StringFormat("EATechnicalsADX  -> getValues -> MINUSDI:%.2f",minusDI[0]);  
-         writeLog
-         pss
+
+
       #endif
 
       /*
@@ -101,20 +108,20 @@ void EATechnicalsADX::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,
       Input data are automatically scaled prior to feeding network, and network outputs are automatically unscaled after processing. 
       Preprocessing is done transparently to user, you don't have to worry about it - just feed data to training algorithm!
       */
-
+      //if (bool (tech.useBuffers&_BUFFER1)) nnInputs.Add(normalizedValue(main[0]));
+      //if (bool (tech.useBuffers&_BUFFER2)) nnInputs.Add(normalizedValue(plusDI[0]));
+      //if (bool (tech.useBuffers&_BUFFER3)) nnInputs.Add(normalizedValue(minusDI[0]));
       if (bool (tech.useBuffers&_BUFFER1)) nnInputs.Add(main[0]);
-      if (bool (tech.useBuffers&_BUFFER2)) nnInputs.Add(plusDI[0]);
-      if (bool (tech.useBuffers&_BUFFER3)) nnInputs.Add(minusDI[0]);
+      //if (bool (tech.useBuffers&_BUFFER4)) nnInputs.Add(??);
+      //if (bool (tech.useBuffers&_BUFFER5)) nnInputs.Add(??);
 
    } else {
-      #ifdef _DEBUG_ADX_MODULE
-         ss="EATechnicalsADX   -> getValues -> ERROR will return zeros"; 
+      #ifdef _DEBUG_OSMA_MODULE
+         ss="EATechnicalsOSMA   -> getValues -> ERROR will return zeros"; 
          writeLog
          pss
       #endif
       if (bool (tech.useBuffers&_BUFFER1)) nnInputs.Add(0);
-      if (bool (tech.useBuffers&_BUFFER2)) nnInputs.Add(0);
-      if (bool (tech.useBuffers&_BUFFER3)) nnInputs.Add(0);
    }
 
 }
@@ -122,39 +129,32 @@ void EATechnicalsADX::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-void EATechnicalsADX::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs) {
+void EATechnicalsOSMA::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs) {
 
-   double main[1], plusDI[1], minusDI[1];
 
+
+   double main[1];
+   
    // Refresh the indicator and get all the buffers
-   adx.Refresh(-1);
+   osma.Refresh(-1);
 
-   if (adx.GetData(1,1,0,main)>0 && adx.GetData(1,1,1,plusDI)>0 && adx.GetData(1,1,2,minusDI)>0) {
-      #ifdef _DEBUG_ADX_MODULE
-         ss=StringFormat("EATechnicalsADX  -> getValues -> MAIN:%.2f",main[0]);        
-         writeLog
-         pss
-         ss=StringFormat("EATechnicalsADX  -> getValues -> PLUSDI:%.2f",plusDI[0]);    
-         writeLog
-         pss
-         ss=StringFormat("EATechnicalsADX  -> getValues -> MINUSDI:%.2f",minusDI[0]);  
+   if (osma.GetData(1,1,0,main)>0) {
+      #ifdef _DEBUG_OSMA_MODULE
+         ss=StringFormat("EATechnicalsOSMA  -> getValues -> MAIN:%.2f",main[0]);        
          writeLog
          pss
       #endif
 
       if (bool (tech.useBuffers&_BUFFER1)) nnInputs.Add(main[0]);
-      if (bool (tech.useBuffers&_BUFFER2)) nnInputs.Add(plusDI[0]);
-      if (bool (tech.useBuffers&_BUFFER3)) nnInputs.Add(minusDI[0]);
+      //if (bool (tech.useBuffers&_BUFFER4)) nnInputs.Add(??);
+      //if (bool (tech.useBuffers&_BUFFER5)) nnInputs.Add(??);
 
    } else {
-      #ifdef _DEBUG_ADX_MODULE
-         ss="EATechnicalsADX -> getValues -> ERROR will return zeros"; 
+      #ifdef _DEBUG_OSMA_MODULE
+         ss="EATechnicalsOSMA -> getValues -> ERROR will return zeros"; 
          writeLog
          pss
       #endif
       if (bool (tech.useBuffers&_BUFFER1)) nnInputs.Add(0);
-      if (bool (tech.useBuffers&_BUFFER2)) nnInputs.Add(0);
-      if (bool (tech.useBuffers&_BUFFER3)) nnInputs.Add(0);
    }
 }
-

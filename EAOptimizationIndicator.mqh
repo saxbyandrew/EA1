@@ -24,8 +24,6 @@ private:
       int      indicatorNumber;
    } i;
 
-
-
 //=========
 protected:
 //=========
@@ -47,6 +45,7 @@ EAOptimizationIndicator::EAOptimizationIndicator(string inputPrefix, string indi
 
    i.inputPrefix=inputPrefix;
    i.indicatorName=indicatorName;
+   i.indicatorNumber=indicatorNumber;
 
    #ifdef _DEBUG_OPTIMIZATION
       ss=StringFormat("EAOptimizationIndicator -> EAOptimizationIndicator %s %s",i.inputPrefix,i.indicatorName);
@@ -68,21 +67,25 @@ void EAOptimizationIndicator::addOptimizationValues(double &val[], int passNumbe
    string sql;
 
    // ----------------------------------------------------------------
-   if (StringFind(i.inputPrefix,"i1",0)!=-1) {
+   #ifdef _USE_ADX //i1a
    // ----------------------------------------------------------------
-      sql=StringFormat("INSERT INTO TECHNICALS (passNumber,indicatorName,"
-         "period,movingAverage,inputPrefix) VALUES (%u,'%s',%.5f,%.5f,'%s')",
-            passNumber,"ADX",val[1],val[2],i.inputPrefix);
-            #ifdef _DEBUG_OPTIMIZATION
-               ss=sql;
-               pss
-            #endif
+      // Match any input prefix of "iax" where x=a or b pr c etc, which is a ADX
+      if (StringFind(i.inputPrefix,"i1",0)!=-1) {
+         sql=StringFormat("INSERT INTO TECHNICALS (passNumber,indicatorName,"
+            "period,movingAverage,inputPrefix) VALUES (%u,'%s',%.5f,%.5f,'%s')", // Checked
+               passNumber,"ADX",val[1],val[2],i.inputPrefix);
+               #ifdef _DEBUG_OPTIMIZATION
+                  ss=sql;
+                  pss
+               #endif
       }
+   #endif
 
    // ----------------------------------------------------------------
-   if (StringFind(i.inputPrefix,"i2",0)!=-1) {
+   #ifdef _USE_RSI //i2a
    // ----------------------------------------------------------------
-      sql=StringFormat("INSERT INTO TECHNICALS (passNumber,indicatorName,"
+      if (StringFind(i.inputPrefix,"i2",0)!=-1) {
+         sql=StringFormat("INSERT INTO TECHNICALS (passNumber,indicatorName,"
          "period,movingAverage,appliedPrice,inputPrefix) VALUES (%u,'%s',%.5f,%.5f,%.5f,'%s')",
             passNumber,"RSI",val[1],val[2],val[3],i.inputPrefix);
             #ifdef _DEBUG_OPTIMIZATION
@@ -90,10 +93,104 @@ void EAOptimizationIndicator::addOptimizationValues(double &val[], int passNumbe
                pss
             #endif
       }
+   #endif
 
    // ----------------------------------------------------------------
-   if (StringFind(i.inputPrefix,"i9",0)!=-1) {
+   #ifdef _USE_MFI //i3a
    // ----------------------------------------------------------------
+      if (StringFind(i.inputPrefix,"i3",0)!=-1) {
+         sql=StringFormat("INSERT INTO TECHNICALS (passNumber,indicatorName,"
+         "period,movingAverage,appliedVolume,inputPrefix) VALUES (%u,'%s',%.5f,%.5f,%.5f,'%s')",
+            passNumber,"MFI",val[1],val[2],val[3],i.inputPrefix);
+            #ifdef _DEBUG_OPTIMIZATION
+               ss=sql;
+               pss
+            #endif
+      }
+   
+   #endif
+
+   // ----------------------------------------------------------------
+   #ifdef _USE_SAR //i4a
+   // ----------------------------------------------------------------
+      if (StringFind(i.inputPrefix,"i4",0)!=-1) {
+         sql=StringFormat("INSERT INTO TECHNICALS (passNumber,indicatorName,"
+         "period,stepValue,maxValue,inputPrefix) VALUES (%u,'%s',%.5f,%.5f,%.5f,'%s')",
+            passNumber,"SAR",val[1],val[2],val[3],i.inputPrefix);
+            #ifdef _DEBUG_OPTIMIZATION
+               ss=sql;
+               pss
+            #endif
+      }
+   
+   #endif
+
+   // ----------------------------------------------------------------
+   #ifdef _USE_ICH //i5a
+   // ----------------------------------------------------------------
+      if (StringFind(i.inputPrefix,"i5",0)!=-1) {
+         sql=StringFormat("INSERT INTO TECHNICALS (passNumber,indicatorName,"
+         "period,tenkanSen,kijunSen,spanB,inputPrefix) VALUES (%u,'%s',%.5f,%.5f,%.5f,%.5f,'%s')",
+            passNumber,"ICH",val[1],val[2],val[3],val[4],i.inputPrefix);
+            #ifdef _DEBUG_OPTIMIZATION
+               ss=sql;
+               pss
+            #endif
+      }
+   
+   #endif
+
+   // ----------------------------------------------------------------
+   #ifdef _USE_RVI //i6a
+   // ----------------------------------------------------------------
+      if (StringFind(i.inputPrefix,"i6",0)!=-1) {
+         sql=StringFormat("INSERT INTO TECHNICALS (passNumber,indicatorName,"
+         "period,movingAverage,inputPrefix) VALUES (%u,'%s',%.5f,%.5f,'%s')",
+            passNumber,"RVI",val[1],val[2],i.inputPrefix);
+            #ifdef _DEBUG_OPTIMIZATION
+               ss=sql;
+               pss
+            #endif
+      }
+   
+   #endif
+
+   // ----------------------------------------------------------------
+   #ifdef _USE_STOC //i7a
+   // ----------------------------------------------------------------
+      if (StringFind(i.inputPrefix,"i7",0)!=-1) {
+         sql=StringFormat("INSERT INTO TECHNICALS (passNumber,indicatorName,"
+         "period,kPeriod,dPeriod,slowMovingAverage,movingAverageMethod,stocPrice,inputPrefix) VALUES (%u,'%s',%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,'%s')",
+            passNumber,"STOC",val[1],val[2],val[3],val[4],val[5],val[6],i.inputPrefix);
+            #ifdef _DEBUG_OPTIMIZATION
+               ss=sql;
+               pss
+            #endif
+      }
+   
+   #endif
+
+   // ----------------------------------------------------------------
+   #ifdef _USE_OSMA //i8a
+   // ----------------------------------------------------------------
+      if (StringFind(i.inputPrefix,"i8",0)!=-1) {
+         sql=StringFormat("INSERT INTO TECHNICALS (passNumber,indicatorName,"
+         "period,slowMovingAverage,fastMovingAverage,signalPeriod,appliedPrice,inputPrefix) VALUES (%u,'%s',%.5f,%.5f,%.5f,%.5f,%.5f,'%s')",
+            passNumber,"OSMA",val[1],val[2],val[3],val[4],val[5],i.inputPrefix);
+            #ifdef _DEBUG_OPTIMIZATION
+               ss=sql;
+               pss
+            #endif
+      
+      }
+   
+   #endif
+
+   // ----------------------------------------------------------------
+   #ifdef _USE_MACD //i8a
+   // ----------------------------------------------------------------
+   if (StringFind(i.inputPrefix,"i9",0)!=-1) {
+
       sql=StringFormat("INSERT INTO TECHNICALS (passNumber,indicatorName,"
          "period,slowMovingAverage,fastMovingAverage,signalPeriod,appliedPrice,inputPrefix) VALUES (%u,'%s',%.5f,%.5f,%.5f,%.5f,%.5f,'%s')",
             passNumber,"MACD",val[1],val[2],val[3],val[4],val[5],i.inputPrefix);
@@ -114,4 +211,6 @@ void EAOptimizationIndicator::addOptimizationValues(double &val[], int passNumbe
          pss
       #endif
    }  
+   
+   #endif
 }

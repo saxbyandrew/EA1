@@ -25,7 +25,7 @@ struct Technicals {
       int               movingAverage;
       int               slowMovingAverage;
       int               fastMovingAverage;
-      int               movingAverageMethod;
+      ENUM_MA_METHOD    movingAverageMethod;
       ENUM_APPLIED_PRICE appliedPrice;
       double            stepValue;
       double            maxValue;
@@ -35,9 +35,11 @@ struct Technicals {
       int               spanB;
       int               kPeriod;
       int               dPeriod;
-      unsigned          useBuffers;
-      int               totalBuffers;
+      ENUM_STO_PRICE    stocPrice;
+      ENUM_APPLIED_VOLUME appliedVolume;
+      int               useBuffers;
       int               ttl;
+      double            incDecFactor;
       string            inputPrefix;
       double            lowerLevel;
       double            upperLevel;

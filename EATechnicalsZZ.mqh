@@ -28,7 +28,7 @@ protected:
 //=========
 public:
 //=========
-   EATechnicalsZZ(Technicals &tech);
+   EATechnicalsZZ(Technicals &t);
    ~EATechnicalsZZ();
 
    void  getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs);   
@@ -38,7 +38,7 @@ public:
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-EATechnicalsZZ::EATechnicalsZZ(Technicals &tech) {
+EATechnicalsZZ::EATechnicalsZZ(Technicals &t) {
 
    /*
    #ifdef _DEBUG_ZIGZAG
@@ -49,10 +49,10 @@ EATechnicalsZZ::EATechnicalsZZ(Technicals &tech) {
    */
 
    // Set the local instance struct variables
-   EATechnicalsBase::copyValues(tech);
+   EATechnicalsBase::copyValues(t);
 
    if (ZIGZAGHandle==NULL) 
-      ZIGZAGHandle=iCustom(_Symbol,tech.period,"deltazigzag",0,0,500,0.5,1);
+      ZIGZAGHandle=iCustom(_Symbol,t.period,"deltazigzag",0,0,500,0.5,1);
 
 }
 

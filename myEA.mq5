@@ -25,23 +25,23 @@
 //#define _DEBUG_PARAMETERS
 //#define _DEBUG_MAIN_LOOP
 //#define _DEBUG_TIME
-//#define _DEBUG_TECHNICAL_PARAMETERS
-//#define _DEBUG_NN_INPUTS_OUTPUTS
-//#define _DEBUG_NN
-//#define _DEBUG_NN_LOADSAVE
-//#define _DEBUG_NN_FORCAST
-//#define _DEBUG_NN_TRAINING
+#define _DEBUG_TECHNICAL_PARAMETERS
+#define _DEBUG_NN_INPUTS_OUTPUTS
+#define _DEBUG_NN
+#define _DEBUG_NN_LOADSAVE
+#define _DEBUG_NN_FORCAST
+#define _DEBUG_NN_TRAINING
 //#define _DEBUG_STRATEGY
-#define _DEBUG_STRATEGY_UPDATE
+//#define _DEBUG_STRATEGY_UPDATE
 //#define _DEBUG_STRATEGY_TRIGGERS
 //#define _DEBUG_DATAFRAME
-//#define _DEBUG_BASE
+#define _DEBUG_BASE
 //#define _DEBUG_LONG 
 //#define _DEBUG_LABEL
 
 
 
-#define _DEBUG_OPTIMIZATION
+//#define _DEBUG_OPTIMIZATION
 
 #include <Object.mqh>
 #include <Arrays\List.mqh>
@@ -116,9 +116,8 @@ EARunOptimization       optimization;
 //+------------------------------------------------------------------+
 int OnInit() {
 
-    string ss;
+    
     MqlDateTime t;
-
 
 
     // If the system is in optimization mode once the initializtion is complete
@@ -186,7 +185,7 @@ int OnInit() {
 
     #ifdef _RUN_LONG_STRATEGY
         // Hard coded strategy Number to match strategy number in the DB
-        strategyLong=new EAStrategyLong(1234);                                                                            
+        strategyLong=new EAStrategyLong(1);                                                                            
         if (CheckPointer(strategyLong)==POINTER_INVALID) {
             #ifdef _DEBUG_LONG
                 ss="OnInit  -> Error instantiating LONG EA strategy";
@@ -321,7 +320,6 @@ void updateStrategy() {
 void OnTick() {
 
     EAEnum  action;
-    string  ss;
     static  datetime lastBar, lastDay;
     static int testFlag=1;
 
@@ -361,7 +359,7 @@ void OnTick() {
         //==========
         // CHECK FOR STRATEGY RELOAD
         //==========
-        updateStrategy();
+        //updateStrategy();
 
     } 
 

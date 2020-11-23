@@ -12,18 +12,17 @@
 #include "EAOptimizationInputs.mqh"
 #include "EATechnicalsBase.mqh"
 
-#ifdef _USE_ADX    #include "EATechnicalsADX.mqh"   #endif
-#ifdef _USE_RSI    #include "EATechnicalsRSI.mqh"   #endif
-#ifdef _USE_MACD   #include "EATechnicalsMACD.mqh"  #endif
-#ifdef _USE_ZIGZAG #include "EATechnicalsZZ.mqh"    #endif
-//#include "EATechnicalsRSI.mqh"
+#ifdef _USE_ADX    #include "EATechnicalsADX.mqh"   #endif //i1a
+#ifdef _USE_RSI    #include "EATechnicalsRSI.mqh"   #endif //12a
+#ifdef _USE_MFI    #include "EATechnicalsMFI.mqh"   #endif //13a
+#ifdef _USE_SAR    #include "EATechnicalsSAR.mqh"   #endif //14a
+#ifdef _USE_ICH    #include "EATechnicalsICH.mqh"   #endif //i5a
+#ifdef _USE_RVI    #include "EATechnicalsRVI.mqh"   #endif //i6a
+#ifdef _USE_STOC   #include "EATechnicalsSTOC.mqh"  #endif //i7a
+#ifdef _USE_OSMA   #include "EATechnicalsOSMA.mqh"  #endif //i8a
+#ifdef _USE_MACD   #include "EATechnicalsMACD.mqh"  #endif //i9a
+#ifdef _USE_ZIGZAG #include "EATechnicalsZZ.mqh"    #endif 
 
-/*
-#ifdef _USE_ADX    class EATechnicalsADX;    #endif
-#ifdef _USE_RSI    class EATechnicalsRSI;    #endif
-#ifdef _USE_MACD   class EATechnicalsMACD;   #endif
-#ifdef _USE_ZIGZAG class EATechnicalsZZ;     #endif                    
-*/
 //=========
 class EATechnicalParameters : public EATechnicalsBase {
 //=========
@@ -106,7 +105,6 @@ EATechnicalParameters::~EATechnicalParameters() {
    }
 }
 
-
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
@@ -149,11 +147,14 @@ void EATechnicalParameters::copyValuesFromDatabase(int strategyNumber) {
          DatabaseColumnInteger      (request,14,tech.spanB);
          DatabaseColumnInteger      (request,15,tech.kPeriod);
          DatabaseColumnInteger      (request,16,tech.dPeriod);
-         DatabaseColumnInteger      (request,17,tech.useBuffers);
-         DatabaseColumnInteger      (request,18,tech.ttl);
-         DatabaseColumnText         (request,19,tech.inputPrefix);
-         DatabaseColumnDouble       (request,20,tech.lowerLevel);
-         DatabaseColumnDouble       (request,21,tech.upperLevel);
+         DatabaseColumnInteger      (request,17,tech.stocPrice);
+         DatabaseColumnInteger      (request,18,tech.appliedVolume);
+         DatabaseColumnInteger      (request,19,tech.useBuffers);
+         DatabaseColumnInteger      (request,20,tech.ttl);
+         DatabaseColumnDouble       (request,21,tech.incDecFactor);
+         DatabaseColumnText         (request,22,tech.inputPrefix);
+         DatabaseColumnDouble       (request,23,tech.lowerLevel);
+         DatabaseColumnDouble       (request,24,tech.upperLevel);
 
          // Over write with values given to us during optimization
          if (_runMode==_RUN_OPTIMIZATION) {
@@ -195,7 +196,7 @@ void EATechnicalParameters::copyValuesFromOptimizationInputs() {
    #endif
 
    // ----------------------------------------------------------------
-   #ifdef _USE_ADX
+   #ifdef _USE_ADX //i1a
 
    if (StringFind("i1a_",tech.inputPrefix,0)!=-1) {
       #ifdef _DEBUG_TECHNICAL_PARAMETERS
@@ -226,14 +227,12 @@ void EATechnicalParameters::copyValuesFromOptimizationInputs() {
    #endif
 
    // ----------------------------------------------------------------
-   #ifdef _USE_RSI
+   #ifdef _USE_RSI //i2a
    if (StringFind("i2a_",tech.inputPrefix,0)!=-1) {
       tech.indicatorName="RSI";
       tech.period=i2a_period;
       tech.movingAverage=i2a_movingAverage;
       tech.appliedPrice=i2a_appliedPrice;
-      //tech.useBuffer1=i2a_useBuffer1;
-
       return;
    }
    if (StringFind("i2b_",tech.inputPrefix,0)!=-1) {
@@ -241,15 +240,139 @@ void EATechnicalParameters::copyValuesFromOptimizationInputs() {
       tech.period=i2b_period;
       tech.movingAverage=i2b_movingAverage;
       tech.appliedPrice=i2b_appliedPrice;
-      //tech.useBuffer1=i2b_useBuffer1;
-
       return;
    }
    #endif
 
+   // ----------------------------------------------------------------
+   #ifdef _USE_MFI //i3a
+   if (StringFind("i3a_",tech.inputPrefix,0)!=-1) {
+      tech.indicatorName="MFI";
+      tech.period=i3a_period;
+      tech.movingAverage=i3a_movingAverage;
+      tech.appliedVolume=i3a_appliedVolume;
+      return;
+   }
+   if (StringFind("i3b_",tech.inputPrefix,0)!=-1) {
+      tech.indicatorName="MFI";
+      tech.period=i3b_period;
+      tech.movingAverage=i3b_movingAverage;
+      tech.appliedVolume=i3b_appliedVolume;
+      return;
+   }
+
+   #endif
+
+      // ----------------------------------------------------------------
+   #ifdef _USE_SAR //i4a
+   if (StringFind("i4a_",tech.inputPrefix,0)!=-1) {
+      tech.indicatorName="SAR";
+      tech.period=i4a_period;
+      tech.stepValue=i4a_stepValue;
+      tech.maxValue=i4a_maxValue;
+      return;
+   }
+   if (StringFind("i4b_",tech.inputPrefix,0)!=-1) {
+      tech.indicatorName="SAR";
+      tech.period=i4b_period;
+      tech.stepValue=i4b_stepValue;
+      tech.maxValue=i4b_maxValue;
+      return;
+   }
+
+   #endif
+
+      // ----------------------------------------------------------------
+   #ifdef _USE_ICH //i5a
+   if (StringFind("i5a_",tech.inputPrefix,0)!=-1) {
+      tech.indicatorName="ICH";
+      tech.period=i5a_period;
+      tech.tenkanSen=i5a_tenkanSen;
+      tech.kijunSen=i5a_kijunSen;
+      tech.spanB=i5a_spanB;
+      return;
+   }
+   if (StringFind("i5b_",tech.inputPrefix,0)!=-1) {
+      tech.indicatorName="ICH";
+      tech.period=i5b_period;
+      tech.tenkanSen=i5b_tenkanSen;
+      tech.kijunSen=i5b_kijunSen;
+      tech.spanB=i5b_spanB;
+      return;
+   }
+
+   #endif
 
    // ----------------------------------------------------------------
-   #ifdef _USE_MACD
+   #ifdef _USE_RVI //i6a
+
+   if (StringFind("i6a_",tech.inputPrefix,0)!=-1) {
+
+      tech.indicatorName="RVI";
+      tech.period=i6a_period;
+      tech.movingAverage=i6a_movingAverage;
+      return;
+   }
+
+   if (StringFind("i6b_",tech.inputPrefix,0)!=-1) {
+      tech.indicatorName="RVI";
+      tech.period=i6b_period;
+      tech.movingAverage=i6b_movingAverage;
+      return;
+   }
+   #endif
+
+   // ----------------------------------------------------------------
+   #ifdef _USE_STOC //i7a
+      
+      if (StringFind("i7a_",tech.inputPrefix,0)!=-1) {
+         tech.indicatorName="STOC";
+         tech.period=i7a_period;
+         tech.dPeriod=i7a_kPeriod;
+         tech.kPeriod=i7a_dPeriod;
+         tech.slowMovingAverage=i7a_slowing;
+         tech.movingAverageMethod=i7a_maMethod;
+         tech.stocPrice=i7a_stocPrice;
+         return;
+      }
+      if (StringFind("i7b_",tech.inputPrefix,0)!=-1) {
+         tech.indicatorName="STOC";
+         tech.period=i7b_period;
+         tech.dPeriod=i7b_kPeriod;
+         tech.kPeriod=i7b_dPeriod;
+         tech.slowMovingAverage=i7b_slowing;
+         tech.movingAverageMethod=i7b_maMethod;
+         tech.stocPrice=i7b_stocPrice;
+         return;
+      }
+
+   #endif
+
+      // ----------------------------------------------------------------
+   #ifdef _USE_OSMA //i8a
+      if (StringFind("i8a_",tech.inputPrefix,0)!=-1) {
+         tech.indicatorName="OSMA";
+         tech.period=i8a_period;
+         tech.slowMovingAverage=i8a_slowMovingAverage;
+         tech.fastMovingAverage=i8a_fastMovingAverage;
+         tech.signalPeriod=i8a_signalPeriod;
+         tech.appliedPrice=i8a_appliedPrice;
+         return;
+      }
+      if (StringFind("i8b_",tech.inputPrefix,0)!=-1) {
+         tech.indicatorName="OSMA";
+         tech.period=i8b_period;
+         tech.slowMovingAverage=i8b_slowMovingAverage;
+         tech.fastMovingAverage=i8b_fastMovingAverage;
+         tech.signalPeriod=i8b_signalPeriod;
+         tech.appliedPrice=i8b_appliedPrice;
+         return;
+      }
+
+   #endif
+
+   // ----------------------------------------------------------------
+   #ifdef _USE_MACD //i9a
    if (StringFind("i9a_",tech.inputPrefix,0)!=-1) {
       tech.indicatorName="MACD";
       tech.period=i9a_period;
@@ -308,7 +431,14 @@ void EATechnicalParameters::createTechnicalObject() {
 
    #ifdef _USE_ADX   if (tech.indicatorName=="ADX")         i=new EATechnicalsADX(tech);  #endif
    #ifdef _USE_RSI   if (tech.indicatorName=="RSI")         i=new EATechnicalsRSI(tech);  #endif
+   #ifdef _USE_MFI   if (tech.indicatorName=="MFI")         i=new EATechnicalsMFI(tech);  #endif
+   #ifdef _USE_SAR   if (tech.indicatorName=="SAR")         i=new EATechnicalsSAR(tech);  #endif
+   #ifdef _USE_ICH   if (tech.indicatorName=="ICH")         i=new EATechnicalsICH(tech);  #endif
+   #ifdef _USE_RVI   if (tech.indicatorName=="RVI")         i=new EATechnicalsRVI(tech);  #endif
+   #ifdef _USE_STOC  if (tech.indicatorName=="STOC")        i=new EATechnicalsSTOC(tech);  #endif
+   #ifdef _USE_OSMA  if (tech.indicatorName=="OSMA")        i=new EATechnicalsOSMA(tech);  #endif
    #ifdef _USE_MACD  if (tech.indicatorName=="MACD")        i=new EATechnicalsMACD(tech);  #endif
+   #ifdef _USE_MACDJB if (tech.indicatorName=="MACDJB")     i=new EATechnicalsJB(tech);   #endif
    #ifdef _USE_ZIGZAG if (tech.indicatorName=="ZIGZAG")     i=new EATechnicalsZZ(tech);   #endif
    // etc
 
@@ -371,6 +501,8 @@ EAEnum EATechnicalParameters::getValues() {
       if (nn.networkForcast(nnIn, nnOut, prediction)==_OPEN_NEW_POSITION) {
          return _OPEN_NEW_POSITION;
       }
+
+      return _NO_ACTION;
    }
 
    //================================
@@ -378,7 +510,7 @@ EAEnum EATechnicalParameters::getValues() {
    //================================
       // Loop through all object and get the object to return the value as a input to the NN
       #ifdef _DEBUG_TECHNICAL_PARAMETERS
-         ss="EATechnicalParameters -> getValues -> getting values in dataframe mode....";
+         ss="EATechnicalParameters -> getValues -> getting values in _RUN_OPTIMIZATION mode....";
          writeLog
       #endif
 
@@ -390,15 +522,19 @@ EAEnum EATechnicalParameters::getValues() {
 
       #ifdef _DEBUG_TECHNICAL_PARAMETERS
          ss=StringFormat("EATechnicalParameters -> getValues -> Inputs:%d ",nnIn.Total());
+         writeLog
+         ss="";
          for (int l=0;l<nnIn.Total();l++) {
-            ss=DoubleToString(nnIn.At(l),5);
-            writeLog
+            ss=ss+DoubleToString(nnIn.At(l),5)+' ';
          }
+         writeLog
          ss=StringFormat("EATechnicalParameters -> getValues -> Outputs:%d ",nnOut.Total());
+         writeLog
+         ss="";
          for (int m=0;m<nnIn.Total();m++) {
-            ss=DoubleToString(nnIn.At(m),5);
-            writeLog
+            ss=ss+DoubleToString(nnIn.At(m),5)+' ';
          }
+         writeLog
       #endif
       return _NO_ACTION;
    }

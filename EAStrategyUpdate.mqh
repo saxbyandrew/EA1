@@ -380,7 +380,7 @@ void EAStrategyUpdate::technicalsUpdate() {
          DatabaseColumnInteger      (request,13,tech.spanB);
          DatabaseColumnInteger      (request,14,tech.kPeriod);
          DatabaseColumnInteger      (request,15,tech.dPeriod);
-         DatabaseColumnInteger      (request,16,tech.useBuffers);
+         DatabaseColumnInteger      (request,16,tech.stocPrice);
          DatabaseColumnInteger      (request,17,tech.ttl);
          DatabaseColumnText         (request,18,tech.inputPrefix); 
          DatabaseColumnDouble       (request,19,tech.lowerLevel);

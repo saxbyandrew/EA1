@@ -127,13 +127,43 @@ int EARunOptimization::OnTesterInit(void) {
    // 1 EAOptimizationInputs.mqh
    // 2 EARunOptimization::OnTester
    // 3 EATechnicalParameters::copyValuesFromOptimizationInputs()
-   
-   allIndicators.Add(new EAOptimizationIndicator("i1a_","ADX",0));
-   allIndicators.Add(new EAOptimizationIndicator("i1b_","ADX",1));
-   allIndicators.Add(new EAOptimizationIndicator("i2a_","RSI",2));
-   allIndicators.Add(new EAOptimizationIndicator("i2b_","RSI",3));
-   allIndicators.Add(new EAOptimizationIndicator("i9a_","MACD",4));
-   allIndicators.Add(new EAOptimizationIndicator("i9b_","MACD",5));
+   #ifdef _USE_ADX 
+      allIndicators.Add(new EAOptimizationIndicator("i1a_","ADX",10)); //i1a
+      allIndicators.Add(new EAOptimizationIndicator("i1b_","ADX",11));
+   #endif
+   #ifdef _USE_RSI 
+      allIndicators.Add(new EAOptimizationIndicator("i2a_","RSI",20));  //i2a
+      allIndicators.Add(new EAOptimizationIndicator("i2b_","RSI",21));
+   #endif
+   #ifdef _USE_MFI 
+      allIndicators.Add(new EAOptimizationIndicator("i3a_","MFI",30)); //13a
+      allIndicators.Add(new EAOptimizationIndicator("i3b_","MFI",31));
+   #endif
+   #ifdef _USE_SAR 
+      allIndicators.Add(new EAOptimizationIndicator("i4a_","SAR",40));  //14a
+      allIndicators.Add(new EAOptimizationIndicator("i4b_","SAR",41));
+   #endif
+   #ifdef _USE_ICH   
+      allIndicators.Add(new EAOptimizationIndicator("i5a_","ICH",50));  //i5a
+      allIndicators.Add(new EAOptimizationIndicator("i5b_","ICH",51));
+   #endif
+   #ifdef _USE_RVI  
+      allIndicators.Add(new EAOptimizationIndicator("i6a_","RVI",60));  //i6a
+      allIndicators.Add(new EAOptimizationIndicator("i6b_","RVI",61));
+   #endif
+   #ifdef _USE_STOC  
+      allIndicators.Add(new EAOptimizationIndicator("i7a_","STOC",70));  //i7a
+      allIndicators.Add(new EAOptimizationIndicator("i7b_","STOC",71));
+   #endif
+
+   #ifdef _USE_OSMA
+
+   #endif
+
+   #ifdef _USE_MACD 
+      allIndicators.Add(new EAOptimizationIndicator("i9a_","MACD",90)); //i9a
+      allIndicators.Add(new EAOptimizationIndicator("i9b_","MACD",91));
+   #endif
 
    return(INIT_SUCCEEDED);
 }
@@ -163,7 +193,7 @@ void EARunOptimization::createSQLOptimizationTables() {
 
    string sql;
 
-   string ss="createSQLOptimizationTables -> ....";
+   ss="createSQLOptimizationTables -> ....";
    pss
 
    // ----------------------------------------------------------------
@@ -262,8 +292,11 @@ void EARunOptimization::createSQLOptimizationTables() {
       "spanB	REAL,"
       "kPeriod	REAL,"
       "dPeriod	REAL,"
+      "stocPrice REAL,"
+      "appliedVolume REAL,"
       "useBuffers REAL,"
       "ttl REAL,"
+      "incDecFactor REAL,"
       "inputPrefix,"
       "normalizationMin REAL,"
       "normalizationMax REAL)";
@@ -288,7 +321,7 @@ void EARunOptimization::OnTesterPass() {
          Frames are added using the FrameAdd() function, which can be called after the
          end of a single pass in the OnTester() handler.
    */
-   string ss="OnTesterPass ->  ....";
+   ss="OnTesterPass ->  ....";
    pss
    
 
@@ -325,7 +358,7 @@ void EARunOptimization::OnTester(const double val) {
    int row=0, col=0;                      // Counters for technical array
 
    #ifdef _DEBUG_OPTIMIZATION
-      string ss="OnTester ->  ....";
+      ss="OnTester ->  ....";
       pss
    #endif
 
@@ -389,42 +422,156 @@ void EARunOptimization::OnTester(const double val) {
       v[0].vn[9]=imaxITS;
       
 
-      // This section MUST be consistant with other sections and the number of inputs used 
-      #ifdef _USE_ADX
+      // ----------------------------------------------------------------
+      #ifdef _USE_ADX   //i1a // Checked
       // ----------------------------------------------------------------
       // v[0].vv[0][0,1,2]
       // i1a_
-      v[0].vv[row][col++]=0;
+      v[0].vv[row][col++]=10;
       v[0].vv[row][col++]=i1a_period;
       v[0].vv[row][col++]=i1a_movingAverage;
       row++; col=0;
       // i1b_
-      v[0].vv[row][col++]=1;
+      v[0].vv[row][col++]=11;
       v[0].vv[row][col++]=i1b_period;
       v[0].vv[row][col++]=i1b_movingAverage;
       row++; col=0;
       #endif
 
-      #ifdef _USE_RSI
+      //----------------------------------------------------------------
+      #ifdef _USE_RSI   //i2a // Checked
       // ----------------------------------------------------------------
       // i1a_
-      v[0].vv[row][col++]=2;
+      v[0].vv[row][col++]=20;
       v[0].vv[row][col++]=i2a_period;
       v[0].vv[row][col++]=i2a_movingAverage;
       v[0].vv[row][col++]=i2a_appliedPrice;
       row++; col=0;
       // i2b
-      v[0].vv[row][col++]=3;
+      v[0].vv[row][col++]=21;
       v[0].vv[row][col++]=i2b_period;
       v[0].vv[row][col++]=i2b_movingAverage;
       v[0].vv[row][col++]=i2b_appliedPrice;
       row++; col=0;
       #endif
 
-      #ifdef _USE_MACD
+      //----------------------------------------------------------------
+      #ifdef _USE_MFI   //i3a // Checked
+      // ----------------------------------------------------------------
+      // i4a_
+      v[0].vv[row][col++]=30;
+      v[0].vv[row][col++]=i3a_period;
+      v[0].vv[row][col++]=i3a_movingAverage;
+      v[0].vv[row][col++]=i3a_appliedVolume;
+      row++; col=0;
+      // i4b
+      v[0].vv[row][col++]=31;
+      v[0].vv[row][col++]=i3b_period;
+      v[0].vv[row][col++]=i3b_movingAverage;
+      v[0].vv[row][col++]=i3b_appliedVolume;
+      row++; col=0;
+      #endif
+      //----------------------------------------------------------------
+      #ifdef _USE_SAR   //i4a // Checked
+      // ----------------------------------------------------------------
+      // i4a_
+      v[0].vv[row][col++]=40;
+      v[0].vv[row][col++]=i4a_period;
+      v[0].vv[row][col++]=i4a_stepValue;
+      v[0].vv[row][col++]=i4a_maxValue;
+      row++; col=0;
+      // i4b
+      v[0].vv[row][col++]=41;
+      v[0].vv[row][col++]=i4b_period;
+      v[0].vv[row][col++]=i4b_stepValue;
+      v[0].vv[row][col++]=i4b_maxValue;
+      row++; col=0;
+      #endif
+
+      //----------------------------------------------------------------
+      #ifdef _USE_ICH   //i5a // Checked
+      // ----------------------------------------------------------------
+      // i5a_
+      v[0].vv[row][col++]=50;
+      v[0].vv[row][col++]=i5a_period;
+      v[0].vv[row][col++]=i5a_tenkanSen;
+      v[0].vv[row][col++]=i5a_kijunSen;
+      v[0].vv[row][col++]=i5a_spanB;
+      row++; col=0;
+      // i5b
+      v[0].vv[row][col++]=51;
+      v[0].vv[row][col++]=i5b_period;
+      v[0].vv[row][col++]=i5b_tenkanSen;
+      v[0].vv[row][col++]=i5b_kijunSen;
+      v[0].vv[row][col++]=i5b_spanB;
+      row++; col=0;
+      #endif
+
+
+      // ----------------------------------------------------------------
+      #ifdef _USE_RVI   //i6a // Checked
+      // ----------------------------------------------------------------
+      // i6a_
+      v[0].vv[row][col++]=60;
+      v[0].vv[row][col++]=i6a_period;
+      v[0].vv[row][col++]=i6a_movingAverage;
+      row++; col=0;
+      // i6b
+      v[0].vv[row][col++]=61;
+      v[0].vv[row][col++]=i6b_period;
+      v[0].vv[row][col++]=i6b_movingAverage;
+      row++; col=0;
+      #endif
+
+      // ----------------------------------------------------------------
+      #ifdef _USE_STOC  //i7a
+      // ----------------------------------------------------------------
+      // i7a_
+      v[0].vv[row][col++]=90;
+      v[0].vv[row][col++]=i7a_period;
+      v[0].vv[row][col++]=i7a_kPeriod;
+      v[0].vv[row][col++]=i7a_dPeriod;
+      v[0].vv[row][col++]=i7a_slowing;
+      v[0].vv[row][col++]=i7a_maMethod;
+      v[0].vv[row][col++]=i7a_stocPrice;
+
+      row++; col=0;
+      // i7b_
+      v[0].vv[row][col++]=90;
+      v[0].vv[row][col++]=i7b_period;
+      v[0].vv[row][col++]=i7b_kPeriod;
+      v[0].vv[row][col++]=i7b_dPeriod;
+      v[0].vv[row][col++]=i7b_slowing;
+      v[0].vv[row][col++]=i7b_maMethod;
+      v[0].vv[row][col++]=i7b_stocPrice;
+      row++; col=0;
+      #endif
+
+      // ----------------------------------------------------------------
+      #ifdef _USE_OSMA //i8a // Checked
+      // ----------------------------------------------------------------
+      v[0].vv[row][col++]=80;
+      v[0].vv[row][col++]=i8a_period;
+      v[0].vv[row][col++]=i8a_slowMovingAverage;
+      v[0].vv[row][col++]=i8a_fastMovingAverage;
+      v[0].vv[row][col++]=i8a_signalPeriod;
+      v[0].vv[row][col++]=i8a_appliedPrice;
+      row++; col=0;
+      // i8b_
+      v[0].vv[row][col++]=81;
+      v[0].vv[row][col++]=i8b_period;
+      v[0].vv[row][col++]=i8b_slowMovingAverage;
+      v[0].vv[row][col++]=i8b_fastMovingAverage;
+      v[0].vv[row][col++]=i8b_signalPeriod;
+      v[0].vv[row][col++]=i8b_appliedPrice;
+      row++; col=0;
+
+      #endif
+      // ----------------------------------------------------------------
+      #ifdef _USE_MACD  //i9a // Checked
       // ----------------------------------------------------------------
       // i9a_
-      v[0].vv[row][col++]=4;
+      v[0].vv[row][col++]=90;
       v[0].vv[row][col++]=i9a_period;
       v[0].vv[row][col++]=i9a_slowMovingAverage;
       v[0].vv[row][col++]=i9a_fastMovingAverage;
@@ -432,7 +579,7 @@ void EARunOptimization::OnTester(const double val) {
       v[0].vv[row][col++]=i9a_appliedPrice;
       row++; col=0;
       // i9b_
-      v[0].vv[row][col++]=5;
+      v[0].vv[row][col++]=91;
       v[0].vv[row][col++]=i9b_period;
       v[0].vv[row][col++]=i9b_slowMovingAverage;
       v[0].vv[row][col++]=i9b_fastMovingAverage;
@@ -471,14 +618,13 @@ void EARunOptimization::OnTesterDeinit() {
       The function is used for final processing of all optimization results.
    */
 
-   string ss="OnTesterDeinit ->  ....";
+   ss="OnTesterDeinit ->  ....";
    pss
 
    //--- variables for reading frames
    string         name, sql, sql1, sql2;
    ulong          passNumber;
    long           id;
-   double         value;
 
 
    //--- move the frame pointer to the beginning
@@ -580,16 +726,16 @@ void EARunOptimization::OnTesterDeinit() {
       // Iterate through all indicators that are part of this strategy passing in the optimization values
       // which will then be updated in the optimzation DB
       for (int row=0;row<allIndicators.Total();row++)  {
-         EAOptimizationIndicator *io;
+         EAOptimizationIndicator *oi;
          double dst[14];
-         io=allIndicators.At(row);
+         oi=allIndicators.At(row);
 
          for (int col=0;col<14;col++) {
             ss=StringFormat(" ----> row:%d col:%d",row,col);
             pss
             dst[col]=v[0].vv[row][col];
          }
-         io.addOptimizationValues(dst,passNumber);
+         oi.addOptimizationValues(dst,passNumber);
          #ifdef _DEBUG_OPTIMIZATION
             ss=StringFormat(" -> %.5f %.5f %.5f",dst[0],dst[1],dst[2]);
             pss

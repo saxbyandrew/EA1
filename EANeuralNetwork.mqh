@@ -456,7 +456,7 @@ void EANeuralNetwork::createNewNetwork()  {
 //+------------------------------------------------------------------+
 bool EANeuralNetwork::saveNetwork() {
 
-   string csvString;
+   string csvString="";
 
 
    #ifdef _DEBUG_NN_LOADSAVE
@@ -557,28 +557,21 @@ bool EANeuralNetwork::saveNetwork() {
    #endif
 
    binFileName=StringFormat("%s%s.bin",IntegerToString(nnetwork.strategyNumber),IntegerToString(nnetwork.fileNumber));
-   // Now create it
-   if (binFileHandle=FileOpen(binFileName,FILE_WRITE|FILE_BIN|FILE_ANSI|FILE_COMMON)) {
-      if (nnStore.Save(binFileHandle)) {
-         #ifdef _DEBUG_NN_LOADSAVE
-            ss=StringFormat("saveNetwork -> SUCCESS created file:%s",binFileName);
-            writeLog
-            pss
-         #endif
-      } else {
-         #ifdef _DEBUG_NN_LOADSAVE
-            ss=StringFormat("saveNetwork -> ERROR saving file:%s -> %d",binFileName, GetLastError());
-            writeLog
-            pss
-         #endif
-      }
-   } else {
+   binFileHandle=FileOpen(binFileName,FILE_WRITE|FILE_BIN|FILE_ANSI|FILE_COMMON);
+   
+   if (nnStore.Save(binFileHandle)) {
       #ifdef _DEBUG_NN_LOADSAVE
-         ss=StringFormat("saveNetwork -> ERROR creating file:%s-> %d",binFileName, GetLastError());
+         ss=StringFormat("saveNetwork -> SUCCESS created file:%s",binFileName);
          writeLog
          pss
       #endif
-   }; 
+   } else {
+      #ifdef _DEBUG_NN_LOADSAVE
+         ss=StringFormat("saveNetwork -> ERROR saving file:%s -> %d",binFileName, GetLastError());
+         writeLog
+         pss
+      #endif
+   }
 
    FileClose(binFileHandle);
 
@@ -598,9 +591,9 @@ void EANeuralNetwork::loadNetwork() {
       writeLog
    #endif
 
-   int k=0, i=0, j=0, idx=0, numLayers=0, network[], functionType=0, binFileHandle, csvFileHandle;
+   int k=0, i=0, j=0, idx=0, numLayers=0, network[], functionType=0, binFileHandle, csvFileHandle=0;
    double threshold=0, weights=0, media=0, sigma=0;
-   string binFileName, csvFileName, csvString;
+   string binFileName, csvFileName="", csvString;
 
    // entry at this point can occur in 1 or 2 ways
    // 1 first time after optimization where the .bin file does not exist the DF will need to be 
@@ -622,8 +615,8 @@ void EANeuralNetwork::loadNetwork() {
             FileWrite(csvFileHandle,csvString);
          }
       #endif
-
-      if (binFileHandle=FileOpen(binFileName,FILE_READ|FILE_BIN|FILE_ANSI|FILE_COMMON)) {  // Open the existing nn.bin
+      binFileHandle=FileOpen(binFileName,FILE_READ|FILE_BIN|FILE_ANSI|FILE_COMMON);
+      if (binFileHandle) {  // Open the existing nn.bin
          if (nnStore.Load(binFileHandle)) {
             ss=StringFormat("EANeuralNetwork -> loadNetwork -> SUCCESS loaded from file:%s",binFileName);
             pss

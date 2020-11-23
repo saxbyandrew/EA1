@@ -13,14 +13,14 @@
 #include <Indicators\Trend.mqh>
 
 //=========
-class EATechnicalsADX : public EATechnicalsBase {
+class EATechnicalsSAR : public EATechnicalsBase {
 //=========
 
 //=========
 private:
 
    string   ss;
-   CiADX    adx;  
+   CiSAR    sar;  
 
 
 //=========
@@ -31,8 +31,8 @@ protected:
 //=========
 public:
 //=========
-   EATechnicalsADX(Technicals &t);
-   ~EATechnicalsADX();
+   EATechnicalsSAR(Technicals &t);
+   ~EATechnicalsSAR();
 
    void  getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs);    
    void  getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,datetime barDateTime);                    
@@ -42,56 +42,41 @@ public:
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-EATechnicalsADX::EATechnicalsADX(Technicals &t) {
+EATechnicalsSAR::EATechnicalsSAR(Technicals &t) {
+
 
    EATechnicalsBase::copyValues(t);
 
-   if (!adx.Create(_Symbol,t.period,t.movingAverage)) {
-      #ifdef _DEBUG_ADX_MODULE
-            printf("ADXSetParameters -> ERROR");
+   if (!sar.Create(_Symbol,t.period,t.stepValue,t.maxValue)) {
+      #ifdef _DEBUG_SAR_MODULE
+            ss="SARSetParameters -> ERROR";
+            pss
+            writeLog
             ExpertRemove();
       #endif
    } 
-}
-
-//+------------------------------------------------------------------+
-//|                                                                  |
-//+------------------------------------------------------------------+
-EATechnicalsADX::~EATechnicalsADX() {
 
 }
 
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-void EATechnicalsADX::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,datetime barDateTime) {
+EATechnicalsSAR::~EATechnicalsSAR() {
 
-   /*
-   #ifdef _DEBUG_ADX_MODULE
-      ss="EATechnicalsADX -> getValues -> Entry 2....";
-      pss
-      writeLog
-   #endif 
-   */
-//ss=StringFormat("EATechnicalsADX  -> getValues -> PLUSDI Time %s value:%.2f barNumber:%d",TimeToString(barDateTime),plusDI[0],barNumber);  
+}
+
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+void EATechnicalsSAR::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,datetime barDateTime) {
+
    int      barNumber=iBarShift(_Symbol,tech.period,barDateTime,false); // Adjust the bar number based on PERIOD and TIME
-   double   main[1], plusDI[1], minusDI[1];
+   double   main[1];
 
    // Refresh the indicator and get all the buffers
-   adx.Refresh(-1);
+   sar.Refresh(-1);
 
-   if (adx.GetData(barDateTime,1,0,main)>0 && adx.GetData(barDateTime,1,1,plusDI)>0 && adx.GetData(barDateTime,1,2,minusDI)>0) {
-      #ifdef _DEBUG_ADX_MODULE
-         ss=StringFormat("EATechnicalsADX  -> getValues -> MAIN:%.2f",main[0]);        
-         writeLog
-         pss
-         ss=StringFormat("EATechnicalsADX  -> getValues -> PLUSDI:%.2f",plusDI[0]);    
-         writeLog
-         pss
-         ss=StringFormat("EATechnicalsADX  -> getValues -> MINUSDI:%.2f",minusDI[0]);  
-         writeLog
-         pss
-      #endif
+   if (sar.GetData(barDateTime,1,0,main)>0) {
 
       /*
       https://www.alglib.net/dataanalysis/neuralnetworks.php#header0
@@ -102,19 +87,30 @@ void EATechnicalsADX::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,
       Preprocessing is done transparently to user, you don't have to worry about it - just feed data to training algorithm!
       */
 
-      if (bool (tech.useBuffers&_BUFFER1)) nnInputs.Add(main[0]);
-      if (bool (tech.useBuffers&_BUFFER2)) nnInputs.Add(plusDI[0]);
-      if (bool (tech.useBuffers&_BUFFER3)) nnInputs.Add(minusDI[0]);
-
+      if (bool (tech.useBuffers&_BUFFER1)) {
+         if (main[0]>iClose(_Symbol,tech.period,barNumber)) {
+            nnInputs.Add(0);     // SAR above current price BEARISH
+            #ifdef _DEBUG_SAR_MODULE
+               ss=StringFormat("EATechnicalsSAR  -> getValues(HISTORY) -> BEARISH barNumber:%d Period:%d Price:%.2f",barNumber,tech.period,iClose(_Symbol,tech.period,barNumber));        
+               writeLog
+               pss
+            #endif
+         } else {
+            nnInputs.Add(1);     // SAR below current price BULLISH
+            #ifdef _DEBUG_SAR_MODULE
+               ss=StringFormat("EATechnicalsSAR  -> getValues(HISTORY) -> BULLISH barNumber:%d Period:%d Price:%.2f",barNumber,tech.period,iClose(_Symbol,tech.period,barNumber));     
+               writeLog
+               pss
+            #endif
+         }
+      }
    } else {
-      #ifdef _DEBUG_ADX_MODULE
-         ss="EATechnicalsADX   -> getValues -> ERROR will return zeros"; 
+      #ifdef _DEBUG_SAR_MODULE
+         ss="EATechnicalsSAR   -> getValues -> ERROR will return zeros"; 
          writeLog
          pss
       #endif
       if (bool (tech.useBuffers&_BUFFER1)) nnInputs.Add(0);
-      if (bool (tech.useBuffers&_BUFFER2)) nnInputs.Add(0);
-      if (bool (tech.useBuffers&_BUFFER3)) nnInputs.Add(0);
    }
 
 }
@@ -122,39 +118,40 @@ void EATechnicalsADX::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-void EATechnicalsADX::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs) {
+void EATechnicalsSAR::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs) {
 
-   double main[1], plusDI[1], minusDI[1];
+   double main[1];
 
    // Refresh the indicator and get all the buffers
-   adx.Refresh(-1);
+   sar.Refresh(-1);
 
-   if (adx.GetData(1,1,0,main)>0 && adx.GetData(1,1,1,plusDI)>0 && adx.GetData(1,1,2,minusDI)>0) {
-      #ifdef _DEBUG_ADX_MODULE
-         ss=StringFormat("EATechnicalsADX  -> getValues -> MAIN:%.2f",main[0]);        
-         writeLog
-         pss
-         ss=StringFormat("EATechnicalsADX  -> getValues -> PLUSDI:%.2f",plusDI[0]);    
-         writeLog
-         pss
-         ss=StringFormat("EATechnicalsADX  -> getValues -> MINUSDI:%.2f",minusDI[0]);  
-         writeLog
-         pss
-      #endif
+   if (sar.GetData(1,1,0,main)>0) {
 
-      if (bool (tech.useBuffers&_BUFFER1)) nnInputs.Add(main[0]);
-      if (bool (tech.useBuffers&_BUFFER2)) nnInputs.Add(plusDI[0]);
-      if (bool (tech.useBuffers&_BUFFER3)) nnInputs.Add(minusDI[0]);
+
+   if (bool (tech.useBuffers&_BUFFER1)) {
+         if (main[0]>iClose(_Symbol,tech.period,1)) {
+            nnInputs.Add(0);     // SAR above current price BEARISH
+            #ifdef _DEBUG_SAR_MODULE
+               ss=StringFormat("EATechnicalsSAR  -> getValues(CURRENT) -> BEARISH Period:%d",tech.period);        
+               writeLog
+               pss
+            #endif
+         } else {
+            nnInputs.Add(1);     // SAR below current price BULLISH
+            #ifdef _DEBUG_SAR_MODULE
+               ss=StringFormat("EATechnicalsSAR  -> getValues(CURRENT) -> BULLISH Period:%d",tech.period);     
+               writeLog
+               pss
+            #endif
+         }
+      }
 
    } else {
-      #ifdef _DEBUG_ADX_MODULE
-         ss="EATechnicalsADX -> getValues -> ERROR will return zeros"; 
+      #ifdef _DEBUG_SAR_MODULE
+         ss="EATechnicalsSAR -> getValues -> ERROR will return zeros"; 
          writeLog
          pss
       #endif
       if (bool (tech.useBuffers&_BUFFER1)) nnInputs.Add(0);
-      if (bool (tech.useBuffers&_BUFFER2)) nnInputs.Add(0);
-      if (bool (tech.useBuffers&_BUFFER3)) nnInputs.Add(0);
    }
 }
-
