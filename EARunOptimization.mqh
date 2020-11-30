@@ -59,7 +59,7 @@ EARunOptimization();
 
    int         OnTesterInit(void);
    void        OnTesterDeinit(void);
-   void        OnTester(const double OnTesterValue);
+   void        OnTester();
    void        OnTesterPass();
 
    // Called inn a non optimization mode only !
@@ -155,15 +155,19 @@ int EARunOptimization::OnTesterInit(void) {
       allIndicators.Add(new EAOptimizationIndicator("i7a_","STOC",70));  //i7a
       allIndicators.Add(new EAOptimizationIndicator("i7b_","STOC",71));
    #endif
-
    #ifdef _USE_OSMA
-
+      allIndicators.Add(new EAOptimizationIndicator("i8a_","OSMA",80));  //i8a
+      allIndicators.Add(new EAOptimizationIndicator("i8b_","OSMA",81));
    #endif
-
    #ifdef _USE_MACD 
       allIndicators.Add(new EAOptimizationIndicator("i9a_","MACD",90)); //i9a
       allIndicators.Add(new EAOptimizationIndicator("i9b_","MACD",91));
    #endif
+   #ifdef _USE_MACDJB 
+      allIndicators.Add(new EAOptimizationIndicator("i10a_","MACDJB",100)); //i10a
+      allIndicators.Add(new EAOptimizationIndicator("i10b_","MACDJB",101));
+   #endif
+
 
    return(INIT_SUCCEEDED);
 }
@@ -298,8 +302,8 @@ void EARunOptimization::createSQLOptimizationTables() {
       "ttl REAL,"
       "incDecFactor REAL,"
       "inputPrefix,"
-      "normalizationMin REAL,"
-      "normalizationMax REAL)";
+      "upperLevel REAL,"
+      "lowerLevel REAL)";
 
       createSQLOptimizationTables(sql);
 
@@ -321,7 +325,7 @@ void EARunOptimization::OnTesterPass() {
          Frames are added using the FrameAdd() function, which can be called after the
          end of a single pass in the OnTester() handler.
    */
-   ss="OnTesterPass ->  ....";
+   ss="EARunOptimization -> OnTesterPass ->  ....";
    pss
    
 
@@ -330,7 +334,7 @@ void EARunOptimization::OnTesterPass() {
       long   id   =0;   // Public id of the frame
       double val  =0.0; // Single numerical value of the frame
       //---
-      FrameNext(pass,name,id,val);
+      //FrameNext(pass,name,id,val);
       //ss=StringFormat(" ---> Name: %s pass:%u",name,DoubleToString(pass));
       //pss
       
@@ -343,8 +347,9 @@ void EARunOptimization::OnTesterPass() {
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-void EARunOptimization::OnTester(const double val) {
+void EARunOptimization::OnTester() {
 
+   return;
 
    /*
       Tester - this event is generated after completion of Expert Advisor testing 
@@ -358,11 +363,11 @@ void EARunOptimization::OnTester(const double val) {
    int row=0, col=0;                      // Counters for technical array
 
    #ifdef _DEBUG_OPTIMIZATION
-      ss="OnTester ->  ....";
+      ss="EARunOptimization -> OnTester -> ";
       pss
    #endif
-
-   //if (onTesterValue>0) { 
+   
+   if (TesterStatistics(STAT_PROFIT)<istrategyGrossProfit) return;
       
 
   // ----------------------------------------------------------------
@@ -397,7 +402,7 @@ void EARunOptimization::OnTester(const double val) {
       v[0].vp[28]=TesterStatistics(STAT_PROFIT_LONGTRADES);
       v[0].vp[29]=TesterStatistics(STAT_PROFITTRADES_AVGCON);
       v[0].vp[30]=TesterStatistics(STAT_LOSSTRADES_AVGCON);
-      v[0].vp[31]=val;
+      v[0].vp[31]=0;
    // ----------------------------------------------------------------
       v[0].vs[0]=ilsize;
       v[0].vs[1]=ifpt;
@@ -430,11 +435,15 @@ void EARunOptimization::OnTester(const double val) {
       v[0].vv[row][col++]=10;
       v[0].vv[row][col++]=i1a_period;
       v[0].vv[row][col++]=i1a_movingAverage;
+      v[0].vv[row][col++]=i1a_crossLevel;
+
       row++; col=0;
       // i1b_
       v[0].vv[row][col++]=11;
       v[0].vv[row][col++]=i1b_period;
       v[0].vv[row][col++]=i1b_movingAverage;
+      v[0].vv[row][col++]=i1b_crossLevel;
+
       row++; col=0;
       #endif
 
@@ -446,12 +455,16 @@ void EARunOptimization::OnTester(const double val) {
       v[0].vv[row][col++]=i2a_period;
       v[0].vv[row][col++]=i2a_movingAverage;
       v[0].vv[row][col++]=i2a_appliedPrice;
+      v[0].vv[row][col++]=i2a_upperLevel;
+      v[0].vv[row][col++]=i2a_lowerLevel;
       row++; col=0;
       // i2b
       v[0].vv[row][col++]=21;
       v[0].vv[row][col++]=i2b_period;
       v[0].vv[row][col++]=i2b_movingAverage;
       v[0].vv[row][col++]=i2b_appliedPrice;
+      v[0].vv[row][col++]=i2a_upperLevel;
+      v[0].vv[row][col++]=i2a_lowerLevel;
       row++; col=0;
       #endif
 
@@ -587,6 +600,25 @@ void EARunOptimization::OnTester(const double val) {
       v[0].vv[row][col++]=i9b_appliedPrice;
       row++; col=0;
       #endif
+
+      // ----------------------------------------------------------------
+      #ifdef _USE_MACDJB  //i10a 
+      // ----------------------------------------------------------------
+      // i10a_
+      v[0].vv[row][col++]=100;
+      v[0].vv[row][col++]=i10a_period;
+      v[0].vv[row][col++]=i10a_slowMovingAverage;
+      v[0].vv[row][col++]=i10a_fastMovingAverage;
+      v[0].vv[row][col++]=i10a_signalPeriod;
+      row++; col=0;
+      // i10b_
+      v[0].vv[row][col++]=101;
+      v[0].vv[row][col++]=i10b_period;
+      v[0].vv[row][col++]=i10b_slowMovingAverage;
+      v[0].vv[row][col++]=i10b_fastMovingAverage;
+      v[0].vv[row][col++]=i10b_signalPeriod;
+      row++; col=0;
+      #endif
       
       //--- create a data frame and send it to the terminal
       if (!FrameAdd(MQLInfoString(MQL_PROGRAM_NAME)+"_stats", STATS_FRAME,v[0].vp[0], v)) {
@@ -595,7 +627,6 @@ void EARunOptimization::OnTester(const double val) {
       } else {
          #ifdef _DEBUG_OPTIMIZATION
             ss=StringFormat(" -> Stats Frame added:%.2f",v[0].vp[0]);  
-            writeLog
             pss
          #endif
       }
@@ -618,6 +649,8 @@ void EARunOptimization::OnTesterDeinit() {
       The function is used for final processing of all optimization results.
    */
 
+  return;
+
    ss="OnTesterDeinit ->  ....";
    pss
 
@@ -637,12 +670,16 @@ void EARunOptimization::OnTesterDeinit() {
 
    while (FrameNext(passNumber, name, id,v[0].vp[0], v)) {
 
-      ss=StringFormat("In FrameNext Loop -> %u %s <%.5f> ....",passNumber,name,v[0].vp[1]);
-      pss
+
+
+    //ss=StringFormat("In FrameNext Loop -> %u %s <%.5f> ....",passNumber,name,v[0].vp[1]);
+      //pss
       
       // ----------------------------------------------------------------
-      sql=StringFormat("INSERT INTO OPTIMIZATION (strategyNumber,passNumber,reload) VALUES (%d,%d,0)",_strategyNumber,passNumber,0);
+      sql=StringFormat("INSERT INTO OPTIMIZATION (strategyNumber,passNumber,reload) VALUES (%d,%d,%d)",_strategyNumber,passNumber,0);
       if (!DatabaseExecute(_optimizeDBHandle, sql)) {
+         ss=sql;
+         pss
          ss=StringFormat("OnTesterDeinit -> Failed to insert OPTIMIZATION with code %d", GetLastError());
          pss
          break;
@@ -651,7 +688,8 @@ void EARunOptimization::OnTesterDeinit() {
             ss="EARunOptimization -> OnTesterDeinit -> Insert into OPTIMIZATION succcess";
             pss
          #endif
-      } 
+      }
+      
 
 
       //if (v[0].vp[2]<100) continue;
@@ -731,14 +769,14 @@ void EARunOptimization::OnTesterDeinit() {
          oi=allIndicators.At(row);
 
          for (int col=0;col<14;col++) {
-            ss=StringFormat(" ----> row:%d col:%d",row,col);
-            pss
+            //ss=StringFormat(" ----> row:%d col:%d",row,col);
+            //pss
             dst[col]=v[0].vv[row][col];
          }
          oi.addOptimizationValues(dst,passNumber);
          #ifdef _DEBUG_OPTIMIZATION
-            ss=StringFormat(" -> %.5f %.5f %.5f",dst[0],dst[1],dst[2]);
-            pss
+            //ss=StringFormat(" -> %.5f %.5f %.5f",dst[0],dst[1],dst[2]);
+            //pss
          #endif
       }
       

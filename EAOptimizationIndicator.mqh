@@ -47,8 +47,8 @@ EAOptimizationIndicator::EAOptimizationIndicator(string inputPrefix, string indi
    i.indicatorName=indicatorName;
    i.indicatorNumber=indicatorNumber;
 
-   #ifdef _DEBUG_OPTIMIZATION
-      ss=StringFormat("EAOptimizationIndicator -> EAOptimizationIndicator %s %s",i.inputPrefix,i.indicatorName);
+   #ifdef _DEBUG_OPTIMIZATION_INDICATOR
+      ss=StringFormat("EAOptimizationIndicator -> EAOptimizationIndicator %s %s %d",i.inputPrefix,i.indicatorName, i.indicatorNumber);
       pss
    #endif
 
@@ -72,9 +72,9 @@ void EAOptimizationIndicator::addOptimizationValues(double &val[], int passNumbe
       // Match any input prefix of "iax" where x=a or b pr c etc, which is a ADX
       if (StringFind(i.inputPrefix,"i1",0)!=-1) {
          sql=StringFormat("INSERT INTO TECHNICALS (passNumber,indicatorName,"
-            "period,movingAverage,inputPrefix) VALUES (%u,'%s',%.5f,%.5f,'%s')", // Checked
-               passNumber,"ADX",val[1],val[2],i.inputPrefix);
-               #ifdef _DEBUG_OPTIMIZATION
+            "period,movingAverage,upperLevel,inputPrefix) VALUES (%u,'%s',%.5f,%.5f,%.5f,'%s')", // Checked
+               passNumber,"ADX",val[1],val[2],val[3],i.inputPrefix);
+               #ifdef _DEBUG_OPTIMIZATION_INDICATOR
                   ss=sql;
                   pss
                #endif
@@ -86,9 +86,9 @@ void EAOptimizationIndicator::addOptimizationValues(double &val[], int passNumbe
    // ----------------------------------------------------------------
       if (StringFind(i.inputPrefix,"i2",0)!=-1) {
          sql=StringFormat("INSERT INTO TECHNICALS (passNumber,indicatorName,"
-         "period,movingAverage,appliedPrice,inputPrefix) VALUES (%u,'%s',%.5f,%.5f,%.5f,'%s')",
-            passNumber,"RSI",val[1],val[2],val[3],i.inputPrefix);
-            #ifdef _DEBUG_OPTIMIZATION
+         "period,movingAverage,appliedPrice,upperLevel,lowerLevel,inputPrefix) VALUES (%u,'%s',%.5f,%.5f,%.5f,%.5f,%.5f,'%s')",
+            passNumber,"RSI",val[1],val[2],val[3],val[4],val[5],i.inputPrefix);
+            #ifdef _DEBUG_OPTIMIZATION_INDICATOR
                ss=sql;
                pss
             #endif
@@ -102,7 +102,7 @@ void EAOptimizationIndicator::addOptimizationValues(double &val[], int passNumbe
          sql=StringFormat("INSERT INTO TECHNICALS (passNumber,indicatorName,"
          "period,movingAverage,appliedVolume,inputPrefix) VALUES (%u,'%s',%.5f,%.5f,%.5f,'%s')",
             passNumber,"MFI",val[1],val[2],val[3],i.inputPrefix);
-            #ifdef _DEBUG_OPTIMIZATION
+            #ifdef _DEBUG_OPTIMIZATION_INDICATOR
                ss=sql;
                pss
             #endif
@@ -117,7 +117,7 @@ void EAOptimizationIndicator::addOptimizationValues(double &val[], int passNumbe
          sql=StringFormat("INSERT INTO TECHNICALS (passNumber,indicatorName,"
          "period,stepValue,maxValue,inputPrefix) VALUES (%u,'%s',%.5f,%.5f,%.5f,'%s')",
             passNumber,"SAR",val[1],val[2],val[3],i.inputPrefix);
-            #ifdef _DEBUG_OPTIMIZATION
+            #ifdef _DEBUG_OPTIMIZATION_INDICATOR
                ss=sql;
                pss
             #endif
@@ -132,7 +132,7 @@ void EAOptimizationIndicator::addOptimizationValues(double &val[], int passNumbe
          sql=StringFormat("INSERT INTO TECHNICALS (passNumber,indicatorName,"
          "period,tenkanSen,kijunSen,spanB,inputPrefix) VALUES (%u,'%s',%.5f,%.5f,%.5f,%.5f,'%s')",
             passNumber,"ICH",val[1],val[2],val[3],val[4],i.inputPrefix);
-            #ifdef _DEBUG_OPTIMIZATION
+            #ifdef _DEBUG_OPTIMIZATION_INDICATOR
                ss=sql;
                pss
             #endif
@@ -147,7 +147,7 @@ void EAOptimizationIndicator::addOptimizationValues(double &val[], int passNumbe
          sql=StringFormat("INSERT INTO TECHNICALS (passNumber,indicatorName,"
          "period,movingAverage,inputPrefix) VALUES (%u,'%s',%.5f,%.5f,'%s')",
             passNumber,"RVI",val[1],val[2],i.inputPrefix);
-            #ifdef _DEBUG_OPTIMIZATION
+            #ifdef _DEBUG_OPTIMIZATION_INDICATOR
                ss=sql;
                pss
             #endif
@@ -162,7 +162,7 @@ void EAOptimizationIndicator::addOptimizationValues(double &val[], int passNumbe
          sql=StringFormat("INSERT INTO TECHNICALS (passNumber,indicatorName,"
          "period,kPeriod,dPeriod,slowMovingAverage,movingAverageMethod,stocPrice,inputPrefix) VALUES (%u,'%s',%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,'%s')",
             passNumber,"STOC",val[1],val[2],val[3],val[4],val[5],val[6],i.inputPrefix);
-            #ifdef _DEBUG_OPTIMIZATION
+            #ifdef _DEBUG_OPTIMIZATION_INDICATOR
                ss=sql;
                pss
             #endif
@@ -177,7 +177,7 @@ void EAOptimizationIndicator::addOptimizationValues(double &val[], int passNumbe
          sql=StringFormat("INSERT INTO TECHNICALS (passNumber,indicatorName,"
          "period,slowMovingAverage,fastMovingAverage,signalPeriod,appliedPrice,inputPrefix) VALUES (%u,'%s',%.5f,%.5f,%.5f,%.5f,%.5f,'%s')",
             passNumber,"OSMA",val[1],val[2],val[3],val[4],val[5],i.inputPrefix);
-            #ifdef _DEBUG_OPTIMIZATION
+            #ifdef _DEBUG_OPTIMIZATION_INDICATOR
                ss=sql;
                pss
             #endif
@@ -194,17 +194,34 @@ void EAOptimizationIndicator::addOptimizationValues(double &val[], int passNumbe
       sql=StringFormat("INSERT INTO TECHNICALS (passNumber,indicatorName,"
          "period,slowMovingAverage,fastMovingAverage,signalPeriod,appliedPrice,inputPrefix) VALUES (%u,'%s',%.5f,%.5f,%.5f,%.5f,%.5f,'%s')",
             passNumber,"MACD",val[1],val[2],val[3],val[4],val[5],i.inputPrefix);
-            #ifdef _DEBUG_OPTIMIZATION
+            #ifdef _DEBUG_OPTIMIZATION_INDICATOR
                ss=sql;
                pss
             #endif
       }
-      
+   
+   #endif
+
+   // ----------------------------------------------------------------
+   #ifdef _USE_MACDJB //i10a
+   // ----------------------------------------------------------------
+   if (StringFind(i.inputPrefix,"i10",0)!=-1) {
+
+      sql=StringFormat("INSERT INTO TECHNICALS (passNumber,indicatorName,"
+         "period,slowMovingAverage,fastMovingAverage,signalPeriod,inputPrefix) VALUES (%u,'%s',%.5f,%.5f,%.5f,%.5f,'%s')",
+            passNumber,"MACDJB",val[1],val[2],val[3],val[4],i.inputPrefix);
+            #ifdef _DEBUG_OPTIMIZATION_INDICATOR
+               ss=sql;
+               pss
+            #endif
+      }
+   #endif  
+   
    if (!DatabaseExecute(_optimizeDBHandle, sql)) {
       ss=StringFormat("OnTesterDeinit -> Failed to insert with code %d", GetLastError());
       pss
    } else {
-      #ifdef _DEBUG_OPTIMIZATION
+      #ifdef _DEBUG_OPTIMIZATION_INDICATOR
          ss=" -> INSERT INTO TECHNICALS succcess";
          pss
          ss=sql;
@@ -212,5 +229,5 @@ void EAOptimizationIndicator::addOptimizationValues(double &val[], int passNumbe
       #endif
    }  
    
-   #endif
+
 }

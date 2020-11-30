@@ -21,6 +21,7 @@
 #ifdef _USE_STOC   #include "EATechnicalsSTOC.mqh"  #endif //i7a
 #ifdef _USE_OSMA   #include "EATechnicalsOSMA.mqh"  #endif //i8a
 #ifdef _USE_MACD   #include "EATechnicalsMACD.mqh"  #endif //i9a
+#ifdef _USE_MACDJB #include "EATechnicalsJB.mqh"    #endif //i10a
 #ifdef _USE_ZIGZAG #include "EATechnicalsZZ.mqh"    #endif 
 
 //=========
@@ -157,14 +158,20 @@ void EATechnicalParameters::copyValuesFromDatabase(int strategyNumber) {
          DatabaseColumnDouble       (request,24,tech.upperLevel);
 
          // Over write with values given to us during optimization
-         if (_runMode==_RUN_OPTIMIZATION) {
+         if (MQLInfoInteger(MQL_OPTIMIZATION) || MQLInfoInteger(MQL_TESTER)) {
             #ifdef _DEBUG_TECHNICAL_PARAMETERS
-               ss="EATechnicalParameters ->  copy input values MQL_OPTIMIZATION ....";
+               ss="EATechnicalParameters ->  copy input values MQL_OPTIMIZATION OR MQL_TESTER ....";
                writeLog
                pss
             #endif
             copyValuesFromOptimizationInputs();     
-         }  
+         } else {
+            #ifdef _DEBUG_TECHNICAL_PARAMETERS
+               ss="EATechnicalParameters ->  Using values directly from the DB";
+               writeLog
+               pss
+            #endif
+         }
 
          createTechnicalObject();
          #ifdef _DEBUG_TECHNICAL_PARAMETERS
@@ -199,28 +206,28 @@ void EATechnicalParameters::copyValuesFromOptimizationInputs() {
    #ifdef _USE_ADX //i1a
 
    if (StringFind("i1a_",tech.inputPrefix,0)!=-1) {
-      #ifdef _DEBUG_TECHNICAL_PARAMETERS
-         ss="-----------------------> i1a_";
-         writeLog
-      #endif
 
       tech.indicatorName="ADX";
       tech.period=i1a_period;
       tech.movingAverage=i1a_movingAverage;
-      //tech.useBuffers=i1a_useBuffers; // logical AND 1,2,4,8
+      tech.upperLevel=i1a_crossLevel;
+      #ifdef _DEBUG_TECHNICAL_PARAMETERS
+         ss=StringFormat("EATechnicalParameters-> i1a_ Period:%d MA:%d CrossLevel:%d",tech.period,tech.movingAverage,tech.upperLevel);
+         writeLog
+      #endif
       return;
    }
 
    if (StringFind("i1b_",tech.inputPrefix,0)!=-1) {
-      #ifdef _DEBUG_TECHNICAL_PARAMETERS
-         ss="-----------------------> i1b_";
-         writeLog
-      #endif
 
       tech.indicatorName="ADX";
       tech.period=i1b_period;
       tech.movingAverage=i1b_movingAverage;
-      //tech.useBuffers=i1b_useBuffers;
+      tech.upperLevel=i1b_crossLevel;
+      #ifdef _DEBUG_TECHNICAL_PARAMETERS
+         ss=StringFormat("EATechnicalParameters-> i1b_ Period:%d MA:%d CrossLevel:%d",tech.period,tech.movingAverage,tech.upperLevel);
+         writeLog
+      #endif
 
       return;
    }
@@ -233,6 +240,8 @@ void EATechnicalParameters::copyValuesFromOptimizationInputs() {
       tech.period=i2a_period;
       tech.movingAverage=i2a_movingAverage;
       tech.appliedPrice=i2a_appliedPrice;
+      tech.upperLevel=i2a_upperLevel;
+      tech.lowerLevel=i2a_lowerLevel;
       return;
    }
    if (StringFind("i2b_",tech.inputPrefix,0)!=-1) {
@@ -240,6 +249,8 @@ void EATechnicalParameters::copyValuesFromOptimizationInputs() {
       tech.period=i2b_period;
       tech.movingAverage=i2b_movingAverage;
       tech.appliedPrice=i2b_appliedPrice;
+      tech.upperLevel=i2b_upperLevel;
+      tech.lowerLevel=i2b_lowerLevel;
       return;
    }
    #endif
@@ -399,6 +410,26 @@ void EATechnicalParameters::copyValuesFromOptimizationInputs() {
    #endif
 
    // ----------------------------------------------------------------
+   #ifdef _USE_MACDJB //i10a
+   if (StringFind("i10a_",tech.inputPrefix,0)!=-1) {
+      tech.indicatorName="MACDJB";
+      tech.period=i10a_period;
+      tech.slowMovingAverage=i10a_slowMovingAverage;
+      tech.fastMovingAverage=i10a_fastMovingAverage;
+      tech.signalPeriod=i10a_signalPeriod;
+      return;
+   }
+   if (StringFind("i10b_",tech.inputPrefix,0)!=-1) {
+      tech.indicatorName="MACDJB";
+      tech.period=i10b_period;
+      tech.slowMovingAverage=i10b_slowMovingAverage;
+      tech.fastMovingAverage=i10b_fastMovingAverage;
+      tech.signalPeriod=i10b_signalPeriod;
+      return;
+   }
+   #endif
+
+   // ----------------------------------------------------------------
    #ifdef _USE_ZIGZAG
 
    if (StringFind("i100a_",tech.inputPrefix,0)!=-1) {
@@ -470,6 +501,7 @@ void EATechnicalParameters::createTechnicalObject() {
 EAEnum EATechnicalParameters::getValues() {
 
    static int barNumber=1;
+   int optimizationStartBar, barCnt;
    /*
    #ifdef _DEBUG_TECHNICAL_PARAMETERS
       pline
@@ -484,7 +516,7 @@ EAEnum EATechnicalParameters::getValues() {
 
 
    //==========================
-   if (_runMode==_RUN_NORMAL) {
+   if (_systemState==_STATE_NORMAL) {
    //==========================
       #ifdef _DEBUG_TECHNICAL_PARAMETERS
          ss="EATechnicalParameters -> getValues -> Entry RUN NORMAL";
@@ -506,7 +538,7 @@ EAEnum EATechnicalParameters::getValues() {
    }
 
    //================================
-   if (_runMode==_RUN_OPTIMIZATION) {
+   if (_systemState==_STATE_BUILD_DATAFRAME) {
    //================================
       // Loop through all object and get the object to return the value as a input to the NN
       #ifdef _DEBUG_TECHNICAL_PARAMETERS
@@ -521,18 +553,19 @@ EAEnum EATechnicalParameters::getValues() {
       nn.buildDataFrame(nnIn,nnOut);                  // Add to DF which will the be used in training
 
       #ifdef _DEBUG_TECHNICAL_PARAMETERS
-         ss=StringFormat("EATechnicalParameters -> getValues -> Inputs:%d ",nnIn.Total());
+         ss=StringFormat("EATechnicalParameters -> getValues -> Total Inputs:%d ",nnIn.Total());
          writeLog
-         ss="";
+         ss=" >>>>> Inputs: ";
          for (int l=0;l<nnIn.Total();l++) {
-            ss=ss+DoubleToString(nnIn.At(l),5)+' ';
+            ss=StringFormat("%.5f",nnIn.At(l));
+            writeLog
          }
+         
+         ss=StringFormat("EATechnicalParameters -> getValues -> Total Outputs:%d ",nnOut.Total());
          writeLog
-         ss=StringFormat("EATechnicalParameters -> getValues -> Outputs:%d ",nnOut.Total());
-         writeLog
-         ss="";
+         ss=" >>>>>> Outputs: ";
          for (int m=0;m<nnIn.Total();m++) {
-            ss=ss+DoubleToString(nnIn.At(m),5)+' ';
+            ss=StringFormat("%.5f",nnIn.At(m));
          }
          writeLog
       #endif
@@ -541,7 +574,7 @@ EAEnum EATechnicalParameters::getValues() {
    
 
    //==============================
-   if (_runMode==_RUN_REBUILD_NN) {
+   if (_systemState==_STATE_REBUILD_NETWORK) {
    //==============================
       #ifdef _DEBUG_NN_TRAINING
          ss=StringFormat("EATechnicalParameters -> getValues -> REBUILD NN optimization start time:%s start bar:%d DF Size:%d",
@@ -550,9 +583,18 @@ EAEnum EATechnicalParameters::getValues() {
          pss
       #endif
 
+      barCnt=nn.getDataFrameSize();
+
       // Get the bar number based on the previously saved optimizations run and date/time
-      int optimizationStartBar=iBarShift(_Symbol,PERIOD_CURRENT,nn.getOptimizationStartDateTime(),false);  
-      int barCnt=nn.getDataFrameSize(); 
+      optimizationStartBar=iBarShift(_Symbol,PERIOD_CURRENT,nn.getOptimizationStartDateTime(),false);  
+      if (optimizationStartBar<barCnt) optimizationStartBar=barCnt;
+
+      #ifdef _DEBUG_NN_TRAINING
+         ss=StringFormat("EATechnicalParameters -> getValues -> REBUILD NETWORK optimization start bar:%d",
+            optimizationStartBar);
+         writeLog
+         pss
+      #endif
 
       while (barCnt>0) {
 
@@ -567,6 +609,16 @@ EAEnum EATechnicalParameters::getValues() {
 
          #ifdef _DEBUG_NN_TRAINING
             ss=StringFormat("EATechnicalParameters -> getValues -> barCnt:%d Optimization Bar Number:%d Optimization Bar Date/Time:%s",barCnt,optimizationStartBar,TimeToString(iTime(_Symbol,PERIOD_CURRENT,optimizationStartBar),TIME_DATE|TIME_MINUTES));
+            writeLog
+            pss
+         #endif
+      }
+      // How update the DB with values used in this single test run.
+      for (int i=0;i<indicators.Total();i++) {
+         EATechnicalsBase *indicator=indicators.At(i);
+         indicator.setValues();
+         #ifdef _DEBUG_NN_TRAINING
+            ss="EATechnicalParameters -> getValues -> Updating DB TECHNICALS";
             writeLog
             pss
          #endif

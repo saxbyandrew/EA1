@@ -22,6 +22,9 @@ private:
    string   ss;
    CiRSI    rsi;  
 
+   double overSoldOverBought(double currentValue);
+   
+
 
 //=========
 protected:
@@ -34,6 +37,7 @@ public:
    EATechnicalsRSI(Technicals &t);
    ~EATechnicalsRSI();
 
+   void  setValues();
    void  getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs);    
    void  getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,datetime barDateTime);                    
 
@@ -62,12 +66,35 @@ EATechnicalsRSI::EATechnicalsRSI(Technicals &t) {
 EATechnicalsRSI::~EATechnicalsRSI() {
 
 }
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+void EATechnicalsRSI::setValues() {
+
+   string sql;
+
+   sql=StringFormat("UPDATE TECHNICALS SET period=%d, movingAverage=%d, upperLevel=%.5f, lowerLevel=%.5f, appliedPrice=%d "
+      "WHERE strategyNumber=%d AND inputPrefix='%s'",
+      tech.period, tech.movingAverage,tech.upperLevel,tech.lowerLevel,tech.appliedPrice,tech.strategyNumber,tech.inputPrefix);
+   
+   EATechnicalsBase::copyValuesToDatabase(sql);
+
+}
+
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+double EATechnicalsRSI::overSoldOverBought(double currentValue) {
+
+   if (currentValue>tech.upperLevel) return 1;
+   if (currentValue<tech.lowerLevel) return -1;
+   return 0;
+}
 
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
 void EATechnicalsRSI::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,datetime barDateTime) {
-
 
    int      barNumber=iBarShift(_Symbol,tech.period,barDateTime,false); // Adjust the bar number based on PERIOD and TIME
    double   main[1];
@@ -84,6 +111,7 @@ void EATechnicalsRSI::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,
       #endif
 
       if (bool (tech.useBuffers&_BUFFER1)) nnInputs.Add(main[0]);
+      if (bool (tech.useBuffers&_BUFFER2)) nnInputs.Add(overSoldOverBought(main[0]));
 
    } else {
       #ifdef _DEBUG_RSI_MODULE
@@ -92,8 +120,8 @@ void EATechnicalsRSI::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,
          pss
       #endif
       if (bool (tech.useBuffers&_BUFFER1)) nnInputs.Add(0);
+      if (bool (tech.useBuffers&_BUFFER2)) nnInputs.Add(0);
    }
-   
 
 }
 
@@ -117,6 +145,7 @@ void EATechnicalsRSI::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs)
       #endif
 
       if (bool (tech.useBuffers&_BUFFER1)) nnInputs.Add(main[0]);
+      if (bool (tech.useBuffers&_BUFFER2)) nnInputs.Add(overSoldOverBought(main[0]));
 
    } else {
       #ifdef _DEBUG_RSI_MODULE
@@ -125,8 +154,8 @@ void EATechnicalsRSI::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs)
          pss
       #endif
       if (bool (tech.useBuffers&_BUFFER1)) nnInputs.Add(0);
+      if (bool (tech.useBuffers&_BUFFER2)) nnInputs.Add(0);
+
    }
-
-
 
 }

@@ -131,8 +131,8 @@ void EAPositionBase::closeSQLPosition(EAPosition *p) {
 void EAPositionBase::deleteSQLPosition(int ticket) {
 
 
-   if (bool (positionbase.runMode&_RUN_OPTIMIZATION)) return;   // No state saving during optimizations
-   if (!bool (positionbase.runMode&_RUN_SAVE_STATE)) return;             // No state saving enabled
+   //if (bool (positionbase.runMode&_RUN_OPTIMIZATION)) return;   // No state saving during optimizations
+   //if (!bool (positionbase.runMode&_RUN_SAVE_STATE)) return;             // No state saving enabled
 
     string sql=StringFormat("DELETE FROM STATE WHERE ticket=%d",ticket);
     if (!DatabaseExecute(_mainDBHandle,sql)) {

@@ -20,8 +20,10 @@ class EATechnicalsJB : public EATechnicalsBase {
 private:
 
    int         MACDPlatinumHandle, QQEHandle, QMPHandle;
+   double      main[], signal[], bullish[], bearish[];
    string      ss;
-   CiMACD      macd;  
+
+   double      getValues(int bufferNumber);
 
 
 //=========
@@ -56,38 +58,45 @@ EATechnicalsJB::EATechnicalsJB(Technicals &tech) {
    // Set the local instance struct variables
    EATechnicalsBase::copyValues(tech);
 
+   
+   MACDPlatinumHandle=iCustom(_Symbol,tech.period,"MACD_Platinum",tech.fastMovingAverage,tech.slowMovingAverage,tech.signalPeriod,true,true,false,false);
    if (MACDPlatinumHandle==NULL) {
-      MACDPlatinumHandle=iCustom(_Symbol,period,"MACD_Platinum",tech.fastMovingAverage,tech.slowMovingAverage,tech.signalPeriod,true,true,false,false);
-
-      #ifdef _DEBUG_MACDJB_MODULE
-            ss="EATechnicalsJB -> EATechnicalsJB MACD -> ERROR";
-            pss
-            writeLog
-            ExpertRemove();
-      #endif
+   #ifdef _DEBUG_MACDJB_MODULE
+      ss="EATechnicalsJB -> EATechnicalsJB MACD -> ERROR";
+      pss
+      writeLog
+      ExpertRemove();
+   #endif
    } 
 
+   QQEHandle=iCustom(_Symbol,PERIOD_CURRENT,"QQE Adv",1,8,3);
    if (QQEHandle==NULL) {
-      QQEHandle=iCustom(_Symbol,PERIOD_CURRENT,"QQE Adv",1,8,3);
-
-      #ifdef _DEBUG_MACDJB_MODULE
-         ss="EATechnicalsJB -> EATechnicalsJB QQE -> ERROR";
-         pss
-         writeLog
-         ExpertRemove();
-      #endif
+   #ifdef _DEBUG_MACDJB_MODULE
+      ss="EATechnicalsJB -> EATechnicalsJB QQE -> ERROR";
+      pss
+      writeLog
+      ExpertRemove();
+   #endif
    }
 
+   QMPHandle=iCustom(_Symbol,tech.period,"QMP Filter",0,tech.fastMovingAverage,tech.slowMovingAverage,tech.signalPeriod,true,1,8,3,false,false);
    if (QMPHandle==NULL) {
-      QMPHandle=iCustom(_Symbol,period,"QMP Filter",0,tech.fastMovingAverage,tech.slowMovingAverage,tech.signalPeriod,true,1,8,3,false,false);
-
-      #ifdef _DEBUG_MACDJB_MODULE
-         ss="EATechnicalsJB -> EATechnicalsJB QMP -> ERROR";
-         pss
-         writeLog
-         ExpertRemove();
-      #endif
+   #ifdef _DEBUG_MACDJB_MODULE
+      ss="EATechnicalsJB -> EATechnicalsJB QMP -> ERROR";
+      pss
+      writeLog
+      ExpertRemove();
+   #endif
    }
+
+   ArraySetAsSeries(main,true);
+   ArraySetAsSeries(signal,true);
+   ArraySetAsSeries(bullish,true);
+   ArraySetAsSeries(bearish,true);
+   CopyBuffer(MACDPlatinumHandle,0,0,501,main);
+   CopyBuffer(MACDPlatinumHandle,1,0,501,signal);
+   CopyBuffer(MACDPlatinumHandle,2,0,501,bullish);
+   CopyBuffer(MACDPlatinumHandle,3,0,501,bearish);
 
 }
 
@@ -103,41 +112,33 @@ EATechnicalsJB::~EATechnicalsJB() {
 //+------------------------------------------------------------------+
 void EATechnicalsJB::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,datetime barDateTime) {
 
-   /*
-   #ifdef _DEBUG_MACDJB_MODULE
-      ss="EATechnicalsJB -> getValues -> Entry 2....";
-      pss
-      writeLog
-   #endif 
-   */
 
-   int      barNumber=iBarShift(_Symbol,tech.period,barDateTime,false); // Adjust the bar number based on PERIOD and TIME
-   double   main[1], signal[1];
+}
 
-   // Refresh the indicator and get all the buffers
-   macd.Refresh(-1);
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+double EATechnicalsJB::getValues(int bufferNumber) {
 
-   if (macd.GetData(barDateTime,1,0,main)>0 && macd.GetData(barDateTime,1,0,signal)>0) {
+   double buffer[];
+
+   
+
+   if (buffer[0]==EMPTY_VALUE) {
       #ifdef _DEBUG_MACDJB_MODULE
-         ss=StringFormat("EATechnicalsJB -> getValues -> MAIN:%.2f",main[0]);        
+         ss=StringFormat("EATechnicalsJB -> getValues -> Buffer Number :%d EMPTY VALUE",bufferNumber);
          writeLog
-         pss
-         ss=StringFormat("EATechnicalsJB -> getValues -> SIGNAL:%.5f",signal[0]);        
-         writeLog
-         pss
       #endif
-
-      if (bool (tech.useBuffers&_BUFFER1)) nnInputs.Add(main[0]);
-      if (bool (tech.useBuffers&_BUFFER2)) nnInputs.Add(signal[0]);
-      //if (bool (tech.useBuffers&_BUFFER5)) nnInputs.Add(??);
-
-   } else {
-      #ifdef _DEBUG_MACDJB_MODULE
-         ss="EATechnicalsJB -> getValues -> ERROR will return zeros"; 
-         writeLog
-         pss
-      #endif
+      return -1;
    }
+
+   #ifdef _DEBUG_MACDJB_MODULE
+      ss=StringFormat("EATechnicalsJB -> getValues -> Buffer Number :%d Value:%.5f",bufferNumber,buffer[0]);
+      writeLog
+   #endif
+
+   return buffer[0];
+
 
 }
 
@@ -146,47 +147,72 @@ void EATechnicalsJB::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,d
 //+------------------------------------------------------------------+
 void EATechnicalsJB::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs) {
 
-   /*
-   #ifdef _DEBUG_MACDJB_MODULE
-      ss="EATechnicalsJB -> getValues -> Entry 1....";
-      pss
-      writeLog
-   #endif 
-   */
-
-   double main[1], signal[1];
-
-   // Refresh the indicator and get all the buffers
-   macd.Refresh(-1);
-
-   if (macd.GetData(1,1,0,main)>0 && macd.GetData(1,1,0,signal)>0) {
-      #ifdef _DEBUG_MACDJB_MODULE
-         ss=StringFormat("EATechnicalsJB -> getValues -> MAIN:%.2f",main[0]);        
-         writeLog
-         pss
-         ss=StringFormat("EATechnicalsJB -> getValues -> SIGNAL:%.5f",signal[0]);        
-         writeLog
-         pss
-      #endif
-
-      if (bool (tech.useBuffers&_BUFFER1)) nnInputs.Add(main[0]);
-      if (bool (tech.useBuffers&_BUFFER2)) nnInputs.Add(signal[0]);
-      //if (bool (tech.useBuffers&_BUFFER5)) nnInputs.Add(??);
-
-   } else {
-      #ifdef _DEBUG_MACDJB_MODULE
-         ss="EATechnicalsJB -> getValues -> ERROR will return zeros"; 
-         writeLog
-         pss
-      #endif
-      if (bool (tech.useBuffers&_BUFFER1)) nnInputs.Add(0);
-      if (bool (tech.useBuffers&_BUFFER2)) nnInputs.Add(0);
-
-   }
 
 
+   if (bool (tech.useBuffers&_BUFFER1)) nnInputs.Add(main[0]);
+   if (bool (tech.useBuffers&_BUFFER2)) nnInputs.Add(signal[0]);
 
+/*
+
+      if (bool (tech.useBuffers&_BUFFER1)) {
+         if (ttlCntBullish>0) {
+            weightBullish=(ttlCntBullish-tech.incDecFactor)/tech.ttl;
+            ttlCntBullish--;
+            #ifdef _DEBUG_MACDJB_MODULE
+               ss=StringFormat("EATechnicalsJB -> getValues -> Countdown -> BULLISH :%d weight:%1.2f",ttlCntBullish,weightBullish);
+               writeLog
+            #endif
+            nnInputs.Add(weightBullish);
+         } else {
+
+            ttlCntBullish=tech.ttl;
+            if (bullish[1]!=EMPTY_VALUE) {
+               nnInputs.Add(1);
+               #ifdef _DEBUG_MACDJB_MODULE
+                  ss=StringFormat("EATechnicalsJB -> getValues -> BULLISH :%d",1);
+                  writeLog
+               #endif
+            } else {
+               nnInputs.Add(0);
+               #ifdef _DEBUG_MACDJB_MODULE
+                  ss=StringFormat("EATechnicalsJB -> getValues -> BULLISH EMPTY VALUE:%d",0);
+                  writeLog
+               #endif
+            }
+         }
+      }
+
+      if (bool (tech.useBuffers&_BUFFER2)) {
+         if (ttlCntBearish>0) {
+            weightBearish=(ttlCntBearish-tech.incDecFactor)/tech.ttl;
+            ttlCntBearish--;
+            #ifdef _DEBUG_MACDJB_MODULE
+               ss=StringFormat("EATechnicalsJB -> getValues -> Countdown -> BEARISH :%d weight:%1.2f",ttlCntBearish,weightBullish);
+               writeLog
+            #endif
+            nnInputs.Add(weightBearish);
+
+         } else {
+
+            ttlCntBearish=tech.ttl;
+            if (bearish[1]!=EMPTY_VALUE) {
+               nnInputs.Add(2);
+               #ifdef _DEBUG_MACDJB_MODULE
+                  ss=StringFormat("EATechnicalsJB -> getValues -> BEARISH :%d",2);
+                  writeLog
+               #endif
+            } else {
+               nnInputs.Add(0);
+               #ifdef _DEBUG_MACDJB_MODULE
+                  ss=StringFormat("EATechnicalsJB -> getValues -> BEARISH EMPTY VALUE :%d",0);
+                  writeLog
+               #endif
+            }
+         }
+      }
+      */
 }
+/*
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
@@ -260,11 +286,13 @@ double EATechnicalsJB::MACDPlatinumBearish(int ttl, double factor) {
 
    return 0;
 }
+*/
 
+/*
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-double EAModuleTechnicals::QQEFilterSlow(int ttl, double factor) {
+double EATechnicalsJB::QQEFilterSlow(int ttl, double factor) {
 
    #ifdef _DEBUG_MACDJB_MODULE
       ss="EAModuleTechnicals ->  QQEFilterSlow";
@@ -272,12 +300,12 @@ double EAModuleTechnicals::QQEFilterSlow(int ttl, double factor) {
       pss
    #endif 
 
-   static double QQEBuffer[];
+   static double QQEBufferRSI[1];
    static int ttlCnt=0;
    double weight=1;
 
-   ArraySetAsSeries(QQEBuffer,true);
-   CopyBuffer(QQEHandle, 1, 0, lookBackBuffersSize, QQEBuffer);
+   ArraySetAsSeries(QQEBufferRSI,true);
+   CopyBuffer(QQEHandle, 1, 0, lookBackBuffersSize, QQEBufferRSI);
 
    // Allow divergence time to live
    if (ttlCnt>0) {
@@ -289,8 +317,8 @@ double EAModuleTechnicals::QQEFilterSlow(int ttl, double factor) {
       return weight;
    } 
 
-   if (QQEBuffer[1]!=EMPTY_VALUE) {
-      printf("QQE slow buffer:%2.2f",QQEBuffer[1]);
+   if (QQEBufferRSI[1]!=EMPTY_VALUE) {
+      printf("QQE slow buffer:%2.2f",QQEBufferRSI[1]);
       ttlCnt=ttl;
       return 1;
    }
@@ -301,7 +329,7 @@ double EAModuleTechnicals::QQEFilterSlow(int ttl, double factor) {
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-double EAModuleTechnicals::QQEFilterRSIMA(int ttl, double factor) {
+double EATechnicalsJB::QQEFilterRSIMA(int ttl, double factor) {
 
    #ifdef _DEBUG_MACDJB_MODULE
       ss="EAModuleTechnicals ->  QQEFilterRSIMA";
@@ -342,7 +370,7 @@ double EAModuleTechnicals::QQEFilterRSIMA(int ttl, double factor) {
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-double EAModuleTechnicals::QMPFilterBullish(int ttl, double factor) {
+double EATechnicalsJB::QMPFilterBullish(int ttl, double factor) {
 
    static double QMPBuffer[];
    static int ttlCnt=0;
@@ -372,7 +400,7 @@ double EAModuleTechnicals::QMPFilterBullish(int ttl, double factor) {
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-double EAModuleTechnicals::QMPFilterBearish(int ttl, double factor) {
+double EATechnicalsJB::QMPFilterBearish(int ttl, double factor) {
 
    static double QMPBuffer[];
    static int ttlCnt=0;
@@ -398,3 +426,4 @@ double EAModuleTechnicals::QMPFilterBearish(int ttl, double factor) {
    } 
    return 0;
 }
+*/

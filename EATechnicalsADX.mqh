@@ -21,6 +21,7 @@ private:
 
    string   ss;
    CiADX    adx;  
+   double ADXMainLevelCross(double val);
 
 
 //=========
@@ -35,7 +36,8 @@ public:
    ~EATechnicalsADX();
 
    void  getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs);    
-   void  getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,datetime barDateTime);                    
+   void  getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,datetime barDateTime);  
+   void  setValues();            
 
 
 };
@@ -58,6 +60,29 @@ EATechnicalsADX::EATechnicalsADX(Technicals &t) {
 //|                                                                  |
 //+------------------------------------------------------------------+
 EATechnicalsADX::~EATechnicalsADX() {
+
+}
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+void EATechnicalsADX::setValues() {
+
+   string sql;
+
+   sql=StringFormat("UPDATE TECHNICALS SET period=%d, movingAverage=%d, upperLevel=%.5f "
+      "WHERE strategyNumber=%d AND inputPrefix='%s'",
+      tech.period, tech.movingAverage,tech.upperLevel,tech.strategyNumber,tech.inputPrefix);
+   
+   EATechnicalsBase::copyValuesToDatabase(sql);
+
+}
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+double EATechnicalsADX::ADXMainLevelCross(double val) {
+
+   if (val>tech.upperLevel) return 1;
+   return 0;
 
 }
 
@@ -105,6 +130,7 @@ void EATechnicalsADX::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,
       if (bool (tech.useBuffers&_BUFFER1)) nnInputs.Add(main[0]);
       if (bool (tech.useBuffers&_BUFFER2)) nnInputs.Add(plusDI[0]);
       if (bool (tech.useBuffers&_BUFFER3)) nnInputs.Add(minusDI[0]);
+      if (bool (tech.useBuffers&_BUFFER4)) nnInputs.Add(ADXMainLevelCross(main[0]));
 
    } else {
       #ifdef _DEBUG_ADX_MODULE
@@ -115,6 +141,7 @@ void EATechnicalsADX::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,
       if (bool (tech.useBuffers&_BUFFER1)) nnInputs.Add(0);
       if (bool (tech.useBuffers&_BUFFER2)) nnInputs.Add(0);
       if (bool (tech.useBuffers&_BUFFER3)) nnInputs.Add(0);
+      if (bool (tech.useBuffers&_BUFFER4)) nnInputs.Add(0);
    }
 
 }
@@ -145,6 +172,7 @@ void EATechnicalsADX::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs)
       if (bool (tech.useBuffers&_BUFFER1)) nnInputs.Add(main[0]);
       if (bool (tech.useBuffers&_BUFFER2)) nnInputs.Add(plusDI[0]);
       if (bool (tech.useBuffers&_BUFFER3)) nnInputs.Add(minusDI[0]);
+      if (bool (tech.useBuffers&_BUFFER4)) nnInputs.Add(ADXMainLevelCross(main[0]));
 
    } else {
       #ifdef _DEBUG_ADX_MODULE
@@ -155,6 +183,7 @@ void EATechnicalsADX::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs)
       if (bool (tech.useBuffers&_BUFFER1)) nnInputs.Add(0);
       if (bool (tech.useBuffers&_BUFFER2)) nnInputs.Add(0);
       if (bool (tech.useBuffers&_BUFFER3)) nnInputs.Add(0);
+      if (bool (tech.useBuffers&_BUFFER4)) nnInputs.Add(0);
    }
 }
 

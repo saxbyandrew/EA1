@@ -15,7 +15,7 @@
 //#define _RUN_PANEL
 
 // DEBUG OPTIONS
-#define _DEBUG_WRITE_CSV
+//#define _DEBUG_WRITE_CSV
 //#define _DEBUG_MYEA
 //#define _DEBUG_PANEL
 //#define _DEBUG_COMBOXBOX
@@ -26,11 +26,11 @@
 //#define _DEBUG_MAIN_LOOP
 //#define _DEBUG_TIME
 #define _DEBUG_TECHNICAL_PARAMETERS
-#define _DEBUG_NN_INPUTS_OUTPUTS
-#define _DEBUG_NN
-#define _DEBUG_NN_LOADSAVE
-#define _DEBUG_NN_FORCAST
-#define _DEBUG_NN_TRAINING
+//#define _DEBUG_NN_INPUTS_OUTPUTS
+//#define _DEBUG_NN
+//#define _DEBUG_NN_LOADSAVE
+//#define _DEBUG_NN_FORCAST
+//#define _DEBUG_NN_TRAINING
 //#define _DEBUG_STRATEGY
 //#define _DEBUG_STRATEGY_UPDATE
 //#define _DEBUG_STRATEGY_TRIGGERS
@@ -40,8 +40,40 @@
 //#define _DEBUG_LABEL
 
 
+#define _USE_ADX                    //i1a
+//#define _DEBUG_ADX_MODULE 
+#define _USE_RSI                    //i2a
+//#define _DEBUG_RSI_MODULE
+//#define _USE_MFI                  //i4a               
+//#define _DEBUG_MFI_MODULE
+//#define _USE_SAR                  //i4a               
+//#define _DEBUG_SAR_MODULE
+//#define _USE_ICH                  //i5a
+//#define _DEBUG_ICH_MODULE
+//#define _USE_RVI                  //i6a
+//#define _DEBUG_RVI_MODULE
+//#define _USE_STOC                 //i7a
+//#define _DEBUG_STOC_MODULE
+//#define _USE_OSMA                   //i8a
+//#define _DEBUG_OSMA_MODULE
+//#define _USE_MACD                 //i9a
+//#define _DEBUG_MACD_MODULE
+//#define _USE_MACDJB                 //i10a
+//#define _DEBUG_MACDJB_MODULE        //i10b
+//#define _DEBUG_MACD_DIVERGENCE
+//#define _DEBUG_MACDPLAT_BULLISH
+//#define _DEBUG_MACDPLAT_BEARISH
+//#define _DEBUG_QMP_BULLISH
+//#define _DEBUG_QMP_BEARISH
+//#define _DEBUG_QQE
+//#define _DEBUG_ZIGZAG
+//#define _USE_MACDBULL
+//#define _USE_MACDBEAR
+#define _USE_ZIGZAG
 
-//#define _DEBUG_OPTIMIZATION
+
+#define _DEBUG_OPTIMIZATION
+//#define _DEBUG_OPTIMIZATION_INDICATOR
 
 #include <Object.mqh>
 #include <Arrays\List.mqh>
@@ -98,7 +130,7 @@ CArrayObj               indicators, strategies;
     EATabControlMenu        *tabControlMenu;
 #endif
 
-EAEnum                  _runMode;
+EAEnum                  _systemState;
 datetime                _historyStart;
 int                     _mainDBHandle, _txtHandle, _optimizeDBHandle, _strategyNumber;
 string                  _mainDBName="strategies.sqlite";
@@ -120,16 +152,14 @@ int OnInit() {
     MqlDateTime t;
 
 
+
     // If the system is in optimization mode once the initializtion is complete
     // we need to create, populate a dataframe and the train the network before optimization continues
     // and positions are open/closed
     if (MQLInfoInteger(MQL_OPTIMIZATION)) {   
-        _runMode=_RUN_OPTIMIZATION; 
-    } else {
-        // if we are not optimizing remove there optimization code
-
-    }
-
+        _systemState=_STATE_BUILD_DATAFRAME; 
+    } 
+    
 
     TimeToStruct(TimeCurrent(),t);
     string fn=StringFormat("%d%d%d%d%d%d%d%d.log",t.year,t.mon,t.day,t.hour,t.min,t.sec);
@@ -154,8 +184,6 @@ int OnInit() {
             #endif
         }
     }
-
-
 
     #ifdef _RUN_PANEL
     showPanel {
@@ -234,51 +262,7 @@ void OnDeinit(const int reason) {
     
 }
 
-/*
-//+------------------------------------------------------------------+
-//| Expert tick function                                             |
-//+------------------------------------------------------------------+
-void eaStrategyLoad() {
 
-
-    strategyParameters=new EAStrategyParameters;
-    if (CheckPointer(strategyParameters)==POINTER_INVALID) {
-        #ifdef _DEBUG_MYEA
-            ss="OnInit -> Error instantiating strategy parameters";
-            writeLog;
-            pss
-        #endif 
-        ExpertRemove();
-    } else {
-        #ifdef _DEBUG_MYEA
-            ss="OnInit -> Success instantiating strategy parameters";
-            writeLog;
-            pss
-        #endif 
-    }
-
-    usp.runMode=_RUN_STRATEGY_REBUILD_NN;
-
-    expertAdvisor=new EAMain;                                  // Instantiate the EA                                           
-    if (CheckPointer(expertAdvisor)==POINTER_INVALID) {
-        #ifdef _DEBUG_MYEA
-            ss="OnInit  -> Error instantiating main EA";
-            writeLog
-            pss
-        #endif 
-        ExpertRemove();
-        
-    } else {
-        #ifdef _DEBUG_MYEA
-            ss="OnInit  -> Success instantiating main EA";
-            writeLog
-            pss
-        #endif 
-    }
-    
-
-}
-*/
 
 //+------------------------------------------------------------------+
 //|                                                                  |
@@ -295,6 +279,8 @@ void updateStrategy() {
     // that each strategy is tied to a strategy number and a strategy type, the strategy number may have 
     // multiple strategy types one for long one for shore one for stoploss etc etc, and each optimiztion run 
     // a optimization run will only optimize against on of these types. 
+
+    if (MQLInfoInteger(MQL_OPTIMIZATION)) return;  // don't do this is we are running the optimizer !
 
     updateStrategy=new EAStrategyUpdate;
     if (CheckPointer(updateStrategy)==POINTER_INVALID) {
@@ -428,9 +414,7 @@ void OnChartEvent(const int id,         // event ID
 //+------------------------------------------------------------------+
 int OnTesterInit() {
 
-    
-
-    _strategyNumber=1234;
+    _strategyNumber=1;
 
 
     return(optimization.OnTesterInit());
@@ -450,12 +434,17 @@ void OnTesterDeinit() {
 //+------------------------------------------------------------------+
 double OnTester() {
 
+    optimization.OnTester();
+/*()
     double val=TesterStatistics(STAT_PROFIT);
 
     if (val>=istrategyGrossProfit) {
         optimization.OnTester(val);
+    } else {
+        string ss=StringFormat("OnTester profit:%.2f",val);
+        pss
     }
-
+*/
     /*
     if (val)
 
@@ -470,16 +459,30 @@ double OnTester() {
 
     
 }
+
+
 /*
 //+------------------------------------------------------------------+
 void OnTesterPass() {
 
-        double val=TesterStatistics(STAT_SHARPE_RATIO);
-    string ss=StringFormat("================OnTester================= STAT_SHARPE_RATIO: %s",DoubleToString(val));
-    pss
 
+
+    double val=TesterStatistics(STAT_PROFIT);
+
+    if (val>=istrategyGrossProfit) {
+        string ss=StringFormat("OnTester profit achieved:%.2f",val);
+        pss
+    } else {
+        string ss=StringFormat("OnTester profit not achieved:%.2f",val);
+        pss
+    }
+
+    //string ss="OnTesterPass";
+    //pss
     optimization.OnTesterPass();
 
 
 }
 */
+
+

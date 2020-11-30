@@ -22,14 +22,15 @@ private:
 //=========
 
    string ss;
+   
 
 //=========
 protected:
 //=========
 
    Technicals tech;     // See EAStructures.mqh
-   
-   int countBuffersUsed();
+   void  copyValuesToDatabase(string sql);
+   int   countBuffersUsed();
 
 //=========
 public:
@@ -39,6 +40,7 @@ public:
 
    void     copyValues(Technicals &tt);
    
+   virtual void setValues() {};
    virtual void getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs) {};
    virtual void getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs, int barNumber) {};
    virtual void getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs, datetime barDateTime) {};
@@ -90,7 +92,26 @@ void EATechnicalsBase::copyValues(Technicals &t) {
       ss=StringFormat("EATechnicalsBase -> copyValues -> fastMovingAverage:%d slowMovingAverage:%d signalPeriod appliedPrice:%d",t.fastMovingAverage,t.slowMovingAverage,t.signalPeriod,t.appliedPrice);
       writeLog
    #endif
-
-
    
+}
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+void EATechnicalsBase::copyValuesToDatabase(string sql) {
+
+   if (!DatabaseExecute(_mainDBHandle, sql)) {
+      ss=StringFormat("copyValuesToDatabase -> Failed to insert with code %d", GetLastError());
+      pss
+      ss=sql;
+      pss
+      writeLog
+   } else {
+      #ifdef _DEBUG_BASE
+         ss="copyValuesToDatabase -> UPDATE INTO TECHNICALS succcess";
+         pss
+         ss=sql;
+         pss
+      #endif
+   }  
+
 }

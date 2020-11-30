@@ -78,11 +78,12 @@ EANeuralNetwork::EANeuralNetwork(int strategyNumber) {
 
    // OPTIMIZATION MODE
    // Check which mode we are executing in
-   if (_runMode==_RUN_OPTIMIZATION) {                                    // If we are optimizing there will be no nn??.bin file yet or a old one may exist 
+   if (MQLInfoInteger(MQL_OPTIMIZATION)) {                                      // If we are optimizing there will be no nn??.bin file yet or a old one may exist 
       #ifdef _DEBUG_NN
          string ss=StringFormat("EANeuralNetwork -> .... starting time:%s",TimeToString(SeriesInfoInteger(Symbol(),Period(),SERIES_SERVER_FIRSTDATE)));
          writeLog
       #endif
+      _systemState=_STATE_BUILD_DATAFRAME;
       return;                                                                 // A blank network which will be created and used once the DF has been created and will be trained
    }  
 
@@ -172,7 +173,6 @@ void EANeuralNetwork::buildDataFrame(CArrayDouble &nnIn, CArrayDouble &nnOut) {
          csvString=csvString+rowCnt+",";
       }
    #endif
-
 
    // MQL_OPTIMIZATION _RUN_BUILD_DATAFRAME Grab the number of frame as specified in the nn.dfSize
    // get the current bar in optimization mode calc the inputs and outputs
@@ -284,8 +284,8 @@ void EANeuralNetwork::copyValuesFromDatabase(int strategyNumber) {
       DatabaseColumnInteger(request,16,nnetwork.trainWeightsThreshold);
       DatabaseColumnDouble (request,17,nnetwork.triggerThreshold);
 
-      // Over write with values given to us during optimization
-      if (_runMode==_RUN_OPTIMIZATION) {
+      // Over write DB loaded values with values given to us from inputs
+      if (MQLInfoInteger(MQL_OPTIMIZATION) || MQLInfoInteger(MQL_TESTER)) {
          #ifdef _DEBUG_NN
             ss="EANeuralNetwork ->  copy input values MQL_OPTIMIZATION ....";
             writeLog
@@ -319,9 +319,12 @@ void EANeuralNetwork::copyValuesFromOptimizationInputs() {
       pss
    #endif
 
+
+
    nnetwork.numHiddenLayer1=innLayer1;
    nnetwork.numHiddenLayer2=innLayer2;
    nnetwork.triggerThreshold=itriggerThreshold;
+   nnetwork.dfSize=idataFrameSize;
 
    #ifdef _DEBUG_TECHNICAL_PARAMETERS
       ss=StringFormat("EANeuralNetwork -> copyValuesFromOptimizationInputs -> L1:%d L2:%d Threshold:%.5f",nnetwork.numHiddenLayer1,nnetwork.numHiddenLayer2,nnetwork.triggerThreshold);
@@ -595,12 +598,30 @@ void EANeuralNetwork::loadNetwork() {
    double threshold=0, weights=0, media=0, sigma=0;
    string binFileName, csvFileName="", csvString;
 
-   // entry at this point can occur in 1 or 2 ways
+   // entry at this point can occur in 1 of 3 ways
    // 1 first time after optimization where the .bin file does not exist the DF will need to be 
    // created and the network trained using parameters choosen after optimization
    // 2 every other time the EA is started where the existing .bin file will be reread
-   // NORMAL RUN MODE
+   // 3 After optimization using a single run test
+
    binFileName=StringFormat("%s%s.bin",IntegerToString(nnetwork.strategyNumber),IntegerToString(nnetwork.fileNumber));
+
+   // If we enter here for option (3) remove the nn.bin first 
+   // We run this if we are in tester mode
+   if (MQLInfoInteger(MQL_TESTER)) {
+      if (FileIsExist(binFileName,FILE_COMMON)) {
+         if (FileDelete(binFileName,FILE_COMMON)) {
+            #ifdef _DEBUG_NN_LOADSAVE
+            ss="EANeuralNetwork -> loadNetwork -> NN bin file removed successfully";
+               pss
+               writeLog
+            #endif
+         }
+      }
+   }
+
+
+   // Use the existing nn.bin if it exists
    if (FileIsExist(binFileName,FILE_COMMON)) {
       pline  
       ss=StringFormat("* EANeuralNetwork -> loadNetwork ->  attempting to open a existing bin file ... %s",binFileName);
@@ -646,6 +667,7 @@ void EANeuralNetwork::loadNetwork() {
             }
             createNewNetwork();
 
+            // Populate the network with its values
             for(k= 0; k<numLayers; k++) {
                for(i= 0; i<network[k]; i++) {
                   if(k==0) {
@@ -707,7 +729,7 @@ void EANeuralNetwork::loadNetwork() {
 
       // network created based on bin file with weights and biaes, now ready to be used via calls to 
       // networkForcast(double &inputs[], double &outputs[]);
-      _runMode=_RUN_NORMAL;
+      _systemState=_STATE_NORMAL;
 
    } else {
       // No NN flat file exists so force the system to read and recreate one
@@ -715,7 +737,7 @@ void EANeuralNetwork::loadNetwork() {
       writeLog
       pss
       // We must rebuild the DF, retrain the network and save its as a .bin file.
-      _runMode=_RUN_REBUILD_NN;
+      _systemState=_STATE_REBUILD_NETWORK;
       
    }
 }
@@ -901,18 +923,20 @@ void EANeuralNetwork::trainNetwork() {
    }  
    
 
-   // if we are in optimization mode we don't need to save the trained network as flat file
-   // each iteratoin will be different based on different IO inputs. Only after a choosen set
-   // of inputs can we save a network for continued use as the IO input will have constant values
+   // 1 if we are in optimization mode we don't need to save the trained network as flat file
+   // each iteration will be different based on different IO inputs. Only after a choosen set
+   // of inputs can we save a network for continued use as the IO input will have constant values (2)
    if (MQLInfoInteger(MQL_OPTIMIZATION)) {
-      _runMode=_RUN_NORMAL;
+      _systemState=_STATE_NORMAL;
       return;
    }
+   ss=StringFormat("system state %d",_systemState);
+   writeLog
 
-   // We save the network to disk if this is the first time a new set of parameters after a optimization run
-   // this occurs if there is no existing disk file or if a reload of the strategy was pressed. 
+   // 2 We save the network to disk if this is the first time a new set of parameters after a optimization run
+   // this occurs if there is no existing disk file nn.bin or if a reload of the strategy was pressed. 
+   if (_systemState==_STATE_REBUILD_NETWORK) {
 
-   if (_runMode==_RUN_REBUILD_NN) {
       #ifdef _DEBUG_NN
          ss="EANeuralNetwork -> trainNetwork -> Now nave the trained network to disk";
          writeLog
@@ -922,7 +946,7 @@ void EANeuralNetwork::trainNetwork() {
             ss="EANeuralNetwork -> trainNetwork -> Nework saved success";
             writeLog
          #endif
-         _runMode=_RUN_NORMAL;
+         _systemState=_STATE_NORMAL;
 
       } else {
          #ifdef _DEBUG_NN
@@ -932,5 +956,4 @@ void EANeuralNetwork::trainNetwork() {
          ExpertRemove();
       }
    }  
-
 }
