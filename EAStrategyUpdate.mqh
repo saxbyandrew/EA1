@@ -20,8 +20,7 @@ private:
 //=========
    string               ss;
 
-   PositionBase         base;
-   Position             position;
+   Strategy             s;
    Timing               timing;
    Technicals           tech;
    Network              nnetwork;
@@ -208,15 +207,15 @@ void EAStrategyUpdate::strategyUpdate() {
 
    DatabaseRead(request);
    DatabaseColumnInteger   (request,0,cnt);
-   DatabaseColumnDouble    (request,1,position.lotSize);
-   DatabaseColumnDouble    (request,2,position.fpt);
-   DatabaseColumnDouble    (request,3,position.flt);
-   DatabaseColumnInteger   (request,4,position.maxPositions);
-   DatabaseColumnInteger   (request,5,base.maxDaily);
-   DatabaseColumnInteger   (request,6,position.maxDailyHold);
-   DatabaseColumnInteger   (request,7,position.maxMg);
-   DatabaseColumnDouble    (request,8,position.mgMultiplier);
-   DatabaseColumnDouble    (request,9,position.hedgeLossAmount);
+   DatabaseColumnDouble    (request,1,s.lotSize);
+   DatabaseColumnDouble    (request,2,s.fpt);
+   DatabaseColumnDouble    (request,3,s.flt);
+   DatabaseColumnInteger   (request,4,s.maxPositions);
+   DatabaseColumnInteger   (request,5,s.maxDaily);
+   DatabaseColumnInteger   (request,6,s.maxDailyHold);
+   DatabaseColumnInteger   (request,7,s.maxMg);
+   DatabaseColumnDouble    (request,8,s.mgMultiplier);
+   DatabaseColumnDouble    (request,9,s.hedgeLossAmount);
 
    #ifdef _DEBUG_STRATEGY_UPDATE
       ss=StringFormat("EAStrategyUpdate -> strategyUpdate -> StrategyNumber:%d Pass Number:%d",strategyNumber,passNumber);
@@ -235,23 +234,23 @@ void EAStrategyUpdate::strategyUpdate() {
 
    } else {
       #ifdef _DEBUG_STRATEGY_UPDATE
-         ss=StringFormat("EAStrategyUpdate -> strategyUpdate -> will update passnumber:%d %.2f %.2f %.2f",passNumber,position.lotSize,position.fpt,position.mgMultiplier);
+         ss=StringFormat("EAStrategyUpdate -> strategyUpdate -> will update passnumber:%d %.2f %.2f %.2f",passNumber,s.lotSize,s.fpt,s.mgMultiplier);
          writeLog
          pss
       #endif 
 
 
       // INT
-      databaseUpdate("STRATEGY","maxPositions",position.maxPositions);
-      databaseUpdate("STRATEGY","maxDaily",base.maxDaily);
-      databaseUpdate("STRATEGY","maxDailyHold",position.maxDailyHold);
-      databaseUpdate("STRATEGY","maxMg",position.maxMg);
+      databaseUpdate("STRATEGY","maxPositions",s.maxPositions);
+      databaseUpdate("STRATEGY","maxDaily",s.maxDaily);
+      databaseUpdate("STRATEGY","maxDailyHold",s.maxDailyHold);
+      databaseUpdate("STRATEGY","maxMg",s.maxMg);
       // DOUBLES
-      databaseUpdate("STRATEGY","lotSize",position.lotSize);
-      databaseUpdate("STRATEGY","fpt",position.fpt);
-      databaseUpdate("STRATEGY","flt",position.flt);
-      databaseUpdate("STRATEGY","mgMultiplier",position.mgMultiplier);
-      databaseUpdate("STRATEGY","hedgeLossAmount",position.hedgeLossAmount);
+      databaseUpdate("STRATEGY","lotSize",s.lotSize);
+      databaseUpdate("STRATEGY","fpt",s.fpt);
+      databaseUpdate("STRATEGY","flt",s.flt);
+      databaseUpdate("STRATEGY","mgMultiplier",s.mgMultiplier);
+      databaseUpdate("STRATEGY","hedgeLossAmount",s.hedgeLossAmount);
 
    }
 

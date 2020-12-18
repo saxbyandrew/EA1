@@ -165,7 +165,7 @@
 
 
          // ----------------------------------------------------------------
-   request=copyValuesFromDatabase("MFI");
+   request=selectValuesFromDatabase("MFI");
       DatabaseColumnInteger   (request,0,mfi.strategyNumber);
       DatabaseColumnInteger   (request,1,mfi.typeReference);
       DatabaseColumnInteger   (request,2,mfi.useMFI);
@@ -178,7 +178,7 @@
    
 
    // ----------------------------------------------------------------
-   request=copyValuesFromDatabase("SAR");
+   request=selectValuesFromDatabase("SAR");
       DatabaseColumnInteger   (request,0,sar.strategyNumber);
       DatabaseColumnInteger   (request,1,sar.typeReference);
       DatabaseColumnInteger   (request,2,sar.useSAR);
@@ -194,7 +194,7 @@
    
 
    // ----------------------------------------------------------------
-   request=copyValuesFromDatabase("ICH");
+   request=selectValuesFromDatabase("ICH");
       DatabaseColumnInteger   (request,0,ich.strategyNumber);
       DatabaseColumnInteger   (request,1,ich.typeReference);
       DatabaseColumnInteger   (request,2,ich.useICH);
@@ -213,7 +213,7 @@
    
 
    // ----------------------------------------------------------------
-   request=copyValuesFromDatabase("RVI");
+   request=selectValuesFromDatabase("RVI");
       DatabaseColumnInteger   (request,0,rvi.strategyNumber);
       DatabaseColumnInteger   (request,1,rvi.typeReference);
       DatabaseColumnInteger   (request,2,rvi.useRVI);
@@ -226,7 +226,7 @@
    
 
    // ----------------------------------------------------------------
-   request=copyValuesFromDatabase("STOC");
+   request=selectValuesFromDatabase("STOC");
       DatabaseColumnInteger   (request,0,stoc.strategyNumber);
       DatabaseColumnInteger   (request,1,stoc.typeReference);
       DatabaseColumnInteger   (request,2,stoc.useSTOC);
@@ -251,7 +251,7 @@
    
 
    // ----------------------------------------------------------------
-   request=copyValuesFromDatabase("OSMA");
+   request=selectValuesFromDatabase("OSMA");
       DatabaseColumnInteger   (request,0,osma.strategyNumber);
       DatabaseColumnInteger   (request,1,osma.typeReference);
       DatabaseColumnInteger   (request,2,osma.useOSMA);
@@ -285,13 +285,13 @@ void EATechnicalParameters::copyValuesToDatabase(string indicatorName) {
    sql=StringFormat("SELECT COUNT() FROM %s WHERE strategyNumber=% AND strategyType=%d",indicatorName,usp.strategyNumber,_basestrategyType);
    request=DatabasePrepare(_mainDBHandle1,sql); 
    if (request==INVALID_HANDLE) {
-      ss=StringFormat(" -> copyValuesToDatabase copyValuesFromDatabase DB request failed %s %d %d with code:",indicatorName,usp.strategyNumber,_basestrategyType, GetLastError()); 
+      ss=StringFormat(" -> copyValuesToDatabase selectValuesFromDatabase DB request failed %s %d %d with code:",indicatorName,usp.strategyNumber,_basestrategyType, GetLastError()); 
       pss
       ExpertRemove();
    }
 
    if (!DatabaseRead(request)) {
-      ss=StringFormat(" -> copyValuesToDatabase copyValuesFromDatabase DB request failed %s %d %d with code:",indicatorName,usp.strategyNumber,_basestrategyType, GetLastError()); 
+      ss=StringFormat(" -> copyValuesToDatabase selectValuesFromDatabase DB request failed %s %d %d with code:",indicatorName,usp.strategyNumber,_basestrategyType, GetLastError()); 
       pss
       ExpertRemove();
    } else {

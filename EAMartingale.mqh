@@ -27,7 +27,7 @@ private:
 protected:
 //=========
 
-   void     updateOnInterval(EAEnum interval);
+   void     updatesOnInterval(EAEnum interval);
    bool     newPosition(EAPosition *pp);
    void     closeOnStealthProfit();
    void     closeOnStealthLoss();
@@ -83,7 +83,7 @@ EAMartingale::~EAMartingale() {
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-void EAMartingale::updateOnInterval(EAEnum interval) {
+void EAMartingale::updatesOnInterval(EAEnum interval) {
 
    #ifdef _DEBUG_MARTINGALE 
       Print (__FUNCTION__); 
@@ -309,12 +309,12 @@ bool EAMartingale::execute(EAEnum action) {
    switch (action) {
       case _RUN_ONTICK:    closeOnStealthProfit();
                            closeOnStealthLoss();
-                           updateOnInterval(_RUN_ONTICK);
+                           updatesOnInterval(_RUN_ONTICK);
       break;
-      case _RUN_ONBAR:    updateOnInterval(_RUN_ONBAR);
+      case _RUN_ONBAR:    updatesOnInterval(_RUN_ONBAR);
                            
       break;
-      case _RUN_ONDAY:    updateOnInterval(_RUN_ONDAY);
+      case _RUN_ONDAY:    updatesOnInterval(_RUN_ONDAY);
       break;
 
    }

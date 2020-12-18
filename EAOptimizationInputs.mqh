@@ -32,12 +32,11 @@ input group "ADX"
 input ENUM_TIMEFRAMES i1a_period=PERIOD_CURRENT;    
 input int i1a_movingAverage=14;   
 input int i1a_crossLevel=25;  
-                  
+
 
 input ENUM_TIMEFRAMES i1b_period=PERIOD_CURRENT;    
 input int i1b_movingAverage=14; 
 input int i1b_crossLevel=25;  
-                  
 #endif
 
 #ifdef _USE_RSI
@@ -176,6 +175,7 @@ input int i11b_signalPeriod=0;
 input group "ZIG ZAG"
 input ENUM_TIMEFRAMES i100a_ZZperiod=PERIOD_CURRENT;
 input int i100a_useBuffers=1;
+input int i100a_ZZttl;
 #endif
 
 

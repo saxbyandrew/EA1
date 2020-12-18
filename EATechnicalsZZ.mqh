@@ -32,7 +32,8 @@ public:
    ~EATechnicalsZZ();
 
    void  getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs);   
-   void  getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,datetime barDateTime);  
+   void  getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,datetime barDateTime); 
+   void  setValues();   
 
 };
 //+------------------------------------------------------------------+
@@ -65,6 +66,31 @@ EATechnicalsZZ::~EATechnicalsZZ() {
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
+void EATechnicalsZZ::setValues() {
+
+   string sql;
+
+   tech.versionNumber++;
+
+   sql=StringFormat("UPDATE TECHNICALS SET period=%d, ENUM_TIMEFRAMES='%s', versionNumber=%d "
+      "WHERE strategyNumber=%d AND inputPrefix='%s'",
+      tech.period, EnumToString(tech.period), tech.versionNumber, tech.strategyNumber,tech.inputPrefix);
+
+   #ifdef _DEBUG_BASE
+      ss="EATechnicalsZZ -> UPDATE INTO TECHNICALS";
+      pss
+      writeLog
+      ss=sql;
+      pss
+      writeLog
+   #endif
+
+   EATechnicalsBase::updateValuesToDatabase(sql);
+
+}
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
 void EATechnicalsZZ::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,datetime barDateTime) {
 
    /*
@@ -77,14 +103,20 @@ void EATechnicalsZZ::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,d
 
       static double ZIGZAGBuffer0[];
       static double ZIGZAGBuffer1[];
-      static int direction;
-      static int ttlCnt=0;
+      static double ZIGZAGBuffer2[];
+      static double ZIGZAGBuffer3[];
+      static int    direction;
+      static int    ttlCnt=0;
 
       ArraySetAsSeries(ZIGZAGBuffer0,true);
       ArraySetAsSeries(ZIGZAGBuffer1,true);
+      ArraySetAsSeries(ZIGZAGBuffer2,true);
+      ArraySetAsSeries(ZIGZAGBuffer3,true);
 
       CopyBuffer(ZIGZAGHandle,0,barDateTime,1,ZIGZAGBuffer0);
       CopyBuffer(ZIGZAGHandle,1,barDateTime,1,ZIGZAGBuffer1);
+      CopyBuffer(ZIGZAGHandle,2,barDateTime,1,ZIGZAGBuffer2);
+      CopyBuffer(ZIGZAGHandle,3,barDateTime,1,ZIGZAGBuffer3);
 
       // Allow indicator time to live
       if (ttlCnt>0) {
@@ -102,7 +134,7 @@ void EATechnicalsZZ::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,d
          ttlCnt=tech.ttl;
          direction= (int) _DOWN;
          #ifdef _DEBUG_ZIGZAG
-            ss="EATechnicalsZZ -> getValues -> DOWN";
+            ss="EATechnicalsZZ -> getValues -> ZIGZAGBuffer0 -> DOWN";
             pss
             writeLog
          #endif
@@ -112,7 +144,7 @@ void EATechnicalsZZ::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,d
          ttlCnt=tech.ttl;
          direction= (int) _UP;
          #ifdef _DEBUG_ZIGZAG
-            ss="EATechnicalsZZ -> getValues -> UP";
+            ss="EATechnicalsZZ -> getValues -> ZIGZAGBuffer1 -> UP";
             pss
             writeLog
          #endif
@@ -129,6 +161,23 @@ void EATechnicalsZZ::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,d
       if (direction==_UP) {
          #ifdef _DEBUG_ZIGZAG
             ss="EATechnicalsZZ -> getValues -> UP";
+            pss
+            writeLog
+         #endif
+      }
+
+      if (ZIGZAGBuffer2[0]>0) {
+
+         #ifdef _DEBUG_ZIGZAG
+            ss="EATechnicalsZZ -> getValues -> ZIGZAGBuffer2 -> > 0";
+            pss
+            writeLog
+         #endif
+      }
+
+      if (ZIGZAGBuffer3[0]>0) {
+         #ifdef _DEBUG_ZIGZAG
+            ss="EATechnicalsZZ -> getValues -> ZIGZAGBuffer3 -> > 0";
             pss
             writeLog
          #endif

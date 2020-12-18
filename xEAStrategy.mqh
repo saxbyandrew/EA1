@@ -311,7 +311,7 @@ EAEnum EAStrategy::runOnBar() {
    */
 
    // Check trading times first
-   //if (t.sessionTimes()) return retValue;
+   //if (t.tradingTimes()) return retValue;
 
    if (LOAD_HISTORY) {
       io.getInputs();

@@ -29,8 +29,8 @@ protected:
 //=========
 
    Technicals tech;     // See EAStructures.mqh
-   void  copyValuesToDatabase(string sql);
-   int   countBuffersUsed();
+   void     updateValuesToDatabase(string sql);
+   int      countBuffersUsed();
 
 //=========
 public:
@@ -59,6 +59,7 @@ EATechnicalsBase::EATechnicalsBase() {
 EATechnicalsBase::~EATechnicalsBase() {
 
 }
+
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
@@ -97,21 +98,26 @@ void EATechnicalsBase::copyValues(Technicals &t) {
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-void EATechnicalsBase::copyValuesToDatabase(string sql) {
+void EATechnicalsBase::updateValuesToDatabase(string sql) {
 
-   if (!DatabaseExecute(_mainDBHandle, sql)) {
-      ss=StringFormat("copyValuesToDatabase -> Failed to insert with code %d", GetLastError());
+   int request=DatabaseExecute(_mainDBHandle, sql);
+   if (!request) {
+      ss=StringFormat("EATechnicalsBase -> updateValuesToDatabase -> Failed to insert with code %d", GetLastError());
       pss
       ss=sql;
+      writeLog
       pss
       writeLog
    } else {
       #ifdef _DEBUG_BASE
-         ss="copyValuesToDatabase -> UPDATE INTO TECHNICALS succcess";
+         ss="EATechnicalsBase -> updateValuesToDatabase -> UPDATE INTO TECHNICALS succcess";
          pss
+         writeLog
          ss=sql;
          pss
+         writeLog
       #endif
+      DatabaseFinalize(request);
    }  
 
 }

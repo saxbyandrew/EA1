@@ -40,7 +40,7 @@ protected:
 //=========
 EANeuralNetwork   *nn;        // The network 
 void  createTechnicalObject();
-void  copyValuesFromDatabase(int strategyNumber);
+void  selectValuesFromDatabase(int strategyNumber);
 void  copyValuesFromOptimizationInputs();
 EAEnum getValues();
 
@@ -79,13 +79,13 @@ EATechnicalParameters::EATechnicalParameters(int strategyNumber) {
       ExpertRemove();
    } else {
       #ifdef _DEBUG_TECHNICAL_PARAMETERS  
-         ss=StringFormat("EAStrategyLong -> Using base strategy number:%d %d",strategyNumber);
+         ss=StringFormat("EATechnicalParameters -> Using base strategy number:%d",strategyNumber);
          writeLog
          pss
       #endif 
    }
 
-   copyValuesFromDatabase(strategyNumber);     // Get Technicals from the DB
+   selectValuesFromDatabase(strategyNumber);     // Get Technicals from the DB
    #ifdef _DEBUG_TECHNICAL_PARAMETERS
       ss=StringFormat("EATechnicalParameters -> Number of loaded technical objects:%d",indicators.Total());
       writeLog
@@ -109,18 +109,19 @@ EATechnicalParameters::~EATechnicalParameters() {
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-void EATechnicalParameters::copyValuesFromDatabase(int strategyNumber) {
+void EATechnicalParameters::selectValuesFromDatabase(int strategyNumber) {
 
 
    #ifdef _DEBUG_TECHNICAL_PARAMETERS
-      ss=StringFormat("EATechnicalParameters -> copyValuesFromDatabase -> .... %d",strategyNumber);
+      ss=StringFormat("EATechnicalParameters -> selectValuesFromDatabase -> .... %d",strategyNumber);
       pss
    #endif
 
-   string sql=StringFormat("SELECT * FROM TECHNICALS where strategyNumber=%d",strategyNumber);
+   // Only using ORDER BY so the log file looks more readable! 
+   string sql=StringFormat("SELECT * FROM TECHNICALS where strategyNumber=%d ORDER BY inputPrefix",strategyNumber);
    int request=DatabasePrepare(_mainDBHandle,sql);
    if (request==INVALID_HANDLE) {
-      ss=StringFormat(" -> EATechnicalParameters -> copyValuesFromDatabase DB request failed %d with code:%d",strategyNumber, GetLastError()); 
+      ss=StringFormat(" -> EATechnicalParameters -> selectValuesFromDatabase DB request failed %d with code:%d",strategyNumber, GetLastError()); 
       writeLog
       pss
       ss=sql;
@@ -135,39 +136,45 @@ void EATechnicalParameters::copyValuesFromDatabase(int strategyNumber) {
          DatabaseColumnText         (request,1,tech.indicatorName);
          DatabaseColumnInteger      (request,2,tech.instanceNumber);
          DatabaseColumnInteger      (request,3,tech.period);
-         DatabaseColumnInteger      (request,4,tech.movingAverage);
-         DatabaseColumnInteger      (request,5,tech.slowMovingAverage);
-         DatabaseColumnInteger      (request,6,tech.fastMovingAverage);
-         DatabaseColumnInteger      (request,7,tech.movingAverageMethod);
-         DatabaseColumnInteger      (request,8,tech.appliedPrice);
-         DatabaseColumnDouble       (request,9,tech.stepValue);
-         DatabaseColumnDouble       (request,10,tech.maxValue);
-         DatabaseColumnInteger      (request,11,tech.signalPeriod);
-         DatabaseColumnInteger      (request,12,tech.tenkanSen);
-         DatabaseColumnInteger      (request,13,tech.kijunSen);
-         DatabaseColumnInteger      (request,14,tech.spanB);
-         DatabaseColumnInteger      (request,15,tech.kPeriod);
-         DatabaseColumnInteger      (request,16,tech.dPeriod);
-         DatabaseColumnInteger      (request,17,tech.stocPrice);
-         DatabaseColumnInteger      (request,18,tech.appliedVolume);
-         DatabaseColumnInteger      (request,19,tech.useBuffers);
-         DatabaseColumnInteger      (request,20,tech.ttl);
-         DatabaseColumnDouble       (request,21,tech.incDecFactor);
-         DatabaseColumnText         (request,22,tech.inputPrefix);
-         DatabaseColumnDouble       (request,23,tech.lowerLevel);
-         DatabaseColumnDouble       (request,24,tech.upperLevel);
+         DatabaseColumnText         (request,4,tech.enumTimeFrames);
+         DatabaseColumnInteger      (request,5,tech.movingAverage);
+         DatabaseColumnInteger      (request,6,tech.slowMovingAverage);
+         DatabaseColumnInteger      (request,7,tech.fastMovingAverage);
+         DatabaseColumnInteger      (request,8,tech.movingAverageMethod);
+         DatabaseColumnText         (request,9,tech.enumMAMethod);
+         DatabaseColumnInteger      (request,10,tech.appliedPrice);
+         DatabaseColumnText         (request,11,tech.enumAppliedPrice);
+         DatabaseColumnDouble       (request,12,tech.stepValue);
+         DatabaseColumnDouble       (request,13,tech.maxValue);
+         DatabaseColumnInteger      (request,14,tech.signalPeriod);
+         DatabaseColumnInteger      (request,15,tech.tenkanSen);
+         DatabaseColumnInteger      (request,16,tech.kijunSen);
+         DatabaseColumnInteger      (request,17,tech.spanB);
+         DatabaseColumnInteger      (request,18,tech.kPeriod);
+         DatabaseColumnInteger      (request,19,tech.dPeriod);
+         DatabaseColumnInteger      (request,20,tech.stocPrice);
+         DatabaseColumnText         (request,21,tech.enumStoPrice);
+         DatabaseColumnInteger      (request,22,tech.appliedVolume);
+         DatabaseColumnText         (request,23,tech.enumAppliedVolume);
+         DatabaseColumnInteger      (request,24,tech.useBuffers);
+         DatabaseColumnInteger      (request,25,tech.ttl);
+         DatabaseColumnDouble       (request,26,tech.incDecFactor);
+         DatabaseColumnText         (request,27,tech.inputPrefix);
+         DatabaseColumnDouble       (request,28,tech.lowerLevel);
+         DatabaseColumnDouble       (request,29,tech.upperLevel);
+         DatabaseColumnInteger      (request,30,tech.versionNumber);
 
          // Over write with values given to us during optimization
          if (MQLInfoInteger(MQL_OPTIMIZATION) || MQLInfoInteger(MQL_TESTER)) {
             #ifdef _DEBUG_TECHNICAL_PARAMETERS
-               ss="EATechnicalParameters ->  copy input values MQL_OPTIMIZATION OR MQL_TESTER ....";
+               ss="EATechnicalParameters -> selectValuesFromDatabase -> MQL_OPTIMIZATION OR MQL_TESTER MODE copy input values ";
                writeLog
                pss
             #endif
             copyValuesFromOptimizationInputs();     
          } else {
             #ifdef _DEBUG_TECHNICAL_PARAMETERS
-               ss="EATechnicalParameters ->  Using values directly from the DB";
+               ss="EATechnicalParameters -> selectValuesFromDatabase -> Using values directly from the DB";
                writeLog
                pss
             #endif
@@ -175,7 +182,7 @@ void EATechnicalParameters::copyValuesFromDatabase(int strategyNumber) {
 
          createTechnicalObject();
          #ifdef _DEBUG_TECHNICAL_PARAMETERS
-            ss=StringFormat("EATechnicalParameters -> copyValuesFromDatabase -> StrategyNumber:%d Indicator Name:%s",tech.strategyNumber,tech.indicatorName);
+            ss=StringFormat("EATechnicalParameters -> selectValuesFromDatabase -> StrategyNumber:%d Indicator Name:%s",tech.strategyNumber,tech.indicatorName);
             writeLog
             pss
          #endif
@@ -197,9 +204,11 @@ void EATechnicalParameters::copyValuesFromDatabase(int strategyNumber) {
 void EATechnicalParameters::copyValuesFromOptimizationInputs() {
 
    #ifdef _DEBUG_TECHNICAL_PARAMETERS
-      ss=StringFormat("EATechnicalParameters -> copyValuesFromOptimizationInputs -> .... for input prefix:%s",tech.inputPrefix);
+      pline
+      ss=StringFormat("EATechnicalParameters -> copyValuesFromOptimizationInputs -> for input prefix:%s",tech.inputPrefix);
       writeLog
       pss
+      pline
    #endif
 
    // ----------------------------------------------------------------
@@ -212,7 +221,7 @@ void EATechnicalParameters::copyValuesFromOptimizationInputs() {
       tech.movingAverage=i1a_movingAverage;
       tech.upperLevel=i1a_crossLevel;
       #ifdef _DEBUG_TECHNICAL_PARAMETERS
-         ss=StringFormat("EATechnicalParameters-> i1a_ Period:%d MA:%d CrossLevel:%d",tech.period,tech.movingAverage,tech.upperLevel);
+         ss=StringFormat("EATechnicalParameters -> copyValuesFromOptimizationInputs -> i1a_ Period:%d MA:%d CrossLevel:%d",tech.period,tech.movingAverage,tech.upperLevel);
          writeLog
       #endif
       return;
@@ -225,7 +234,7 @@ void EATechnicalParameters::copyValuesFromOptimizationInputs() {
       tech.movingAverage=i1b_movingAverage;
       tech.upperLevel=i1b_crossLevel;
       #ifdef _DEBUG_TECHNICAL_PARAMETERS
-         ss=StringFormat("EATechnicalParameters-> i1b_ Period:%d MA:%d CrossLevel:%d",tech.period,tech.movingAverage,tech.upperLevel);
+         ss=StringFormat("EATechnicalParameters-> copyValuesFromOptimizationInputs -> i1b_ Period:%d MA:%d CrossLevel:%d",tech.period,tech.movingAverage,tech.upperLevel);
          writeLog
       #endif
 
@@ -433,13 +442,14 @@ void EATechnicalParameters::copyValuesFromOptimizationInputs() {
    #ifdef _USE_ZIGZAG
 
    if (StringFind("i100a_",tech.inputPrefix,0)!=-1) {
-      #ifdef _DEBUG_TECHNICAL_PARAMETERS
-         ss="-----------------------> i100a_";
-         writeLog
-      #endif
+
       tech.indicatorName="ZIGZAG";
       tech.period=i100a_ZZperiod;
-      //tech.useBuffer1=i100a_useBuffer1;
+      tech.ttl=i100a_ZZttl;
+      #ifdef _DEBUG_TECHNICAL_PARAMETERS
+         ss=StringFormat("EATechnicalParameters -> copyValuesFromOptimizationInputs -> i100a_ Period:%d",tech.period);
+         writeLog
+      #endif
       return;
    }
 
@@ -450,13 +460,6 @@ void EATechnicalParameters::copyValuesFromOptimizationInputs() {
 //|                                                                  |
 //+------------------------------------------------------------------+
 void EATechnicalParameters::createTechnicalObject() {
-
-   /*
-   #ifdef _DEBUG_TECHNICAL_PARAMETERS
-      ss="EATechnicalParameters -> createTechnicalObject -> ....";
-      pss
-   #endif
-   */
 
    EATechnicalsBase *i;
 
@@ -492,6 +495,15 @@ void EATechnicalParameters::createTechnicalObject() {
          writeLog
          pss
       #endif 
+
+      // Update the DB with the single run values if in TESTER MODE
+      if (MQLInfoInteger(MQL_TESTER)) {
+         ss= StringFormat("xxxxxxxxxxxxx %s", tech.indicatorName);
+         pss
+         writeLog
+
+         i.setValues();
+      }
    }
 
 }
@@ -518,7 +530,7 @@ EAEnum EATechnicalParameters::getValues() {
    //==========================
    if (_systemState==_STATE_NORMAL) {
    //==========================
-      #ifdef _DEBUG_TECHNICAL_PARAMETERS
+      #ifdef _DEBUG_TECHNICAL_PARAMETERS_RUN_LOOP
          ss="EATechnicalParameters -> getValues -> Entry RUN NORMAL";
          writeLog
       #endif
@@ -613,21 +625,10 @@ EAEnum EATechnicalParameters::getValues() {
             pss
          #endif
       }
-      // How update the DB with values used in this single test run.
-      for (int i=0;i<indicators.Total();i++) {
-         EATechnicalsBase *indicator=indicators.At(i);
-         indicator.setValues();
-         #ifdef _DEBUG_NN_TRAINING
-            ss="EATechnicalParameters -> getValues -> Updating DB TECHNICALS";
-            writeLog
-            pss
-         #endif
-      }
-      
+
    }
 
    return _NO_ACTION;
-
 }
 
 //+------------------------------------------------------------------+
@@ -635,11 +636,6 @@ EAEnum EATechnicalParameters::getValues() {
 //+------------------------------------------------------------------+
 EAEnum EATechnicalParameters::execute(EAEnum action) {
 
-
-   #ifdef _DEBUG_TECHNICAL_PARAMETERS
-      ss="EATechnicalParameters -> execute -> ";
-      writeLog
-   #endif
 
    switch (action) {
       case _RUN_ONTICK:  

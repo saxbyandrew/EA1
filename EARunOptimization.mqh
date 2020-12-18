@@ -98,7 +98,7 @@ int EARunOptimization::OnTesterInit(void) {
          optimization for further processing of optimization results.
    */
 
-
+/*
    //--- create or open the database in the common terminal folder
    _optimizeDBHandle=DatabaseOpen(_optimizeDBName, DATABASE_OPEN_READWRITE | DATABASE_OPEN_COMMON| DATABASE_OPEN_CREATE);
    if (_optimizeDBHandle==INVALID_HANDLE) {
@@ -167,7 +167,7 @@ int EARunOptimization::OnTesterInit(void) {
       allIndicators.Add(new EAOptimizationIndicator("i10a_","MACDJB",100)); //i10a
       allIndicators.Add(new EAOptimizationIndicator("i10b_","MACDJB",101));
    #endif
-
+*/
 
    return(INIT_SUCCEEDED);
 }
@@ -177,6 +177,7 @@ int EARunOptimization::OnTesterInit(void) {
 //+------------------------------------------------------------------+
 void EARunOptimization::createSQLOptimizationTables(string sql) {
 
+/*
    if (!DatabaseExecute(_optimizeDBHandle, sql)) {
       ss=StringFormat("createSQLOptimizationTables -> create table failed with code %d", GetLastError());
       ss=sql;
@@ -188,13 +189,14 @@ void EARunOptimization::createSQLOptimizationTables(string sql) {
          pss
       #endif
    }
-
+*/
 }
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
 void EARunOptimization::createSQLOptimizationTables() {
 
+/*
    string sql;
 
    ss="createSQLOptimizationTables -> ....";
@@ -306,7 +308,7 @@ void EARunOptimization::createSQLOptimizationTables() {
       "lowerLevel REAL)";
 
       createSQLOptimizationTables(sql);
-
+*/
 
 }
 //+------------------------------------------------------------------+
@@ -649,7 +651,7 @@ void EARunOptimization::OnTesterDeinit() {
       The function is used for final processing of all optimization results.
    */
 
-  return;
+/*
 
    ss="OnTesterDeinit ->  ....";
    pss
@@ -781,7 +783,7 @@ void EARunOptimization::OnTesterDeinit() {
       }
       
    }
-   
+   */
 }
 
 /*

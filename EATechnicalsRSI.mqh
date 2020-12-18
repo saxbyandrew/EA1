@@ -73,11 +73,22 @@ void EATechnicalsRSI::setValues() {
 
    string sql;
 
-   sql=StringFormat("UPDATE TECHNICALS SET period=%d, movingAverage=%d, upperLevel=%.5f, lowerLevel=%.5f, appliedPrice=%d "
+   tech.versionNumber++;
+
+   sql=StringFormat("UPDATE TECHNICALS SET period=%d, ENUM_TIMEFRAMES='%s', movingAverage=%d, upperLevel=%.5f, lowerLevel=%.5f, appliedPrice=%d, ENUM_APPLIED_PRICE='%s', versionNumber=%d  "
       "WHERE strategyNumber=%d AND inputPrefix='%s'",
-      tech.period, tech.movingAverage,tech.upperLevel,tech.lowerLevel,tech.appliedPrice,tech.strategyNumber,tech.inputPrefix);
+      tech.period, EnumToString(tech.period), tech.movingAverage,tech.upperLevel,tech.lowerLevel,tech.appliedPrice, EnumToString(tech.appliedPrice), tech.versionNumber, tech.strategyNumber,tech.inputPrefix);
    
-   EATechnicalsBase::copyValuesToDatabase(sql);
+   #ifdef _DEBUG_BASE
+      ss="EATechnicalsRSI -> UPDATE INTO TECHNICALS";
+      pss
+      writeLog
+      ss=sql;
+      pss
+      writeLog
+   #endif
+
+   EATechnicalsBase::updateValuesToDatabase(sql);
 
 }
 

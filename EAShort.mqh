@@ -24,7 +24,7 @@ private:
 protected:
 //=========
 
-    void    updateOnInterval(EAEnum interval);
+    void    updatesOnInterval(EAEnum interval);
     void    closeOnFixedTiming();
     void    closeOnStealthProfit();
     void    closeOnStealthLoss();
@@ -65,7 +65,7 @@ EAShort::~EAShort() {
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-void EAShort::updateOnInterval(EAEnum interval) {
+void EAShort::updatesOnInterval(EAEnum interval) {
 
 //----
     #ifdef _DEBUG_SHORT 
@@ -316,12 +316,12 @@ bool EAShort::execute(EAEnum action) {
     switch (action) {
         case _RUN_ONTICK:   closeOnStealthProfit();
                             closeOnStealthLoss();
-                            updateOnInterval(_RUN_ONTICK);
+                            updatesOnInterval(_RUN_ONTICK);
         break;
         case _RUN_ONBAR:    closeOnFixedTiming();
-                            updateOnInterval(_RUN_ONBAR);
+                            updatesOnInterval(_RUN_ONBAR);
         break;
-        case _RUN_ONDAY:    updateOnInterval(_RUN_ONDAY);
+        case _RUN_ONDAY:    updatesOnInterval(_RUN_ONDAY);
         break;
         case _OPEN_SHORT:    retValue=newPosition();
         break;

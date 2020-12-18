@@ -142,7 +142,7 @@ EAEnum EAStrategyTester::runOnBar() {
    
    EAEnum retValue=waitOnTriggers();
    // Check trading times first
-   if (t.sessionTimes()) return retValue;
+   if (t.tradingTimes()) return retValue;
 
    return _NO_ACTION;
 }

@@ -69,11 +69,21 @@ void EATechnicalsADX::setValues() {
 
    string sql;
 
-   sql=StringFormat("UPDATE TECHNICALS SET period=%d, movingAverage=%d, upperLevel=%.5f "
+   tech.versionNumber++;
+
+   sql=StringFormat("UPDATE TECHNICALS SET period=%d, ENUM_TIMEFRAMES='%s', movingAverage=%d, upperLevel=%.5f, versionNumber=%d "
       "WHERE strategyNumber=%d AND inputPrefix='%s'",
-      tech.period, tech.movingAverage,tech.upperLevel,tech.strategyNumber,tech.inputPrefix);
+      tech.period, EnumToString(tech.period), tech.movingAverage,tech.upperLevel, tech.versionNumber, tech.strategyNumber,tech.inputPrefix);
    
-   EATechnicalsBase::copyValuesToDatabase(sql);
+   #ifdef _DEBUG_BASE
+      ss="EATechnicalsADX -> UPDATE INTO TECHNICALS";
+      pss
+      writeLog
+      ss=sql;
+      pss
+      writeLog
+   #endif
+   EATechnicalsBase::updateValuesToDatabase(sql);
 
 }
 //+------------------------------------------------------------------+

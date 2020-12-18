@@ -14,7 +14,9 @@
 //#define _RUN_MARTINGALE_STRATEGY
 //#define _RUN_PANEL
 
+// =============
 // DEBUG OPTIONS
+// =============
 //#define _DEBUG_WRITE_CSV
 //#define _DEBUG_MYEA
 //#define _DEBUG_PANEL
@@ -25,21 +27,32 @@
 //#define _DEBUG_PARAMETERS
 //#define _DEBUG_MAIN_LOOP
 //#define _DEBUG_TIME
-#define _DEBUG_TECHNICAL_PARAMETERS
+//#define _DEBUG_TECHNICAL_PARAMETERS
+//#define _DEBUG_TECHNICAL_PARAMETERS_RUN_LOOP
 //#define _DEBUG_NN_INPUTS_OUTPUTS
 //#define _DEBUG_NN
+//#define _DEBUG_NN_PROPERTIES
 //#define _DEBUG_NN_LOADSAVE
+//#define _DEBUG_NN_LOADSAVE_DETAILED
 //#define _DEBUG_NN_FORCAST
 //#define _DEBUG_NN_TRAINING
+//#define _DEBUG_NN_DATAFRAME
+
 //#define _DEBUG_STRATEGY
 //#define _DEBUG_STRATEGY_UPDATE
 //#define _DEBUG_STRATEGY_TRIGGERS
-//#define _DEBUG_DATAFRAME
+
 #define _DEBUG_BASE
 //#define _DEBUG_LONG 
-//#define _DEBUG_LABEL
+//#define _DEBUG_LONG_STRATEGY
+//#define _DEBUG_LONG_POSITIONS 
+//#define _DEBUG_LONG_OPEN_CLOSE 
+//#define _DEBUG_LONG_MAX_POSITIONS
+//#define _DEBUG_POSITION
 
-
+// ==============
+// MODULES IN USE
+// ===============
 #define _USE_ADX                    //i1a
 //#define _DEBUG_ADX_MODULE 
 #define _USE_RSI                    //i2a
@@ -69,7 +82,9 @@
 //#define _DEBUG_ZIGZAG
 //#define _USE_MACDBULL
 //#define _USE_MACDBEAR
+
 #define _USE_ZIGZAG
+//#define _DEBUG_ZIGZAG
 
 
 #define _DEBUG_OPTIMIZATION
@@ -132,7 +147,7 @@ CArrayObj               indicators, strategies;
 
 EAEnum                  _systemState;
 datetime                _historyStart;
-int                     _mainDBHandle, _txtHandle, _optimizeDBHandle, _strategyNumber;
+int                     _mainDBHandle, _txtHandle, _optimizeDBHandle, _strategyNumber, _versionNumber;
 string                  _mainDBName="strategies.sqlite";
 string                  _optimizeDBName="optimization.sqlite";
 
@@ -148,7 +163,7 @@ EARunOptimization       optimization;
 //+------------------------------------------------------------------+
 int OnInit() {
 
-    
+    string ss;
     MqlDateTime t;
 
 
@@ -183,6 +198,7 @@ int OnInit() {
                 pss
             #endif
         }
+
     }
 
     #ifdef _RUN_PANEL
@@ -321,7 +337,7 @@ void OnTick() {
    //=========
    // ON BAR ! 
    //========= 
-    if(lastBar!=iTime(NULL,PERIOD_CURRENT,0)) {
+    if (lastBar!=iTime(NULL,PERIOD_CURRENT,0)) {
         lastBar=iTime(NULL,PERIOD_CURRENT,0);
 
         action=_RUN_ONBAR;
@@ -335,7 +351,7 @@ void OnTick() {
    //========
    //ON DAY !
    //======== 
-    if(lastDay!=iTime(NULL,PERIOD_D1,0)) {
+    if (lastDay!=iTime(NULL,PERIOD_D1,0)) {
         lastDay=iTime(NULL,PERIOD_D1,0);
         #ifdef _DEBUG_MYEA
             Print(__FUNCTION__," -> In OnTick fire OnDay");
@@ -351,7 +367,7 @@ void OnTick() {
 
     // Loop through all strategies and send a action
     for (int i=0;i<strategies.Total();i++) {
-        EAPositionBase *p=strategies.At(i);
+        EAStrategyLong *p=strategies.At(i);
         p.execute(action);
         #ifdef _DEBUG_MYEA
             ss=StringFormat(" -> In OnTick sending action:%d",action);
