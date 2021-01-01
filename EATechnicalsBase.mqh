@@ -88,6 +88,7 @@ void EATechnicalsBase::copyValues(Technicals &t) {
    tech.inputPrefix=t.inputPrefix;
    tech.lowerLevel=t.lowerLevel;
    tech.upperLevel=t.upperLevel;
+   tech.barDelay=t.barDelay;
 
    #ifdef _DEBUG_OSMA_MODULE 
       ss=StringFormat("EATechnicalsBase -> copyValues -> fastMovingAverage:%d slowMovingAverage:%d signalPeriod appliedPrice:%d",t.fastMovingAverage,t.slowMovingAverage,t.signalPeriod,t.appliedPrice);

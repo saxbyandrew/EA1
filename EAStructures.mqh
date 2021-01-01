@@ -48,6 +48,7 @@ struct Technicals {
       string            inputPrefix;
       double            lowerLevel;
       double            upperLevel;
+      int               barDelay;
       int               versionNumber;
 };
 

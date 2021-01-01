@@ -41,6 +41,7 @@ public:
 //+------------------------------------------------------------------+
 EATechnicalsZZ::EATechnicalsZZ(Technicals &t) {
 
+   int bars;
    /*
    #ifdef _DEBUG_ZIGZAG
       ss="EATechnicalsZZ -> .... default constructor";
@@ -53,7 +54,15 @@ EATechnicalsZZ::EATechnicalsZZ(Technicals &t) {
    EATechnicalsBase::copyValues(t);
 
    if (ZIGZAGHandle==NULL) 
-      ZIGZAGHandle=iCustom(_Symbol,t.period,"deltazigzag",0,0,500,0.5,1);
+      ZIGZAGHandle=iCustom(_Symbol,tech.period,"deltazigzag",0,0,500,0.5,1);
+
+   bars=Bars(_Symbol,tech.period);
+
+   #ifdef _DEBUG_ZIGZAG
+      ss=StringFormat("EATechnicalsZZ -> bars in terminal history:%d for period:%s",bars,EnumToString(tech.period));
+      pss
+      writeLog
+   #endif
 
 }
 
@@ -93,13 +102,17 @@ void EATechnicalsZZ::setValues() {
 //+------------------------------------------------------------------+
 void EATechnicalsZZ::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,datetime barDateTime) {
 
-   /*
+   int   barNumber=iBarShift(_Symbol,tech.period,barDateTime,false); // Adjust the bar number based on PERIOD and TIME
+
    #ifdef _DEBUG_ZIGZAG
-      ss="EATechnicalsZZ -> getValues 2 -> ....";
+      ss=StringFormat("EATechnicalsZZ  -> using getValues(1) %s barNumber:%d Time:%s",tech.inputPrefix, barNumber,TimeToString(barDateTime,TIME_DATE|TIME_MINUTES)); 
+      writeLog
+      pss
+      ss=StringFormat("EATechnicalsZZ -> barscalculated:%d ",BarsCalculated(ZIGZAGHandle));
       pss
       writeLog
-   #endif 
-   */
+
+   #endif
 
       static double ZIGZAGBuffer0[];
       static double ZIGZAGBuffer1[];
@@ -117,6 +130,15 @@ void EATechnicalsZZ::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,d
       CopyBuffer(ZIGZAGHandle,1,barDateTime,1,ZIGZAGBuffer1);
       CopyBuffer(ZIGZAGHandle,2,barDateTime,1,ZIGZAGBuffer2);
       CopyBuffer(ZIGZAGHandle,3,barDateTime,1,ZIGZAGBuffer3);
+
+      if (ZIGZAGBuffer0[0]==EMPTY_VALUE || ZIGZAGBuffer1[0]==EMPTY_VALUE || ZIGZAGBuffer2[0]==EMPTY_VALUE || ZIGZAGBuffer3[0]==EMPTY_VALUE) {
+         #ifdef _DEBUG_ZIGZAG
+            ss="EATechnicalsZZ -> EMPTY_VALUE";
+            pss
+            writeLog
+         #endif
+
+      }
 
       // Allow indicator time to live
       if (ttlCnt>0) {

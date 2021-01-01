@@ -75,9 +75,9 @@ void EATechnicalsRSI::setValues() {
 
    tech.versionNumber++;
 
-   sql=StringFormat("UPDATE TECHNICALS SET period=%d, ENUM_TIMEFRAMES='%s', movingAverage=%d, upperLevel=%.5f, lowerLevel=%.5f, appliedPrice=%d, ENUM_APPLIED_PRICE='%s', versionNumber=%d  "
+   sql=StringFormat("UPDATE TECHNICALS SET period=%d, ENUM_TIMEFRAMES='%s', movingAverage=%d, upperLevel=%.5f, lowerLevel=%.5f, appliedPrice=%d, ENUM_APPLIED_PRICE='%s', barDelay=%d, versionNumber=%d  "
       "WHERE strategyNumber=%d AND inputPrefix='%s'",
-      tech.period, EnumToString(tech.period), tech.movingAverage,tech.upperLevel,tech.lowerLevel,tech.appliedPrice, EnumToString(tech.appliedPrice), tech.versionNumber, tech.strategyNumber,tech.inputPrefix);
+      tech.period, EnumToString(tech.period), tech.movingAverage,tech.upperLevel,tech.lowerLevel,tech.appliedPrice, EnumToString(tech.appliedPrice), tech.versionNumber, tech.barDelay, tech.strategyNumber,tech.inputPrefix);
    
    #ifdef _DEBUG_BASE
       ss="EATechnicalsRSI -> UPDATE INTO TECHNICALS";
@@ -110,6 +110,12 @@ void EATechnicalsRSI::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,
    int      barNumber=iBarShift(_Symbol,tech.period,barDateTime,false); // Adjust the bar number based on PERIOD and TIME
    double   main[1];
 
+      #ifdef _DEBUG_RSI_MODULE
+         ss="EATechnicalsRSI  -> using getValues(1)"; 
+         writeLog
+         pss
+      #endif
+
    // Refresh the indicator and get all the buffers
    rsi.Refresh(-1);
 
@@ -126,7 +132,7 @@ void EATechnicalsRSI::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,
 
    } else {
       #ifdef _DEBUG_RSI_MODULE
-         ss="EATechnicalsRSI  -> getValues -> ERROR will return zeros"; 
+         ss="EATechnicalsRSI  -> getValues(1) -> ERROR will return zeros"; 
          writeLog
          pss
       #endif
@@ -144,6 +150,12 @@ void EATechnicalsRSI::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs)
 
    double main[1];
 
+      #ifdef _DEBUG_RSI_MODULE
+         ss="EATechnicalsRSI  -> using getValues(2)"; 
+         writeLog
+         pss
+      #endif
+
    // Refresh the indicator and get all the buffers
    rsi.Refresh(-1);
 
@@ -160,7 +172,7 @@ void EATechnicalsRSI::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs)
 
    } else {
       #ifdef _DEBUG_RSI_MODULE
-         ss="EATechnicalsRSI -> getValues -> ERROR will return zeros"; 
+         ss="EATechnicalsRSI -> getValues(2) -> ERROR will return zeros"; 
          writeLog
          pss
       #endif
