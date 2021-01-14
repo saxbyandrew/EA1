@@ -157,11 +157,9 @@ void EANeuralNetwork::buildDataFrame(CArrayDouble &nnIn, CArrayDouble &nnOut) {
    datetime barTime;
 
    #ifdef _DEBUG_NN_DATAFRAME  
-      pline
       ss=StringFormat("EANeuralNetwork -> buildDataFrame -> with barCnt:%d",barCnt);
       writeLog
       pss
-      pline
    #endif
 
    #ifdef _DEBUG_WRITE_CSV
@@ -815,14 +813,6 @@ EAEnum EANeuralNetwork::networkForcast(CArrayDouble &nnIn, CArrayDouble &nnOut, 
    static int csvFileHandle;
    string csvFileName, csvString, s1;
    
-   /*
-   #ifdef _DEBUG_NN_FORCAST
-      
-      ss="EANeuralNetwork -> networkForcast -> ";
-      pss
-      writeLog
-   #endif
-   */
 
    #ifdef _DEBUG_WRITE_CSV
       // Create a single line for the CSV file
@@ -876,14 +866,14 @@ EAEnum EANeuralNetwork::networkForcast(CArrayDouble &nnIn, CArrayDouble &nnOut, 
    #endif
 
    #ifdef _DEBUG_NN_FORCAST
-      s1=""; ss="networkForcast -> In:";
+      s1=""; ss="EANeuralNetwork -> networkForcast -> In:";
       for (int i=0;i<ArraySize(inputs);i++) {
          s1=StringFormat("%0.5f",inputs[i]);
          ss=ss+":"+s1;
       }
       pss
       writeLog
-      ss="networkForcast -> Out:";
+      ss="EANeuralNetwork -> networkForcast -> Out:";
       for (int j=0;j<nnOut.Total();j++) {
          s1=StringFormat("%0.5f",nnOut[j]);
          ss=ss+":"+s1;

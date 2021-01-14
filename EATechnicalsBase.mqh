@@ -43,7 +43,7 @@ public:
    virtual void setValues() {};
    virtual void getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs) {};
    virtual void getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs, int barNumber) {};
-   virtual void getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs, datetime barDateTime) {};
+   virtual bool getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs, datetime barDateTime) {return false;};
    virtual EAEnum execute(EAEnum action) {return _NO_ACTION;}; 
 
 };
@@ -104,18 +104,15 @@ void EATechnicalsBase::updateValuesToDatabase(string sql) {
    int request=DatabaseExecute(_mainDBHandle, sql);
    if (!request) {
       ss=StringFormat("EATechnicalsBase -> updateValuesToDatabase -> Failed to insert with code %d", GetLastError());
-      pss
+      writeLog
       ss=sql;
       writeLog
-      pss
-      writeLog
+
    } else {
-      #ifdef _DEBUG_BASE
-         ss="EATechnicalsBase -> updateValuesToDatabase -> UPDATE INTO TECHNICALS succcess";
-         pss
+      #ifdef _DEBUG_TECHNICAL_PARAMETERS
+         ss="EATechnicalsBase -> updateValuesToDatabase -> UPDATE INTO TECHNICALS success";
          writeLog
-         ss=sql;
-         pss
+         ss="   ----> "+sql;
          writeLog
       #endif
       DatabaseFinalize(request);

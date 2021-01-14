@@ -32,7 +32,7 @@ public:
    ~EATechnicalsZZ();
 
    void  getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs);   
-   void  getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,datetime barDateTime); 
+   bool  getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,datetime barDateTime); 
    void  setValues();   
 
 };
@@ -100,7 +100,7 @@ void EATechnicalsZZ::setValues() {
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-void EATechnicalsZZ::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,datetime barDateTime) {
+bool EATechnicalsZZ::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,datetime barDateTime) {
 
    int   barNumber=iBarShift(_Symbol,tech.period,barDateTime,false); // Adjust the bar number based on PERIOD and TIME
 
@@ -149,7 +149,7 @@ void EATechnicalsZZ::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,d
             writeLog
          #endif
          nnOutputs.Add(direction);
-         return;
+         return true;
       } 
 
       if (ZIGZAGBuffer0[0]>0) {
@@ -206,6 +206,8 @@ void EATechnicalsZZ::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,d
       }
 
       nnOutputs.Add(direction);
+
+      return true;
 
 }
 

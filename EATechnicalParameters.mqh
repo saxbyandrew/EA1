@@ -168,7 +168,7 @@ void EATechnicalParameters::selectValuesFromDatabase(int strategyNumber) {
          // Over write with values given to us during optimization
          if (MQLInfoInteger(MQL_OPTIMIZATION) || MQLInfoInteger(MQL_TESTER)) {
             #ifdef _DEBUG_TECHNICAL_PARAMETERS
-               ss="EATechnicalParameters -> selectValuesFromDatabase -> MQL_OPTIMIZATION OR MQL_TESTER MODE copy input values ";
+               ss=StringFormat("EATechnicalParameters -> selectValuesFromDatabase -> MQL_OPTIMIZATION OR MQL_TESTER MODE copy input values at time:%s",TimeToString(TimeCurrent(),TIME_DATE|TIME_MINUTES));
                writeLog
                pss
             #endif
@@ -192,20 +192,10 @@ void EATechnicalParameters::selectValuesFromDatabase(int strategyNumber) {
 
    // do an initial polling of each of the objects to get a count from of the buffers
    // in use
-   #ifdef _DEBUG_TECHNICAL_PARAMETERS
-      pline
-      ss="EATechnicalParameters -> selectValuesFromDatabase -> Initial";
-      writeLog
-      pss
-      pline
-   #endif
    for (int i=0;i<indicators.Total();i++) {
       EATechnicalsBase *indicator=indicators.At(i);
-      indicator.getValues(nnIn, nnOut);
+      indicator.getValues(nnIn, nnOut, TimeCurrent());
    }
-   #ifdef _DEBUG_TECHNICAL_PARAMETERS
-      pline
-   #endif
    nn.setDataFrameArraySizes(nnIn.Total(),nnOut.Total());
 }
 
@@ -516,7 +506,7 @@ void EATechnicalParameters::createTechnicalObject() {
       // Update the DB with the single run values if in TESTER MODE
       if (MQLInfoInteger(MQL_TESTER)) {
          #ifdef _DEBUG_TECHNICAL_PARAMETERS
-            ss= StringFormat("EATechnicalParameters -> createTechnicalObject -> calling setValues %s", tech.indicatorName);
+            ss= StringFormat("EATechnicalParameters -> createTechnicalObject -> (MQL_TESTER) calling setValues for:%s", tech.indicatorName);
             pss
             writeLog
          #endif 
@@ -533,23 +523,19 @@ EAEnum EATechnicalParameters::getValues() {
    static int barNumber=1;
    int optimizationStartBar, barCnt;
    
-   #ifdef _DEBUG_TECHNICAL_PARAMETERS_RUN_LOOP
-      pline
-      ss=StringFormat("EATechnicalParameters -> getValues -> Entry .... runMode:%s",EnumToString(_systemState));
-      writeLog
-      pline
-   #endif
-   
 
    // Start with a blank slate on every bar we clear the nn input/output arrays
    nnIn.Clear(); nnOut.Clear();
 
 
-   //==========================
+   //================================
    if (_systemState==_STATE_NORMAL) {
-   //==========================
+   //================================
       #ifdef _DEBUG_TECHNICAL_PARAMETERS_RUN_LOOP
-         ss="EATechnicalParameters -> getValues(_STATE_NORMAL)";
+         pline
+         ss="EATechnicalParameters -> getValues(_STATE_NORMAL) START ";
+         writeLog
+         ss=StringFormat("EATechnicalParameters -> TIME:%s",TimeToString(TimeCurrent(),TIME_DATE|TIME_MINUTES));
          writeLog
       #endif
 
@@ -557,32 +543,53 @@ EAEnum EATechnicalParameters::getValues() {
 
       for (int i=0;i<indicators.Total();i++) {
          EATechnicalsBase *indicator=indicators.At(i);
-         indicator.getValues(nnIn, nnOut);
+         if (!indicator.getValues(nnIn, nnOut, TimeCurrent())) {
+            #ifdef _DEBUG_TECHNICAL_PARAMETERS_RUN_LOOP
+               ss=StringFormat("EATechnicalParameters -> getValues(_STATE_NORMAL) Indicator returned a EMPTY VALUE at time:%s",TimeToString(TimeCurrent(),TIME_DATE|TIME_MINUTES));
+               writeLog
+            #endif
+            return _NO_ACTION;
+         }
       }
 
       if (nn.networkForcast(nnIn, nnOut, prediction)==_OPEN_NEW_POSITION) {
+         #ifdef _DEBUG_TECHNICAL_PARAMETERS_RUN_LOOP
+            ss="EATechnicalParameters -> getValues(_STATE_NORMAL) Received a _OPEN_NEW_POSITION";
+            writeLog
+         #endif
          return _OPEN_NEW_POSITION;
       }
+
+      #ifdef _DEBUG_TECHNICAL_PARAMETERS_RUN_LOOP
+         ss="EATechnicalParameters -> getValues(_STATE_NORMAL) END";
+         writeLog
+      #endif
 
       return _NO_ACTION;
    }
 
    //================================
-   if (_systemState==_STATE_BUILD_DATAFRAME) {
+   if (_systemState==_STATE_BUILD_DATAFRAME || _systemState== _STATE_REBUILD_NETWORK) {
    //================================
       // Loop through all object and get the object to return the value as a input to the NN
-      #ifdef _DEBUG_TECHNICAL_PARAMETERS_RUN_LOOP
-         ss="EATechnicalParameters -> getValues(_STATE_BUILD_DATAFRAME)";
+      #ifdef _DEBUG_NN_DATAFRAME
+         ss="EATechnicalParameters -> getValues(_STATE_BUILD_DATAFRAME OR _DEBUG_NN_DATAFRAME)";
          writeLog
       #endif
 
       for (int i=0;i<indicators.Total();i++) {
          EATechnicalsBase *indicator=indicators.At(i);
-         indicator.getValues(nnIn, nnOut);            // Build in/out from indicators
+         if (!indicator.getValues(nnIn, nnOut, TimeCurrent())) {
+            #ifdef _DEBUG_NN_DATAFRAME
+               ss=StringFormat("EATechnicalParameters -> getValues Indicator returned a EMPTY VALUE at time:%s",TimeCurrent());
+               writeLog
+            #endif
+            return _NO_ACTION;
+         }
       }
       nn.buildDataFrame(nnIn,nnOut);                  // Add to DF which will the be used in training
 
-      #ifdef _DEBUG_TECHNICAL_PARAMETERS
+      #ifdef _DEBUG_NN_DATAFRAME
          ss=StringFormat("EATechnicalParameters -> getValues -> Total Inputs:%d ",nnIn.Total());
          writeLog
          ss=" >>>>> Inputs: ";
@@ -602,7 +609,7 @@ EAEnum EATechnicalParameters::getValues() {
       return _NO_ACTION;
    }
    
-
+/*
    //==============================
    if (_systemState==_STATE_REBUILD_NETWORK) {
    //==============================
@@ -611,31 +618,26 @@ EAEnum EATechnicalParameters::getValues() {
       datetime _time1=nn.getOptimizationStartDateTime();       // DateTime from DB
       datetime _time2=iTime(_Symbol,PERIOD_CURRENT,1);         // DateTime as set in optimization period
 
-      #ifdef _DEBUG_TECHNICAL_PARAMETERS_RUN_LOOP
+      barCnt=nn.getDataFrameSize();
+
+      #ifdef _DEBUG_NN_DATAFRAME
          pline
-         ss=StringFormat("EATechnicalParameters -> getValues(_STATE_REBUILD_NETWORK) -> REBUILD NN Database NN start time:%s optimization start time:%s Data frame size:%d",
-            TimeToString(_time1,TIME_DATE|TIME_MINUTES),TimeToString(_time2,TIME_DATE|TIME_MINUTES),iBarShift(_Symbol,PERIOD_CURRENT,nn.getDataFrameSize()));
+         ss=StringFormat("EATechnicalParameters -> getValues(1) (_STATE_REBUILD_NETWORK) -> time1:%s (DB start time) time2:%s (Optimization set Time)",
+            TimeToString(_time1,TIME_DATE|TIME_MINUTES),TimeToString(_time2,TIME_DATE|TIME_MINUTES));
          writeLog
          pss
          pline
       #endif
 
-      barCnt=nn.getDataFrameSize();
-
-      // Get the bar number based on the previously saved optimizations run and date/time
-      //optimizationStartBar=iBarShift(_Symbol,PERIOD_CURRENT,nn.getOptimizationStartDateTime(),false);  
-      //if (optimizationStartBar<barCnt) optimizationStartBar=barCnt;
-
-
       do {
-         #ifdef _DEBUG_NN_TRAINING
-            ss=StringFormat("EATechnicalParameters -> getValues(2) -> %d Database NN start time:%s optimization start time:%s",cnt,TimeToString(_time1,TIME_DATE|TIME_MINUTES),TimeToString(_time2,TIME_DATE|TIME_MINUTES));
+         #ifdef _DEBUG_NN_DATAFRAME
+            ss=StringFormat("EATechnicalParameters -> getValues(2) -> %d (DB start time):%s (Optimization set Time):%s",cnt,TimeToString(_time1,TIME_DATE|TIME_MINUTES),TimeToString(_time2,TIME_DATE|TIME_MINUTES));
             pss
             writeLog
          #endif
          if (_time1>_time2) {
-            #ifdef _DEBUG_NN_TRAINING
-               ss=StringFormat("EATechnicalParameters -> getValues(3) -> There are %d bars between dates (NN start time):%s and (optimization start time):%s",cnt,TimeToString(_time1,TIME_DATE|TIME_MINUTES),TimeToString(_time2,TIME_DATE|TIME_MINUTES));
+            #ifdef _DEBUG_NN_DATAFRAME
+               ss=StringFormat("EATechnicalParameters -> getValues(3) -> There are %d bars between dates (DB start time):%s and (Optimization set Time):%s",cnt,TimeToString(_time1,TIME_DATE|TIME_MINUTES),TimeToString(_time2,TIME_DATE|TIME_MINUTES));
                pss
                writeLog
             #endif
@@ -647,7 +649,7 @@ EAEnum EATechnicalParameters::getValues() {
 
       optimizationStartBar=cnt;
 
-      #ifdef _DEBUG_NN_TRAINING
+      #ifdef _DEBUG_NN_DATAFRAME
          pline
          ss=StringFormat("EATechnicalParameters -> getValues(4) -> Start the rebuild of the network from bar:%d at optimization start time:%s for the next:%d bars",optimizationStartBar,TimeToString(_time2,TIME_DATE|TIME_MINUTES),barCnt);
          writeLog
@@ -655,31 +657,44 @@ EAEnum EATechnicalParameters::getValues() {
          pline
       #endif
 
-      while (barCnt>0) {
+
+
+      while (barCnt>0) { 
+
+         #ifdef _DEBUG_NN_DATAFRAME
+            //ss=StringFormat("EATechnicalParameters -> getValues(5) -> barCnt:%d Optimization Bar Date/Time:%s",barCnt,TimeToString(iTime(_Symbol,PERIOD_CURRENT,optimizationStartBar),TIME_DATE|TIME_MINUTES));
+            ss=StringFormat("EATechnicalParameters -> getValues(5) -> barCnt:%d Optimization Bar Date/Time:%s",barCnt,TimeToString(TimeCurrent(),TIME_DATE|TIME_MINUTES));
+            writeLog
+            pss
+         #endif
 
          // Start with a blank slate on every bar we clear the nn input/output arrays
          nnIn.Clear(); nnOut.Clear();
          for (int i=0;i<indicators.Total();i++) {
             EATechnicalsBase *indicator=indicators.At(i);
-            indicator.getValues(nnIn,nnOut,iTime(_Symbol,PERIOD_CURRENT,optimizationStartBar));
+            //if (!indicator.getValues(nnIn, nnOut, iTime(_Symbol,PERIOD_CURRENT,barCnt))) {
+            if (!indicator.getValues(nnIn, nnOut, TimeCurrent())) {
+               #ifdef _DEBUG_NN_DATAFRAME
+                  //ss=StringFormat("EATechnicalParameters -> getValues(_STATE_REBUILD_NETWORK) Indicator returned a EMPTY VALUE at time:%s",TimeToString(iTime(_Symbol,PERIOD_CURRENT,barCnt),TIME_DATE|TIME_MINUTES));
+                  ss=StringFormat("EATechnicalParameters -> getValues(_STATE_REBUILD_NETWORK) Indicator returned a EMPTY VALUE at time:%s",TimeToString(TimeCurrent(),TIME_DATE|TIME_MINUTES));
+                  writeLog
+               #endif
+               nnIn.Clear(); nnOut.Clear();  // clear the values
+               break;                        // exit this batch of indicators
+            }
          }
          nn.buildDataFrame(nnIn,nnOut);               // build the dataframe by adding inputs and outputs
          --barCnt; --optimizationStartBar;            // bump counters
-
-         #ifdef _DEBUG_NN_TRAINING
-            ss=StringFormat("EATechnicalParameters -> getValues(5) -> barCnt:%d Optimization Bar Number:%d Optimization Bar Date/Time:%s",barCnt,optimizationStartBar,TimeToString(iTime(_Symbol,PERIOD_CURRENT,optimizationStartBar),TIME_DATE|TIME_MINUTES));
-            writeLog
-            pss
-         #endif
       }
 
-      #ifdef _DEBUG_NN_TRAINING
-         ss=StringFormat("EATechnicalParameters -> getValues(6) -> Last Optimization Bar Date/Time:%s",TimeToString(iTime(_Symbol,PERIOD_CURRENT,optimizationStartBar),TIME_DATE|TIME_MINUTES));
+      #ifdef _DEBUG_NN_DATAFRAME
+         ss=StringFormat("EATechnicalParameters -> getValues(6) -> Last Optimization Bar Date/Time:%s",TimeToString(iTime(_Symbol,PERIOD_CURRENT,barCnt),TIME_DATE|TIME_MINUTES));
          writeLog
          pss
       #endif
 
    }
+   */
 
    return _NO_ACTION;
 }

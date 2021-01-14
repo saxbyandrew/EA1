@@ -27,22 +27,23 @@
 //#define _DEBUG_PARAMETERS
 //#define _DEBUG_MAIN_LOOP
 //#define _DEBUG_TIME
-//#define _DEBUG_TECHNICAL_PARAMETERS
+#define _DEBUG_TECHNICAL_PARAMETERS
 #define _DEBUG_TECHNICAL_PARAMETERS_RUN_LOOP
-//#define _DEBUG_NN_INPUTS_OUTPUTS
-//#define _DEBUG_NN
-//#define _DEBUG_NN_PROPERTIES
-//#define _DEBUG_NN_LOADSAVE
-//#define _DEBUG_NN_LOADSAVE_DETAILED
-//#define _DEBUG_NN_FORCAST
-//#define _DEBUG_NN_TRAINING
-//#define _DEBUG_NN_DATAFRAME
+#define _DEBUG_NN_INPUTS_OUTPUTS
+#define _DEBUG_NN
+#define _DEBUG_NN_PROPERTIES
+#define _DEBUG_NN_LOADSAVE
+#define _DEBUG_NN_LOADSAVE_DETAILED
+#define _DEBUG_NN_FORCAST
+
+#define _DEBUG_NN_TRAINING
+#define _DEBUG_NN_DATAFRAME
 
 //#define _DEBUG_STRATEGY
 //#define _DEBUG_STRATEGY_UPDATE
 //#define _DEBUG_STRATEGY_TRIGGERS
 
-//#define _DEBUG_BASE
+
 //#define _DEBUG_LONG 
 //#define _DEBUG_LONG_STRATEGY
 //#define _DEBUG_LONG_POSITIONS 
@@ -55,7 +56,7 @@
 // ===============
 #define _USE_ADX                    //i1a
 #define _DEBUG_ADX_MODULE 
-#define _USE_RSI                    //i2a
+//#define _USE_RSI                    //i2a
 //#define _DEBUG_RSI_MODULE
 //#define _USE_MFI                  //i4a               
 //#define _DEBUG_MFI_MODULE
@@ -167,7 +168,6 @@ int OnInit() {
     MqlDateTime t;
 
 
-
     // If the system is in optimization mode once the initializtion is complete
     // we need to create, populate a dataframe and the train the network before optimization continues
     // and positions are open/closed
@@ -175,7 +175,6 @@ int OnInit() {
         _systemState=_STATE_BUILD_DATAFRAME; 
     } 
     
-
     TimeToStruct(TimeCurrent(),t);
     string fn=StringFormat("%d%d%d%d%d%d%d%d.log",t.year,t.mon,t.day,t.hour,t.min,t.sec);
     _txtHandle=FileOpen(fn,FILE_COMMON|FILE_READ|FILE_WRITE|FILE_TXT);  
@@ -198,7 +197,6 @@ int OnInit() {
                 pss
             #endif
         }
-
     }
 
     #ifdef _RUN_PANEL
@@ -253,7 +251,6 @@ int OnInit() {
         }
     #endif
 
-
     TRADING_CIRCUIT_BREAKER=IS_UNLOCKED;          // Initially allow trading operations across all object
     ACTIVE_HEDGE=_NO;
     ENABLE_EVENTS=true;
@@ -277,8 +274,6 @@ void OnDeinit(const int reason) {
     EventKillTimer();
     
 }
-
-
 
 //+------------------------------------------------------------------+
 //|                                                                  |
