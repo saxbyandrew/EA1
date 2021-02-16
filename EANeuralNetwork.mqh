@@ -12,6 +12,7 @@
 #include "EAModelBase.mqh"
 #include <Math\Alglib\alglib.mqh>
 #include <Arrays\ArrayDouble.mqh>
+#include <Arrays\ArrayString.mqh>
 
 
 class EANeuralNetwork  {
@@ -53,7 +54,7 @@ EANeuralNetwork(int strategyNumber);
    datetime getOptimizationStartDateTime();
    int      getDataFrameSize() {return nn.dfSize;};
    void     setDataFrameArraySizes(int nnIn, int nnOut);
-   EAEnum   networkForcast(CArrayDouble &nnIn, CArrayDouble &nnOut, double &prediction[]);
+   EAEnum   networkForcast(CArrayDouble &nnIn, CArrayDouble &nnOut, double &prediction[], CArrayString &nnHeadings);
    void     buildDataFrame(CArrayDouble &nnIn, CArrayDouble &nnOut);
 
 };
@@ -491,10 +492,16 @@ void EANeuralNetwork::createNewNetwork()  {
 
       switch (nn.networkType) {
          case _NN_2: no.MLPCreateC2(nn.numInput,nn.numHiddenLayer1,nn.numHiddenLayer2,nn.numOutput,ps);
+            //ss="EANeuralNetwork -> createNewNetwork -> MLPCreateC2";
+            //writeLog
          break;
          case _NN_C2:no.MLPCreate2(nn.numInput,nn.numHiddenLayer1,nn.numHiddenLayer2,nn.numOutput,ps);
+            //ss="EANeuralNetwork -> createNewNetwork -> MLPCreate2";
+            //writeLog
          break;
          case _NN_R2:no.MLPCreateR2(nn.numInput,nn.numHiddenLayer1,nn.numHiddenLayer2,nn.numOutput,0,1,ps);
+            //ss="EANeuralNetwork -> createNewNetwork -> MLPCreateR2";
+            //writeLog
          break;
       }
       #ifdef _DEBUG_NN_LOADSAVE
@@ -799,7 +806,7 @@ void EANeuralNetwork::loadNetwork() {
          pss
       #endif
 
-      // We must rebuild the DF, retrain the network and save its as a .bin file.
+      // We must rebuild the DF, retrain the network and save it as a .bin file.
       _systemState=_STATE_REBUILD_NETWORK;
       
    }
@@ -808,61 +815,52 @@ void EANeuralNetwork::loadNetwork() {
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-EAEnum EANeuralNetwork::networkForcast(CArrayDouble &nnIn, CArrayDouble &nnOut, double &prediction[]) {
+EAEnum EANeuralNetwork::networkForcast(CArrayDouble &nnIn, CArrayDouble &nnOut, double &prediction[], CArrayString &nnHeadings) {
 
    static int csvFileHandle;
    string csvFileName, csvString, s1;
    
 
-   #ifdef _DEBUG_WRITE_CSV
+   #ifdef _DEBUG_NN_FORCAST_WRITE_CSV
       // Create a single line for the CSV file
       if (nn.csvWriteDF) {
          if (csvFileHandle==NULL) {
             csvFileName=StringFormat("%s%sforcast.csv",IntegerToString(nn.strategyNumber),IntegerToString(nn.fileNumber));
             csvFileHandle=FileOpen(csvFileName,FILE_COMMON|FILE_READ|FILE_WRITE|FILE_ANSI|FILE_CSV,","); 
-         }
+
+            csvString="Date / Time,";
+            for (int i=0;i<nnHeadings.Total();i++) {
+               csvString=csvString+nnHeadings.At(i)+",";
+            }
+            FileWrite(csvFileHandle,csvString);
+            FileFlush(csvFileHandle);
+         } 
          csvString=TimeToString(iTime(_Symbol,PERIOD_CURRENT,1))+",";
-         csvString=csvString+",";
+         
       }
    #endif
 
-   /*
-   #ifdef _DEBUG_NN_FORCAST
-      ss=StringFormat("EANeuralNetwork -> networkForcast -> Array Sizes Total:%d Inputs:%d Output:%d",nnIn.Total(), ArraySize(inputs), ArraySize(prediction));
-      writeLog
-      pss
-   #endif
-   */
 
-   // Convert to normal double [] for inputs
+   // Array TYPE .. Convert to normal double [] for inputs
    for (int i=0;i<nnIn.Total();i++) inputs[i]=nnIn.At(i);
 
    // Ask the network for a prediction note we are also passing back the prediction[] for now
    no.MLPProcess(ps, inputs, prediction);   
 
-   if (prediction[0]>=nn.triggerThreshold) {
-      #ifdef _DEBUG_NN_FORCAST
-         ss=StringFormat("EANeuralNetwork -> networkForcast -> _OPEN_NEW_POSITION %0.5f",prediction[0]);
-         pss
-         writeLog
-      #endif
-
-      return _OPEN_NEW_POSITION;
-   }
-
-   #ifdef _DEBUG_WRITE_CSV
+   #ifdef _DEBUG_NN_FORCAST_WRITE_CSV
       if (nn.csvWriteDF) {
-         for (int l=0;l<ArraySize(inputs);l++) {
-            csvString=csvString+","+l+","+DoubleToString(inputs[l])+",";
-         }
-         for (int m=0;m<nnOut.Total();m++) {
-            csvString=csvString+","+DoubleToString(nnOut[m])+","+DoubleToString(prediction[0]);
-         }
-      }
 
+         for (int m=0;m<nnOut.Total();m++) {
+            if (nnOut[m]==0) {ss="Down";} else {ss="Up";}
+            csvString=csvString+ss+","+DoubleToString(prediction[0])+",";
+         }
+         for (int l=0;l<ArraySize(inputs);l++) {
+            csvString=csvString+DoubleToString(inputs[l])+",";
+         }
+
+      }
       FileWrite(csvFileHandle,csvString);
       FileFlush(csvFileHandle);
-
    #endif
 
    #ifdef _DEBUG_NN_FORCAST
@@ -895,6 +893,15 @@ EAEnum EANeuralNetwork::networkForcast(CArrayDouble &nnIn, CArrayDouble &nnOut, 
       ip.updateInfoLabel(24,0,ss);
    }
    #endif
+
+   if (prediction[0]>=nn.triggerThreshold) {
+      #ifdef _DEBUG_NN_FORCAST
+         ss=StringFormat("EANeuralNetwork -> networkForcast -> _OPEN_NEW_POSITION %0.5f",prediction[0]);
+         pss
+         writeLog
+      #endif
+      return _OPEN_NEW_POSITION;
+   }
 
    return _NO_ACTION;
    

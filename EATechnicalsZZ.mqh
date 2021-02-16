@@ -18,7 +18,12 @@ class EATechnicalsZZ : public EATechnicalsBase {
 //=========
 private:
    string   ss;
-   int   ZIGZAGHandle;
+   int   handle;
+
+   double   buffer0[];
+   double   buffer1[];
+   double   buffer2[];
+   double   buffer3[];
 
 //=========
 protected:
@@ -31,8 +36,7 @@ public:
    EATechnicalsZZ(Technicals &t);
    ~EATechnicalsZZ();
 
-   void  getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs);   
-   bool  getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,datetime barDateTime); 
+   bool  getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,datetime barDateTime, CArrayString &nnHeadings); 
    void  setValues();   
 
 };
@@ -42,19 +46,11 @@ public:
 EATechnicalsZZ::EATechnicalsZZ(Technicals &t) {
 
    int bars;
-   /*
-   #ifdef _DEBUG_ZIGZAG
-      ss="EATechnicalsZZ -> .... default constructor";
-      pss
-      writeLog
-   #endif
-   */
 
-   // Set the local instance struct variables
    EATechnicalsBase::copyValues(t);
 
-   if (ZIGZAGHandle==NULL) 
-      ZIGZAGHandle=iCustom(_Symbol,tech.period,"deltazigzag",0,0,500,0.5,1);
+   if (handle==NULL) 
+      handle=iCustom(_Symbol,tech.period,"deltazigzag",0,0,500,0.5,1);
 
    bars=Bars(_Symbol,tech.period);
 
@@ -85,22 +81,13 @@ void EATechnicalsZZ::setValues() {
       "WHERE strategyNumber=%d AND inputPrefix='%s'",
       tech.period, EnumToString(tech.period), tech.versionNumber, tech.strategyNumber,tech.inputPrefix);
 
-   #ifdef _DEBUG_BASE
-      ss="EATechnicalsZZ -> UPDATE INTO TECHNICALS";
-      pss
-      writeLog
-      ss=sql;
-      pss
-      writeLog
-   #endif
-
    EATechnicalsBase::updateValuesToDatabase(sql);
 
 }
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-bool EATechnicalsZZ::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,datetime barDateTime) {
+bool  EATechnicalsZZ::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs, datetime barDateTime, CArrayString &nnHeadings) {  
 
    int   barNumber=iBarShift(_Symbol,tech.period,barDateTime,false); // Adjust the bar number based on PERIOD and TIME
 
@@ -108,30 +95,34 @@ bool EATechnicalsZZ::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,d
       ss=StringFormat("EATechnicalsZZ  -> using getValues(1) %s barNumber:%d Time:%s",tech.inputPrefix, barNumber,TimeToString(barDateTime,TIME_DATE|TIME_MINUTES)); 
       writeLog
       pss
-      ss=StringFormat("EATechnicalsZZ -> barscalculated:%d ",BarsCalculated(ZIGZAGHandle));
+      ss=StringFormat("EATechnicalsZZ -> barscalculated:%d ",BarsCalculated(handle));
       pss
       writeLog
 
    #endif
 
-      static double ZIGZAGBuffer0[];
-      static double ZIGZAGBuffer1[];
-      static double ZIGZAGBuffer2[];
-      static double ZIGZAGBuffer3[];
       static int    direction;
       static int    ttlCnt=0;
 
-      ArraySetAsSeries(ZIGZAGBuffer0,true);
-      ArraySetAsSeries(ZIGZAGBuffer1,true);
-      ArraySetAsSeries(ZIGZAGBuffer2,true);
-      ArraySetAsSeries(ZIGZAGBuffer3,true);
+      // Descriptive heading for CSV file
+      #ifdef _DEBUG_NN_FORCAST_WRITE_CSV
+         nnHeadings.Add("ZZ Direction,Prediction");
+      #endif
 
-      CopyBuffer(ZIGZAGHandle,0,barDateTime,1,ZIGZAGBuffer0);
-      CopyBuffer(ZIGZAGHandle,1,barDateTime,1,ZIGZAGBuffer1);
-      CopyBuffer(ZIGZAGHandle,2,barDateTime,1,ZIGZAGBuffer2);
-      CopyBuffer(ZIGZAGHandle,3,barDateTime,1,ZIGZAGBuffer3);
 
-      if (ZIGZAGBuffer0[0]==EMPTY_VALUE || ZIGZAGBuffer1[0]==EMPTY_VALUE || ZIGZAGBuffer2[0]==EMPTY_VALUE || ZIGZAGBuffer3[0]==EMPTY_VALUE) {
+      if (CopyBuffer(handle,0,barDateTime,1,buffer0)==-1 ||
+         CopyBuffer(handle,1,barDateTime,1,buffer1)==-1 ||
+         CopyBuffer(handle,2,barDateTime,1,buffer2)==-1 ||
+         CopyBuffer(handle,3,barDateTime,1,buffer3)==-1) {
+         #ifdef _DEBUG_ZIGZAG
+            ss="EATechnicalsZZ -> getValues(1) -> copybuffer error";
+            pss
+            writeLog
+         #endif
+         return false;
+      }
+
+      if (buffer0[0]==EMPTY_VALUE || buffer1[0]==EMPTY_VALUE || buffer2[0]==EMPTY_VALUE || buffer3[0]==EMPTY_VALUE) {
          #ifdef _DEBUG_ZIGZAG
             ss="EATechnicalsZZ -> EMPTY_VALUE";
             pss
@@ -144,29 +135,30 @@ bool EATechnicalsZZ::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,d
       if (ttlCnt>0) {
          ttlCnt--;
          #ifdef _DEBUG_ZIGZAG
-            ss=StringFormat("EATechnicalsZZ -> getValues countdown:%d ",ttlCnt);
+            ss=StringFormat("EATechnicalsZZ -> getValues(2) countdown:%d of %d",ttlCnt,tech.ttl);
             pss
             writeLog
          #endif
          nnOutputs.Add(direction);
+
          return true;
       } 
 
-      if (ZIGZAGBuffer0[0]>0) {
+      if (buffer0[0]>0) {
          ttlCnt=tech.ttl;
          direction= (int) _DOWN;
          #ifdef _DEBUG_ZIGZAG
-            ss="EATechnicalsZZ -> getValues -> ZIGZAGBuffer0 -> DOWN";
+            ss="EATechnicalsZZ -> getValues(3) -> buffer0 -> DOWN";
             pss
             writeLog
          #endif
       }
 
-      if (ZIGZAGBuffer1[0]>0) {
+      if (buffer1[0]>0) {
          ttlCnt=tech.ttl;
          direction= (int) _UP;
          #ifdef _DEBUG_ZIGZAG
-            ss="EATechnicalsZZ -> getValues -> ZIGZAGBuffer1 -> UP";
+            ss="EATechnicalsZZ -> getValues(4) -> buffer1 -> UP";
             pss
             writeLog
          #endif
@@ -174,7 +166,7 @@ bool EATechnicalsZZ::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,d
 
       if (direction==_DOWN) {
          #ifdef _DEBUG_ZIGZAG
-            ss="EATechnicalsZZ -> getValues -> DOWN";
+            ss="EATechnicalsZZ -> getValues(5) -> DOWN";
             pss
             writeLog
          #endif
@@ -182,24 +174,24 @@ bool EATechnicalsZZ::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,d
 
       if (direction==_UP) {
          #ifdef _DEBUG_ZIGZAG
-            ss="EATechnicalsZZ -> getValues -> UP";
+            ss="EATechnicalsZZ -> getValues(6) -> UP";
             pss
             writeLog
          #endif
       }
 
-      if (ZIGZAGBuffer2[0]>0) {
+      if (buffer2[0]>0) {
 
          #ifdef _DEBUG_ZIGZAG
-            ss="EATechnicalsZZ -> getValues -> ZIGZAGBuffer2 -> > 0";
+            ss="EATechnicalsZZ -> getValues(7) -> buffer2 -> > 0";
             pss
             writeLog
          #endif
       }
 
-      if (ZIGZAGBuffer3[0]>0) {
+      if (buffer3[0]>0) {
          #ifdef _DEBUG_ZIGZAG
-            ss="EATechnicalsZZ -> getValues -> ZIGZAGBuffer3 -> > 0";
+            ss="EATechnicalsZZ -> getValues(8) -> buffer3 -> > 0";
             pss
             writeLog
          #endif
@@ -211,78 +203,3 @@ bool EATechnicalsZZ::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,d
 
 }
 
-//+------------------------------------------------------------------+
-//|                                                                  |
-//+------------------------------------------------------------------+
-void EATechnicalsZZ::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs) {
-
-   /*
-   #ifdef _DEBUG_ZIGZAG
-      ss="EATechnicalsZZ -> getValues 1 -> ....";
-      pss
-      writeLog
-   #endif 
-   */
-
-      static double ZIGZAGBuffer0[];
-      static double ZIGZAGBuffer1[];
-      static int direction;
-      static int ttlCnt=0;
-
-      ArraySetAsSeries(ZIGZAGBuffer0,true);
-      ArraySetAsSeries(ZIGZAGBuffer1,true);
-
-      CopyBuffer(ZIGZAGHandle,0,0,1,ZIGZAGBuffer0);
-      CopyBuffer(ZIGZAGHandle,1,0,1,ZIGZAGBuffer1);
-
-      // Allow indicator time to live
-      if (ttlCnt>0) {
-         ttlCnt--;
-         #ifdef _DEBUG_ZIGZAG
-            ss=StringFormat("EATechnicalsZZ -> getValues ->countdown:%d ",ttlCnt);
-            pss
-            writeLog
-         #endif
-         nnOutputs.Add(direction);
-         return;
-      } 
-
-      if (ZIGZAGBuffer0[0]>0) {
-         ttlCnt=tech.ttl;
-         direction= (int) _DOWN;
-         #ifdef _DEBUG_ZIGZAG
-            ss="EATechnicalsZZ -> getValues -> DOWN";
-            pss
-            writeLog
-         #endif
-      }
-
-      if (ZIGZAGBuffer1[0]>0) {
-         ttlCnt=tech.ttl;
-         direction= (int) _UP;
-         #ifdef _DEBUG_ZIGZAG
-            ss="EATechnicalsZZ -> getValues -> UP";
-            pss
-            writeLog
-         #endif
-      }
-
-      if (direction==_DOWN) {
-         #ifdef _DEBUG_ZIGZAG
-            ss="EATechnicalsZZ -> getValues -> DOWN";
-            pss
-            writeLog
-         #endif
-      }
-
-      if (direction==_UP) {
-         #ifdef _DEBUG_ZIGZAG
-            ss="EATechnicalsZZ -> getValues -> UP";
-            pss
-            writeLog
-         #endif
-      }
-
-      nnOutputs.Add(direction);
-
-}

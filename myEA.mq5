@@ -27,17 +27,18 @@
 //#define _DEBUG_PARAMETERS
 //#define _DEBUG_MAIN_LOOP
 //#define _DEBUG_TIME
-#define _DEBUG_TECHNICAL_PARAMETERS
-#define _DEBUG_TECHNICAL_PARAMETERS_RUN_LOOP
-#define _DEBUG_NN_INPUTS_OUTPUTS
-#define _DEBUG_NN
-#define _DEBUG_NN_PROPERTIES
-#define _DEBUG_NN_LOADSAVE
-#define _DEBUG_NN_LOADSAVE_DETAILED
-#define _DEBUG_NN_FORCAST
+//#define _DEBUG_TECHNICAL_PARAMETERS
+//#define _DEBUG_TECHNICAL_PARAMETERS_RUN_LOOP
+//#define _DEBUG_NN_INPUTS_OUTPUTS
+//#define _DEBUG_NN
+//#define _DEBUG_NN_PROPERTIES
+//#define _DEBUG_NN_LOADSAVE
+//#define _DEBUG_NN_LOADSAVE_DETAILED
+//#define _DEBUG_NN_FORCAST
+//#define _DEBUG_NN_FORCAST_WRITE_CSV
 
-#define _DEBUG_NN_TRAINING
-#define _DEBUG_NN_DATAFRAME
+//#define _DEBUG_NN_TRAINING
+//#define _DEBUG_NN_DATAFRAME
 
 //#define _DEBUG_STRATEGY
 //#define _DEBUG_STRATEGY_UPDATE
@@ -54,13 +55,13 @@
 // ==============
 // MODULES IN USE
 // ===============
-#define _USE_ADX                    //i1a
-#define _DEBUG_ADX_MODULE 
+//#define _USE_ADX                    //i1a
+//#define _DEBUG_ADX_MODULE 
 //#define _USE_RSI                    //i2a
 //#define _DEBUG_RSI_MODULE
 //#define _USE_MFI                  //i4a               
 //#define _DEBUG_MFI_MODULE
-//#define _USE_SAR                  //i4a               
+#define _USE_SAR                  //i4a               
 //#define _DEBUG_SAR_MODULE
 //#define _USE_ICH                  //i5a
 //#define _DEBUG_ICH_MODULE

@@ -10,7 +10,6 @@
 
 #include "EATechnicalsBase.mqh"
 
-//#include <Indicators\Trend.mqh>
 
 //=========
 class EATechnicalsADX : public EATechnicalsBase {
@@ -20,7 +19,6 @@ class EATechnicalsADX : public EATechnicalsBase {
 private:
 
    string   ss;
-   //CiADX    adx;  
    int      handle;
    datetime buffer0[];
    double   buffer1[];
@@ -34,16 +32,13 @@ private:
 protected:
 //=========
 
-
 //=========
 public:
 //=========
    EATechnicalsADX(Technicals &t);
    ~EATechnicalsADX();
 
-
-   EAEnum indicatorStatus;
-   bool  getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,datetime barDateTime);  
+   bool  getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs, datetime barDateTime, CArrayString &nnHeadings);  
    void  setValues();            
 
 
@@ -56,51 +51,24 @@ EATechnicalsADX::EATechnicalsADX(Technicals &t) {
    int bars;
    CArrayDouble nnInputs, nnOutputs;
 
-   indicatorStatus=_STATE_UNDEFINED;
-
    EATechnicalsBase::copyValues(t);
-
-/*
-   if (!adx.Create(_Symbol,t.period,t.movingAverage)) {
-      #ifdef _DEBUG_ADX_MODULE
-            ss="EATechnicalsADX -> ERROR";
-            pss
-            writeLog
-            ExpertRemove();
-      #endif
-   } 
-*/
 
    handle=iADX(_Symbol,t.period,t.movingAverage);
    if (!handle) {
       #ifdef _DEBUG_ADX_MODULE
-         ss="EATechnicalsADX -> handle ERROR";
+         ss="EATechnicalsADX -> handle ERROR";                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
          pss
          writeLog
          ExpertRemove();
       #endif
    }
 
-   ss="xxxxxx";
-   writeLog
-
-   getValues(nnInputs, nnOutputs, TimeCurrent());
-   ss="xxxxx";
-   writeLog
-
-   //ArrayResize(buffer1,tech.barDelay,0);
-   //ArrayResize(buffer2,tech.barDelay,0);
-   //ArrayResize(buffer3,tech.barDelay,0);
-
-   //SetIndexBuffer(0,buffer1,INDICATOR_DATA);
-   //SetIndexBuffer(1,buffer2,INDICATOR_DATA);
-   //SetIndexBuffer(2,buffer3,INDICATOR_DATA);
-
    #ifdef _DEBUG_ADX_MODULE
       ss=StringFormat("EATechnicalsADX -> EATechnicalsADX(Technicals &t)  -> bars in terminal history:%d for period:%s with MA:%d barDelay:%d",Bars(_Symbol,tech.period),EnumToString(tech.period),tech.movingAverage,tech.barDelay);
       pss
       writeLog
    #endif
+
 
 }
 
@@ -115,15 +83,12 @@ EATechnicalsADX::~EATechnicalsADX() {
 //+------------------------------------------------------------------+
 void EATechnicalsADX::setValues() {
 
-   string sql;
-
    tech.versionNumber++;
 
-   sql=StringFormat("UPDATE TECHNICALS SET period=%d, ENUM_TIMEFRAMES='%s', movingAverage=%d, upperLevel=%.5f, versionNumber=%d, barDelay=%d "
+   string sql=StringFormat("UPDATE TECHNICALS SET period=%d, ENUM_TIMEFRAMES='%s', movingAverage=%d, upperLevel=%.5f, versionNumber=%d, barDelay=%d "
       "WHERE strategyNumber=%d AND inputPrefix='%s'",
       tech.period, EnumToString(tech.period), tech.movingAverage,tech.upperLevel, tech.versionNumber, tech.barDelay, tech.strategyNumber,tech.inputPrefix);
    
-
    EATechnicalsBase::updateValuesToDatabase(sql);
 
 }
@@ -140,7 +105,7 @@ double EATechnicalsADX::ADXMainLevelCross(double val) {
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-bool EATechnicalsADX::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs, datetime barDateTime) {
+bool EATechnicalsADX::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs, datetime barDateTime, CArrayString &nnHeadings) {
 
       /*
       https://www.alglib.net/dataanalysis/neuralnetworks.php#header0
@@ -151,18 +116,13 @@ bool EATechnicalsADX::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,
       Preprocessing is done transparently to user, you don't have to worry about it - just feed data to training algorithm!
       */
 
-   int barNumber=iBarShift(_Symbol,tech.period,barDateTime,false); // Adjust the bar number based on PERIOD and TIME
 
    #ifdef _DEBUG_ADX_MODULE
       pline
-      ss=StringFormat("EATechnicalsADX  -> getValues -> %s barNumber:%d Time:%s barscalculated:%d ",tech.inputPrefix, barNumber,TimeToString(barDateTime,TIME_DATE|TIME_MINUTES),BarsCalculated(handle)); 
+      ss=StringFormat("EATechnicalsADX  -> getValues -> %s barNumber:%d Time:%s barscalculated:%d ",tech.inputPrefix, iBarShift(_Symbol,tech.period,barDateTime,false),TimeToString(barDateTime,TIME_DATE|TIME_MINUTES),BarsCalculated(handle)); 
       writeLog
       pss
    #endif
-
-   //ArraySetAsSeries(buffer1,true);  // Main
-   //ArraySetAsSeries(buffer2,true);  // plusDI
-   //ArraySetAsSeries(buffer3,true);  // MinusDI
 
    if (CopyBuffer(handle,0,barDateTime,tech.barDelay,buffer1)==-1 || 
       CopyBuffer(handle,1,barDateTime,tech.barDelay,buffer2)==-1 ||
@@ -185,7 +145,7 @@ bool EATechnicalsADX::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,
    } else {
 
       #ifdef _DEBUG_ADX_MODULE
-         ss=StringFormat("EATechnicalsADX  -> getValues -> %s B1:%.2f B2:%.2f B3:%.2f",TimeToString(barDateTime,TIME_DATE|TIME_MINUTES),buffer1[tech.barDelay-1],buffer2[tech.barDelay-1],buffer3[tech.barDelay-1]);        
+         ss=StringFormat("EATechnicalsADX  -> getValues -> %s B1:%.2f B2:%.2f B3:%.2f %d",TimeToString(barDateTime,TIME_DATE|TIME_MINUTES),buffer1[tech.barDelay-1],buffer2[tech.barDelay-1],buffer3[tech.barDelay-1],tech.barDelay);        
          writeLog
          pss
       #endif
@@ -194,6 +154,14 @@ bool EATechnicalsADX::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,
       if (bool (tech.useBuffers&_BUFFER2)) nnInputs.Add(buffer2[tech.barDelay-1]);
       if (bool (tech.useBuffers&_BUFFER3)) nnInputs.Add(buffer3[tech.barDelay-1]);
       if (bool (tech.useBuffers&_BUFFER4)) nnInputs.Add(ADXMainLevelCross(buffer1[tech.barDelay-1])); // Use Main
+
+      // Descriptive heading for CSV file
+      #ifdef _DEBUG_NN_FORCAST_WRITE_CSV
+         if (bool (tech.useBuffers&_BUFFER1)) nnHeadings.Add("ADX Main "+tech.inputPrefix);
+         if (bool (tech.useBuffers&_BUFFER2)) nnHeadings.Add("ADX Plus "+tech.inputPrefix);
+         if (bool (tech.useBuffers&_BUFFER3)) nnHeadings.Add("ADX Minus "+tech.inputPrefix);
+         if (bool (tech.useBuffers&_BUFFER4)) nnHeadings.Add("ADX Cross"+tech.inputPrefix);
+      #endif
    }
    return true;
 }

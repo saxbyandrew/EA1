@@ -62,22 +62,26 @@ input int i2b_barDelay=1;
 input group "MFI"
 input ENUM_TIMEFRAMES i3a_period=PERIOD_CURRENT;    
 input int i3a_movingAverage=14;                     
-input int i3a_appliedVolume=1;
+input ENUM_APPLIED_VOLUME i3a_appliedVolume=1;
+input int i3a_barDelay=1; 
 
 input ENUM_TIMEFRAMES i3b_period=PERIOD_CURRENT;    
 input int i3b_movingAverage=14;                     
-input int i3b_appliedVolume=1;
+input ENUM_APPLIED_VOLUME i3b_appliedVolume=1;
+input int i3b_barDelay=1; 
 #endif
 
 #ifdef _USE_SAR
 input group "SAR"
 input ENUM_TIMEFRAMES i4a_period=PERIOD_CURRENT;    
 input double i4a_stepValue=0.02;                   
-input double i4a_maxValue=0.2;                     
+input double i4a_maxValue=0.2;  
+input int i4a_barDelay=1;                     
 
 input ENUM_TIMEFRAMES i4b_period=PERIOD_CURRENT;   
 input double i4b_stepValue=0.02;                   
-input double i4b_maxValue=0.2;                     
+input double i4b_maxValue=0.2;  
+input int i4b_barDelay=1;                     
 #endif
 
 #ifdef _USE_ICH
@@ -140,13 +144,15 @@ input ENUM_TIMEFRAMES i9a_period=PERIOD_CURRENT;
 input int i9a_fastMovingAverage=12;                
 input int i9a_slowMovingAverage=26;                
 input int i9a_signalPeriod=9;                      
-input ENUM_APPLIED_PRICE i9a_appliedPrice=PRICE_CLOSE;   
+input ENUM_APPLIED_PRICE i9a_appliedPrice=PRICE_CLOSE;  
+input int i9a_barDelay=1;  
 
 input ENUM_TIMEFRAMES i9b_period=PERIOD_CURRENT;   
 input int i9b_fastMovingAverage=12;                
 input int i9b_slowMovingAverage=26;                
 input int i9b_signalPeriod=9;                      
 input ENUM_APPLIED_PRICE i9b_appliedPrice=PRICE_CLOSE; 
+input int i9b_barDelay=1; 
 #endif
 
 #ifdef _USE_MACDJB

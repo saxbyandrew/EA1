@@ -10,7 +10,6 @@
 
 #include "EATechnicalsBase.mqh"
 
-#include <Indicators\Oscilators.mqh>
 
 //=========
 class EATechnicalsMACD : public EATechnicalsBase {
@@ -19,8 +18,11 @@ class EATechnicalsMACD : public EATechnicalsBase {
 //=========
 private:
 
-   string      ss;
-   CiMACD      macd;  
+   string      ss; 
+   int      handle;
+   double   buffer1[];
+   double   buffer2[];
+   double   buffer3[];
 
 
 //=========
@@ -34,8 +36,8 @@ public:
    EATechnicalsMACD(Technicals &t);
    ~EATechnicalsMACD();
 
-   void  getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs);    
-   void  getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,datetime barDateTime);                    
+   bool  getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,datetime barDateTime);  
+   void  setValues();                   
 
 
 };
@@ -44,25 +46,26 @@ public:
 //+------------------------------------------------------------------+
 EATechnicalsMACD::EATechnicalsMACD(Technicals &t) {
 
-   /*
+   int bars;
+   CArrayDouble nnInputs, nnOutputs;
+
+   EATechnicalsBase::copyValues(t);
+
+   handle=iMACD(_Symbol,t.period,t.fastMovingAverage,t.slowMovingAverage,t.signalPeriod,t.appliedPrice);
+   if (!handle) {
+      #ifdef _DEBUG_MACD_MODULE
+         ss="EATechnicalsMACD -> handle ERROR";
+         pss
+         writeLog
+         ExpertRemove();
+      #endif
+   }
+
    #ifdef _DEBUG_MACD_MODULE
-      ss="EATechnicalsMACD -> .... Default Constructor";
+      ss=StringFormat("EATechnicalsMACD -> EATechnicalsMACD(Technicals &t)  -> bars in terminal history:%d for period:%s with MA:%d barDelay:%d",Bars(_Symbol,tech.period),EnumToString(tech.period),tech.movingAverage,tech.barDelay);
       pss
       writeLog
    #endif
-   */
-
-   // Set the local instance struct variables
-   EATechnicalsBase::copyValues(t);
-
-   if (!macd.Create(_Symbol, t.period, t.fastMovingAverage, t.slowMovingAverage, t.signalPeriod, t.appliedPrice)) {
-      #ifdef _DEBUG_MACD_MODULE
-            ss="MACDSetParameters -> ERROR";
-            pss
-            writeLog
-            ExpertRemove();
-      #endif
-   } 
 
 }
 
@@ -76,89 +79,51 @@ EATechnicalsMACD::~EATechnicalsMACD() {
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-void EATechnicalsMACD::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,datetime barDateTime) {
+void EATechnicalsMACD::setValues() {
 
-   /*
-   #ifdef _DEBUG_MACD_MODULE
-      ss="EATechnicalsMACD -> getValues -> Entry 2....";
-      pss
-      writeLog
-   #endif 
-   */
+   tech.versionNumber++;
 
-   int      barNumber=iBarShift(_Symbol,tech.period,barDateTime,false); // Adjust the bar number based on PERIOD and TIME
-   double   main[1], signal[1];
-
-   // Refresh the indicator and get all the buffers
-   macd.Refresh(-1);
-
-   if (macd.GetData(barDateTime,1,0,main)>0 && macd.GetData(barDateTime,1,1,signal)>0) {
-      #ifdef _DEBUG_MACD_MODULE
-         ss=StringFormat("EATechnicalsMACD -> getValues -> MAIN:%.2f",main[0]);        
-         writeLog
-         pss
-         ss=StringFormat("EATechnicalsMACD -> getValues -> SIGNAL:%.5f",signal[0]);        
-         writeLog
-         pss
-      #endif
-
-      if (bool (tech.useBuffers&_BUFFER1)) nnInputs.Add(main[0]);
-      if (bool (tech.useBuffers&_BUFFER2)) nnInputs.Add(signal[0]);
-      //if (bool (tech.useBuffers&_BUFFER5)) nnInputs.Add(??);
-
-   } else {
-      #ifdef _DEBUG_MACD_MODULE
-         ss="EATechnicalsMACD -> getValues -> ERROR will return zeros"; 
-         writeLog
-         pss
-      #endif
-   }
-
+   string sql=StringFormat("UPDATE TECHNICALS SET period=%d, ENUM_TIMEFRAMES='%s', fastMovingAverage=%d, slowMovingAverage=%d, signalPeriod=%d, appliedPrice=%d, ENUM_APPLIED_PRICE=%s, upperLevel=%.5f, versionNumber=%d, barDelay=%d "
+      "WHERE strategyNumber=%d AND inputPrefix='%s'",
+      tech.period, EnumToString(tech.period), tech.fastMovingAverage, tech.slowMovingAverage, tech.signalPeriod, tech.appliedPrice, EnumToString(tech.appliedPrice), tech.upperLevel, tech.versionNumber, tech.barDelay, tech.strategyNumber,tech.inputPrefix);
+   
+   EATechnicalsBase::updateValuesToDatabase(sql);
 }
+
+
 
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-void EATechnicalsMACD::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs) {
+bool EATechnicalsMACD::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs, datetime barDateTime) {
 
-   /*
-   #ifdef _DEBUG_MACD_MODULE
-      ss="EATechnicalsMACD -> getValues -> Entry 1....";
-      pss
-      writeLog
-   #endif 
-   */
 
-   double main[1], signal[1];
-
-   // Refresh the indicator and get all the buffers
-   macd.Refresh(-1);
-
-   if (macd.GetData(1,1,0,main)>0 && macd.GetData(1,1,1,signal)>0) {
-      #ifdef _DEBUG_MACD_MODULE
-         ss=StringFormat("EATechnicalsMACD -> getValues -> MAIN:%.2f",main[0]);        
-         writeLog
-         pss
-         ss=StringFormat("EATechnicalsMACD -> getValues -> SIGNAL:%.5f",signal[0]);        
-         writeLog
-         pss
-      #endif
-
-      if (bool (tech.useBuffers&_BUFFER1)) nnInputs.Add(main[0]);
-      if (bool (tech.useBuffers&_BUFFER2)) nnInputs.Add(signal[0]);
-      //if (bool (tech.useBuffers&_BUFFER5)) nnInputs.Add(??);
-
-   } else {
-      #ifdef _DEBUG_MACD_MODULE
-         ss="EATechnicalsMACD -> getValues -> ERROR will return zeros"; 
-         writeLog
-         pss
-      #endif
-      if (bool (tech.useBuffers&_BUFFER1)) nnInputs.Add(0);
-      if (bool (tech.useBuffers&_BUFFER2)) nnInputs.Add(0);
-
+   if (CopyBuffer(handle,0,barDateTime,tech.barDelay,buffer1)==-1 || 
+      CopyBuffer(handle,1,barDateTime,tech.barDelay,buffer2)==-1) {
+         #ifdef _DEBUG_MACD_MODULE
+            ss=StringFormat("EATechnicalsMACD -> getValues(1) %s -> copybuffer error barDelay:%d %d",tech.inputPrefix, tech.barDelay,GetLastError());
+            writeLog
+         #endif
+         return false;
    }
 
+   if (buffer1[tech.barDelay-1]==EMPTY_VALUE || buffer2[tech.barDelay-1]==EMPTY_VALUE) {
+      #ifdef _DEBUG_MACD_MODULE
+         ss=StringFormat("EATechnicalsMACD -> getValues(2) %s -> (EMPTY VALUE)",tech.inputPrefix);
+         writeLog
+      #endif
+      return false;
+   } else {
 
-
+      #ifdef _DEBUG_MACD_MODULE
+         ss=StringFormat("EATechnicalsMACD  -> getValues(3) %s -> %s B1:%.2f  %d",tech.inputPrefix,TimeToString(barDateTime,TIME_DATE|TIME_MINUTES),buffer1[tech.barDelay-1],tech.barDelay);        
+         writeLog
+      #endif
+      
+      if (bool (tech.useBuffers&_BUFFER1)) nnInputs.Add(buffer1[tech.barDelay-1]);
+      if (bool (tech.useBuffers&_BUFFER2)) nnInputs.Add(buffer2[tech.barDelay-1]);
+      
+   }
+   return true;
 }
+

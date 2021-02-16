@@ -10,7 +10,6 @@
 
 #include "EATechnicalsBase.mqh"
 
-#include <Indicators\Trend.mqh>
 
 //=========
 class EATechnicalsSAR : public EATechnicalsBase {
@@ -20,8 +19,12 @@ class EATechnicalsSAR : public EATechnicalsBase {
 private:
 
    string   ss;
-   CiSAR    sar;  
+   int      handle;
+   double   buffer1[];
+   double   buffer2[];
+   double   buffer3[];
 
+   double SARLevelCross(double val);
 
 //=========
 protected:
@@ -34,8 +37,9 @@ public:
    EATechnicalsSAR(Technicals &t);
    ~EATechnicalsSAR();
 
-   void  getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs);    
-   void  getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,datetime barDateTime);                    
+   void setValues();
+   bool  getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs, datetime barDateTime, CArrayString &nnHeadings);                  
+
 
 
 };
@@ -47,14 +51,16 @@ EATechnicalsSAR::EATechnicalsSAR(Technicals &t) {
 
    EATechnicalsBase::copyValues(t);
 
-   if (!sar.Create(_Symbol,t.period,t.stepValue,t.maxValue)) {
+
+   handle=iSAR(_Symbol,t.period,t.stepValue,t.maxValue);
+   if (!handle) {
       #ifdef _DEBUG_SAR_MODULE
-            ss="SARSetParameters -> ERROR";
-            pss
-            writeLog
-            ExpertRemove();
+         ss="EATechnicalsSAR -> handle ERROR";
+         pss
+         writeLog
+         ExpertRemove();
       #endif
-   } 
+   }
 
 }
 
@@ -64,19 +70,39 @@ EATechnicalsSAR::EATechnicalsSAR(Technicals &t) {
 EATechnicalsSAR::~EATechnicalsSAR() {
 
 }
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+void EATechnicalsSAR::setValues() {
+
+   string sql;
+
+   tech.versionNumber++;
+
+   sql=StringFormat("UPDATE TECHNICALS SET period=%d, ENUM_TIMEFRAMES='%s', stepValue=%.5f, maxValue=%.5f, barDelay=%d, versionNumber=%d  "
+      "WHERE strategyNumber=%d AND inputPrefix='%s'",
+      tech.period, EnumToString(tech.period), tech.stepValue, tech.maxValue, tech.versionNumber, tech.barDelay, tech.strategyNumber,tech.inputPrefix);
+   
+
+   EATechnicalsBase::updateValuesToDatabase(sql);
+
+}
 
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-void EATechnicalsSAR::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,datetime barDateTime) {
+double EATechnicalsSAR::SARLevelCross(double val) {
 
-   int      barNumber=iBarShift(_Symbol,tech.period,barDateTime,false); // Adjust the bar number based on PERIOD and TIME
-   double   main[1];
+   if (iClose(_Symbol,tech.period,tech.barDelay)>val) return 1;
+   return 0;
 
-   // Refresh the indicator and get all the buffers
-   sar.Refresh(-1);
+}
 
-   if (sar.GetData(barDateTime,1,0,main)>0) {
+
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+bool EATechnicalsSAR::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs, datetime barDateTime, CArrayString &nnHeadings) {
 
       /*
       https://www.alglib.net/dataanalysis/neuralnetworks.php#header0
@@ -87,71 +113,35 @@ void EATechnicalsSAR::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,
       Preprocessing is done transparently to user, you don't have to worry about it - just feed data to training algorithm!
       */
 
-      if (bool (tech.useBuffers&_BUFFER1)) {
-         if (main[0]>iClose(_Symbol,tech.period,barNumber)) {
-            nnInputs.Add(0);     // SAR above current price BEARISH
-            #ifdef _DEBUG_SAR_MODULE
-               ss=StringFormat("EATechnicalsSAR  -> getValues(HISTORY) -> BEARISH barNumber:%d Period:%d Price:%.2f",barNumber,tech.period,iClose(_Symbol,tech.period,barNumber));        
-               writeLog
-               pss
-            #endif
-         } else {
-            nnInputs.Add(1);     // SAR below current price BULLISH
-            #ifdef _DEBUG_SAR_MODULE
-               ss=StringFormat("EATechnicalsSAR  -> getValues(HISTORY) -> BULLISH barNumber:%d Period:%d Price:%.2f",barNumber,tech.period,iClose(_Symbol,tech.period,barNumber));     
-               writeLog
-               pss
-            #endif
-         }
-      }
-   } else {
-      #ifdef _DEBUG_SAR_MODULE
-         ss="EATechnicalsSAR   -> getValues -> ERROR will return zeros"; 
-         writeLog
-         pss
-      #endif
-      if (bool (tech.useBuffers&_BUFFER1)) nnInputs.Add(0);
+
+   if (CopyBuffer(handle,0,barDateTime,tech.barDelay,buffer1)==-1) { //MAIN
+         #ifdef _DEBUG_SAR_MODULE
+            ss=StringFormat("EATechnicalsSAR -> getValues(1) %s -> copybuffer error",tech.inputPrefix);
+            writeLog
+         #endif
+         return false;
    }
 
-}
-
-//+------------------------------------------------------------------+
-//|                                                                  |
-//+------------------------------------------------------------------+
-void EATechnicalsSAR::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs) {
-
-   double main[1];
-
-   // Refresh the indicator and get all the buffers
-   sar.Refresh(-1);
-
-   if (sar.GetData(1,1,0,main)>0) {
-
-
-   if (bool (tech.useBuffers&_BUFFER1)) {
-         if (main[0]>iClose(_Symbol,tech.period,1)) {
-            nnInputs.Add(0);     // SAR above current price BEARISH
-            #ifdef _DEBUG_SAR_MODULE
-               ss=StringFormat("EATechnicalsSAR  -> getValues(CURRENT) -> BEARISH Period:%d",tech.period);        
-               writeLog
-               pss
-            #endif
-         } else {
-            nnInputs.Add(1);     // SAR below current price BULLISH
-            #ifdef _DEBUG_SAR_MODULE
-               ss=StringFormat("EATechnicalsSAR  -> getValues(CURRENT) -> BULLISH Period:%d",tech.period);     
-               writeLog
-               pss
-            #endif
-         }
-      }
-
-   } else {
+   if (buffer1[tech.barDelay-1]==EMPTY_VALUE)  {
       #ifdef _DEBUG_SAR_MODULE
-         ss="EATechnicalsSAR -> getValues -> ERROR will return zeros"; 
+         ss=StringFormat("EATechnicalsSAR -> getValues(2) %s (EMPTY VALUE)",tech.inputPrefix);
          writeLog
-         pss
       #endif
-      if (bool (tech.useBuffers&_BUFFER1)) nnInputs.Add(0);
+      return false;
+   } else {
+
+      #ifdef _DEBUG_SAR_MODULE
+         ss=StringFormat("EATechnicalsSAR -> getValues(3) %s -> B1:%.2f",tech.inputPrefix,buffer1[tech.barDelay-1]);        
+         writeLog
+      #endif
+      
+      if (bool (tech.useBuffers&_BUFFER1)) nnInputs.Add(buffer1[tech.barDelay-1]);
+      if (bool (tech.useBuffers&_BUFFER2)) nnInputs.Add(SARLevelCross(buffer1[tech.barDelay-1])); // Use Main
+      // Descriptive heading for CSV file
+      #ifdef _DEBUG_NN_FORCAST_WRITE_CSV
+         if (bool (tech.useBuffers&_BUFFER1)) nnHeadings.Add("SARMain "+tech.inputPrefix);
+         if (bool (tech.useBuffers&_BUFFER2)) nnHeadings.Add("SAR Above/Below"+tech.inputPrefix);
+      #endif
    }
+   return true;
 }

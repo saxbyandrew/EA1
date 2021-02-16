@@ -10,7 +10,6 @@
 
 #include "EATechnicalsBase.mqh"
 
-#include <Indicators\Oscilators.mqh>
 
 //=========
 class EATechnicalsRSI : public EATechnicalsBase {
@@ -20,8 +19,11 @@ class EATechnicalsRSI : public EATechnicalsBase {
 private:
 
    string   ss;
-   CiRSI    rsi;  
-
+   int      handle;
+   double   buffer1[];
+   double   buffer2[];
+   double   buffer3[];
+  
    double overSoldOverBought(double currentValue);
    
 
@@ -37,9 +39,8 @@ public:
    EATechnicalsRSI(Technicals &t);
    ~EATechnicalsRSI();
 
-   void  setValues();
-   void  getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs);    
-   void  getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,datetime barDateTime);                    
+   void  setValues();   
+   bool  getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs, datetime barDateTime, CArrayString &nnHeadings);                    
 
 
 };
@@ -48,16 +49,24 @@ public:
 //+------------------------------------------------------------------+
 EATechnicalsRSI::EATechnicalsRSI(Technicals &t) {
 
+
    EATechnicalsBase::copyValues(t);
 
-   if (!rsi.Create(_Symbol, t.period, t.movingAverage, t.appliedPrice)) {
+   handle=iRSI(_Symbol,t.period,t.movingAverage,t.appliedPrice);
+   if (!handle) {
       #ifdef _DEBUG_RSI_MODULE
-            ss="RSISetParameters -> ERROR";
-            pss
-            writeLog
-            ExpertRemove();
+         ss="EATechnicalsRSI -> handle ERROR";
+         pss
+         writeLog
+         ExpertRemove();
       #endif
-   } 
+   }
+
+   #ifdef _DEBUG_RSI_MODULE
+      ss=StringFormat("EATechnicalsRSI -> EATechnicalsRSI(Technicals &t)  -> bars in terminal history:%d for period:%s with MA:%d barDelay:%d",Bars(_Symbol,tech.period),EnumToString(tech.period),tech.movingAverage,tech.barDelay);
+      pss
+      writeLog
+   #endif
 }
 
 //+------------------------------------------------------------------+
@@ -79,14 +88,6 @@ void EATechnicalsRSI::setValues() {
       "WHERE strategyNumber=%d AND inputPrefix='%s'",
       tech.period, EnumToString(tech.period), tech.movingAverage,tech.upperLevel,tech.lowerLevel,tech.appliedPrice, EnumToString(tech.appliedPrice), tech.versionNumber, tech.barDelay, tech.strategyNumber,tech.inputPrefix);
    
-   #ifdef _DEBUG_BASE
-      ss="EATechnicalsRSI -> UPDATE INTO TECHNICALS";
-      pss
-      writeLog
-      ss=sql;
-      pss
-      writeLog
-   #endif
 
    EATechnicalsBase::updateValuesToDatabase(sql);
 
@@ -102,83 +103,53 @@ double EATechnicalsRSI::overSoldOverBought(double currentValue) {
    return 0;
 }
 
-//+------------------------------------------------------------------+
-//|                                                                  |
-//+------------------------------------------------------------------+
-void EATechnicalsRSI::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,datetime barDateTime) {
-
-   int      barNumber=iBarShift(_Symbol,tech.period,barDateTime,false); // Adjust the bar number based on PERIOD and TIME
-   double   main[1];
-
-      #ifdef _DEBUG_RSI_MODULE
-         ss="EATechnicalsRSI  -> using getValues(1)"; 
-         writeLog
-         pss
-      #endif
-
-   // Refresh the indicator and get all the buffers
-   rsi.Refresh(-1);
-
-   if (rsi.GetData(barDateTime,1,0,main)>0) {
-      #ifdef _DEBUG_RSI_MODULE
-         ss=StringFormat("EATechnicalsRSI  -> getValues -> MAIN:%.2f",main[0]);        
-         writeLog
-         pss
-
-      #endif
-
-      if (bool (tech.useBuffers&_BUFFER1)) nnInputs.Add(main[0]);
-      if (bool (tech.useBuffers&_BUFFER2)) nnInputs.Add(overSoldOverBought(main[0]));
-
-   } else {
-      #ifdef _DEBUG_RSI_MODULE
-         ss="EATechnicalsRSI  -> getValues(1) -> ERROR will return zeros"; 
-         writeLog
-         pss
-      #endif
-      if (bool (tech.useBuffers&_BUFFER1)) nnInputs.Add(0);
-      if (bool (tech.useBuffers&_BUFFER2)) nnInputs.Add(0);
-   }
-
-}
 
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-void EATechnicalsRSI::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs) {
+bool EATechnicalsRSI::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs, datetime barDateTime, CArrayString &nnHeadings) {
+
+      /*
+      https://www.alglib.net/dataanalysis/neuralnetworks.php#header0
+      Data preprocessing is normalization of training data - inputs and output are normalized to have unit mean/deviation. 
+      Preprocessing is essential for fast convergence of the training algorithm - it may even fail to converge on badly scaled data. 
+      ALGLIB package automatically analyzes data set and chooses corresponding scaling for inputs and outputs. 
+      Input data are automatically scaled prior to feeding network, and network outputs are automatically unscaled after processing. 
+      Preprocessing is done transparently to user, you don't have to worry about it - just feed data to training algorithm!
+      */
 
 
-   double main[1];
-
-      #ifdef _DEBUG_RSI_MODULE
-         ss="EATechnicalsRSI  -> using getValues(2)"; 
-         writeLog
-         pss
-      #endif
-
-   // Refresh the indicator and get all the buffers
-   rsi.Refresh(-1);
-
-   if (rsi.GetData(1,1,0,main)>0) {
-      #ifdef _DEBUG_RSI_MODULE
-         ss=StringFormat("EATechnicalsRSI  -> getValues -> MAIN:%.2f",main[0]);        
-         writeLog
-         pss
-
-      #endif
-
-      if (bool (tech.useBuffers&_BUFFER1)) nnInputs.Add(main[0]);
-      if (bool (tech.useBuffers&_BUFFER2)) nnInputs.Add(overSoldOverBought(main[0]));
-
-   } else {
-      #ifdef _DEBUG_RSI_MODULE
-         ss="EATechnicalsRSI -> getValues(2) -> ERROR will return zeros"; 
-         writeLog
-         pss
-      #endif
-      if (bool (tech.useBuffers&_BUFFER1)) nnInputs.Add(0);
-      if (bool (tech.useBuffers&_BUFFER2)) nnInputs.Add(0);
-
+   if (CopyBuffer(handle,0,barDateTime,tech.barDelay,buffer1)==-1) { //MAIN
+         #ifdef _DEBUG_RSI_MODULE
+            ss=StringFormat("EATechnicalsRSI -> getValues(1) %s -> copybuffer error",tech.inputPrefix);
+            writeLog
+         #endif
+         return false;
    }
 
+   if (buffer1[tech.barDelay-1]==EMPTY_VALUE)  {
+      #ifdef _DEBUG_RSI_MODULE
+         ss=StringFormat("EATechnicalsRSI -> getValues(2) %s (EMPTY VALUE)",tech.inputPrefix);
+         writeLog
+      #endif
+      return false;
+   } else {
+
+      #ifdef _DEBUG_RSI_MODULE
+         ss=StringFormat("EATechnicalsRSI -> getValues(3) %s -> B1:%.2f",tech.inputPrefix,buffer1[tech.barDelay-1]);        
+         writeLog
+      #endif
+      
+      if (bool (tech.useBuffers&_BUFFER1)) nnInputs.Add(buffer1[tech.barDelay-1]);
+      if (bool (tech.useBuffers&_BUFFER2)) nnInputs.Add(overSoldOverBought(buffer1[tech.barDelay-1])); // Use Main
+      // Descriptive heading for CSV file
+      #ifdef _DEBUG_NN_FORCAST_WRITE_CSV
+         if (bool (tech.useBuffers&_BUFFER1)) nnHeadings.Add("RSI Main "+tech.inputPrefix);
+         if (bool (tech.useBuffers&_BUFFER2)) nnHeadings.Add("RSI Cross "+tech.inputPrefix);
+      #endif
+   }
+   return true;
 }
+
+
+

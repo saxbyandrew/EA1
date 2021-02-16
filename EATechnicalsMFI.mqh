@@ -10,7 +10,6 @@
 
 #include "EATechnicalsBase.mqh"
 
-#include <Indicators\Volumes.mqh>
 
 //=========
 class EATechnicalsMFI : public EATechnicalsBase {
@@ -20,8 +19,10 @@ class EATechnicalsMFI : public EATechnicalsBase {
 private:
 
    string   ss;
-   CiMFI    mfi;  
-
+   int      handle;
+   double   buffer1[];
+   double   buffer2[];
+   double   buffer3[];
 
 //=========
 protected:
@@ -34,26 +35,28 @@ public:
    EATechnicalsMFI(Technicals &tech);
    ~EATechnicalsMFI();
 
-   void  getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs);    
-   void  getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,datetime barDateTime);                    
+   void setValues();
+   bool  getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs, datetime barDateTime, CArrayString &nnHeadings);                  
 
 
 };
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-EATechnicalsMFI::EATechnicalsMFI(Technicals &tech) {
+EATechnicalsMFI::EATechnicalsMFI(Technicals &t) {
 
-   EATechnicalsBase::copyValues(tech);
+   EATechnicalsBase::copyValues(t);
 
-   if (!mfi.Create(_Symbol,tech.period,tech.movingAverage,tech.appliedVolume)) {
+   handle=iMFI(_Symbol,t.period,t.movingAverage,t.appliedVolume);
+   if (!handle) {
       #ifdef _DEBUG_MFI_MODULE
-            ss="MFISetParameters -> ERROR";
-            pss
-            writeLog
-            ExpertRemove();
+         ss="EATechnicalsMFI -> handle ERROR";
+         pss
+         writeLog
+         ExpertRemove();
       #endif
-   } 
+   }
+
 }
 
 //+------------------------------------------------------------------+
@@ -66,20 +69,25 @@ EATechnicalsMFI::~EATechnicalsMFI() {
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-void EATechnicalsMFI::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,datetime barDateTime) {
+void EATechnicalsMFI::setValues() {
 
-   int      barNumber=iBarShift(_Symbol,tech.period,barDateTime,false); // Adjust the bar number based on PERIOD and TIME
-   double   main[1];
+   string sql;
 
-   // Refresh the indicator and get all the buffers
-   mfi.Refresh(-1);
+   tech.versionNumber++;
 
-   if (mfi.GetData(barDateTime,1,0,main)>0) {
-      #ifdef _DEBUG_MFI_MODULE
-         ss=StringFormat("EATechnicalsMFI  -> getValues -> MAIN:%.2f",main[0]);        
-         writeLog
-         pss
-      #endif
+   sql=StringFormat("UPDATE TECHNICALS SET period=%d, ENUM_TIMEFRAMES='%s', movingAverage=%d, upperLevel=%.5f, lowerLevel=%.5f, appliedVolume=%d, ENUM_APPLIED_PRICE='%s', barDelay=%d, versionNumber=%d  "
+      "WHERE strategyNumber=%d AND inputPrefix='%s'",
+      tech.period, EnumToString(tech.period), tech.movingAverage,tech.upperLevel,tech.lowerLevel,tech.appliedVolume, EnumToString(tech.appliedPrice), tech.versionNumber, tech.barDelay, tech.strategyNumber,tech.inputPrefix);
+   
+
+   EATechnicalsBase::updateValuesToDatabase(sql);
+
+}
+
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+bool EATechnicalsMFI::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs, datetime barDateTime, CArrayString &nnHeadings) {
 
       /*
       https://www.alglib.net/dataanalysis/neuralnetworks.php#header0
@@ -90,44 +98,34 @@ void EATechnicalsMFI::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,
       Preprocessing is done transparently to user, you don't have to worry about it - just feed data to training algorithm!
       */
 
-      if (bool (tech.useBuffers&_BUFFER1)) nnInputs.Add(main[0]);
 
-   } else {
-      #ifdef _DEBUG_MFI_MODULE
-         ss="EATechnicalsMFI   -> getValues -> ERROR will return zeros"; 
-         writeLog
-         pss
-      #endif
-      if (bool (tech.useBuffers&_BUFFER1)) nnInputs.Add(0);
+   if (CopyBuffer(handle,0,barDateTime,tech.barDelay,buffer1)==-1) { //MAIN
+         #ifdef _DEBUG_MFI_MODULE
+            ss=StringFormat("EATechnicalsMFI -> getValues(1) %s -> copybuffer error",tech.inputPrefix);
+            writeLog
+         #endif
+         return false;
    }
+
+   if (buffer1[tech.barDelay-1]==EMPTY_VALUE)  {
+      #ifdef _DEBUG_MFI_MODULE
+         ss=StringFormat("EATechnicalsMFI -> getValues(2) %s (EMPTY VALUE)",tech.inputPrefix);
+         writeLog
+      #endif
+      return false;
+   } else {
+
+      #ifdef _DEBUG_MFI_MODULE
+         ss=StringFormat("EATechnicalsMFI -> getValues(3) %s -> B1:%.2f",tech.inputPrefix,buffer1[tech.barDelay-1]);        
+         writeLog
+      #endif
+      
+      if (bool (tech.useBuffers&_BUFFER1)) nnInputs.Add(buffer1[tech.barDelay-1]);
+      // Descriptive heading for CSV file
+      #ifdef _DEBUG_NN_FORCAST_WRITE_CSV
+         if (bool (tech.useBuffers&_BUFFER1)) nnHeadings.Add("MFIMain");
+      #endif
+   }
+   return true;
 }
 
-//+------------------------------------------------------------------+
-//|                                                                  |
-//+------------------------------------------------------------------+
-void EATechnicalsMFI::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs) {
-
-   double main[1];
-
-   // Refresh the indicator and get all the buffers
-   mfi.Refresh(-1);
-
-   if (mfi.GetData(1,1,0,main)>0) {
-      #ifdef _DEBUG_MFI_MODULE
-         ss=StringFormat("EATechnicalsMFI  -> getValues -> MAIN:%.2f",main[0]);        
-         writeLog
-         pss
-      #endif
-
-      if (bool (tech.useBuffers&_BUFFER1)) nnInputs.Add(main[0]);
-
-
-   } else {
-      #ifdef _DEBUG_MFI_MODULE
-         ss="EATechnicalsMFI -> getValues -> ERROR will return zeros"; 
-         writeLog
-         pss
-      #endif
-      if (bool (tech.useBuffers&_BUFFER1)) nnInputs.Add(0);
-   }
-}
