@@ -62,6 +62,7 @@ EATechnicalsSAR::EATechnicalsSAR(Technicals &t) {
       #endif
    }
 
+
 }
 
 //+------------------------------------------------------------------+

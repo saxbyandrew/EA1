@@ -28,14 +28,16 @@ private:
    bool     saveNetwork();
    void     loadNetwork();
    void     updateValuesToDatabase();
-   void     selectValuesFromDatabase(int strategyNumber);
+   void     copyValuesFromDatabase(int strategyNumber);
    void     copyValuesFromOptimizationInputs();
+   void     normalizeDataFrame(CArrayString &nnHeadings);
    void     trainNetwork();
+   void     setMinMaxValueRange(double val, int idx);
 
    CAlglib  *no;
    CMultilayerPerceptronShell *ps;
    CMatrixDouble  dataFrame;
-   double inputs[];
+   double inputs[], iMinVal[], iMaxVal[];
 
 
 //=========
@@ -55,7 +57,7 @@ EANeuralNetwork(int strategyNumber);
    int      getDataFrameSize() {return nn.dfSize;};
    void     setDataFrameArraySizes(int nnIn, int nnOut);
    EAEnum   networkForcast(CArrayDouble &nnIn, CArrayDouble &nnOut, double &prediction[], CArrayString &nnHeadings);
-   void     buildDataFrame(CArrayDouble &nnIn, CArrayDouble &nnOut);
+   void     buildDataFrame(CArrayDouble &nnIn, CArrayDouble &nnOut, CArrayString &nnHeadings);
 
 };
 //+------------------------------------------------------------------+
@@ -75,8 +77,12 @@ EANeuralNetwork::EANeuralNetwork(int strategyNumber) {
       ExpertRemove();
    }
 
-   // Load the property parameters for this NN regardless of runmode
-   selectValuesFromDatabase(strategyNumber);
+   if (MQLInfoInteger(MQL_OPTIMIZATION) || MQLInfoInteger(MQL_TESTER)) {
+      copyValuesFromOptimizationInputs();  
+   } else {
+      copyValuesFromDatabase(strategyNumber);     // Get Technicals from the DB 
+   }
+
 
    // OPTIMIZATION MODE
    // Check which mode we are executing in
@@ -106,6 +112,16 @@ EANeuralNetwork::~EANeuralNetwork() {
    delete nnStore;
 
 }
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+void EANeuralNetwork::setMinMaxValueRange(double val, int idx) {
+
+   // Track the min and max values so that we can normalise the values prior to NN activies
+   if (val > iMaxVal[idx]) iMaxVal[idx]=val; 
+   if (val < iMinVal[idx]) iMinVal[idx]=val; 
+   
+}
 
 //+------------------------------------------------------------------+
 //|                                                                  |
@@ -119,8 +135,12 @@ void EANeuralNetwork::setDataFrameArraySizes(int nnIn, int nnOut) {
    dataFrame.Resize(nn.dfSize,nn.numInput+nn.numOutput);
 
    // Change the double [] used for networkforcasts
+   // min/maxVal used to store for normilisation limits
    ArrayResize(inputs,nn.numInput);
-
+   ArrayResize(iMinVal,nn.numInput);
+   ArrayResize(iMaxVal,nn.numInput);
+   ArrayFill(iMinVal,0,ArraySize(iMinVal),0.0);
+   ArrayFill(iMaxVal,0,ArraySize(iMaxVal),0.0);
 
    #ifdef _DEBUG_NN_DATAFRAME  
       ss=StringFormat("EANeuralNetwork -> setDataFrameArraySizes -> inputs[]:%d ",ArraySize(inputs));
@@ -144,18 +164,101 @@ datetime EANeuralNetwork::getOptimizationStartDateTime() {
 
    return (StructToTime(osdt));
 }
-
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-void EANeuralNetwork::buildDataFrame(CArrayDouble &nnIn, CArrayDouble &nnOut) {
+void EANeuralNetwork::normalizeDataFrame(CArrayString &nnHeadings) {
+
+   double val;
+
+   if (FileIsExist("normalized.csv",FILE_COMMON)) return;
+
+   #ifdef _DEBUG_WRITE_CSV
+      
+      static int csvFileHandle;
+      string csvString="";
+
+      if (csvFileHandle==NULL) {
+         csvFileHandle=FileOpen("normalized.csv",FILE_COMMON|FILE_READ|FILE_WRITE|FILE_ANSI|FILE_CSV,","); 
+         FileWrite(csvFileHandle,"Values and Normalized Values");
+         FileFlush(csvFileHandle);
+      }
+   #endif
+
+   // indicator Headings
+   #ifdef _DEBUG_WRITE_CSV
+      csvString=",";
+      for (int j=0; j<nn.numInput+nn.numOutput;j++) { 
+         csvString=csvString+nnHeadings.At(j)+",,";
+      }
+      FileWrite(csvFileHandle,csvString);
+      FileFlush(csvFileHandle);
+      csvString="";
+   #endif
+
+   // min / max values headings
+   #ifdef _DEBUG_WRITE_CSV
+      csvString=",,";
+      for (int k=0; k<nn.numInput;k++) {
+         csvString=csvString+DoubleToString(iMinVal[k],3)+","+DoubleToString(iMaxVal[k],3)+",";
+      }
+      FileWrite(csvFileHandle,csvString);
+      FileFlush(csvFileHandle);
+      csvString="";
+   #endif
+
+
+   // Main DF size loop
+   for (int i=0; i<nn.dfSize; i++) {
+      #ifdef _DEBUG_WRITE_CSV
+         csvString="Row:"+IntegerToString(i,4)+",";
+      #endif
+
+      // Outputs
+      for (int l=0; l<nn.numOutput;l++) {
+         #ifdef _DEBUG_WRITE_CSV
+            csvString=csvString+DoubleToString(dataFrame[i][l+nn.numInput],3)+",";
+         #endif
+      }
+
+      // Inputs
+      for (int m=0; m<nn.numInput;m++) {
+         // Normalize
+         val=(dataFrame[i][m]-iMinVal[m])/(iMaxVal[m]-iMinVal[m]);
+         #ifdef _DEBUG_WRITE_CSV
+            csvString=csvString+DoubleToString(dataFrame[i][m],3)+",";
+         #endif
+         dataFrame[i].Set(m,val);
+         #ifdef _DEBUG_WRITE_CSV
+            csvString=csvString+DoubleToString(val,3)+",";
+         #endif
+      }
+      
+      // Update the min/max indicator value
+      #ifdef _DEBUG_WRITE_CSV
+         FileWrite(csvFileHandle,csvString);
+         FileFlush(csvFileHandle);
+         csvString="";
+      #endif
+   }
+   // Update the min/max indicator value
+   #ifdef _DEBUG_WRITE_CSV
+      FileWrite(csvFileHandle,csvString);
+      FileFlush(csvFileHandle);
+      FileClose(csvFileHandle);
+   #endif
+}
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+void EANeuralNetwork::buildDataFrame(CArrayDouble &nnIn, CArrayDouble &nnOut, CArrayString &nnheadings) {
 
    static int csvFileHandle;
    static int rowCnt=0;
    static int barCnt=nn.dfSize;
-   string csvFileName, csvString;
+   string csvString;
    
-   datetime barTime;
+   //datetime barTime;
 
    #ifdef _DEBUG_NN_DATAFRAME  
       ss=StringFormat("EANeuralNetwork -> buildDataFrame -> with barCnt:%d",barCnt);
@@ -164,15 +267,12 @@ void EANeuralNetwork::buildDataFrame(CArrayDouble &nnIn, CArrayDouble &nnOut) {
    #endif
 
    #ifdef _DEBUG_WRITE_CSV
-      // Create a single line for the CSV file
-      if (nn.csvWriteDF) {
-         if (csvFileHandle==NULL) {
-            csvFileName=StringFormat("%s%s.csv",IntegerToString(nn.strategyNumber),IntegerToString(nn.fileNumber));
-            csvFileHandle=FileOpen(csvFileName,FILE_COMMON|FILE_READ|FILE_WRITE|FILE_ANSI|FILE_CSV,","); 
-         }
-         csvString=TimeToString(iTime(_Symbol,PERIOD_CURRENT,1))+",";
-         csvString=csvString+rowCnt+",";
-      }
+   // Create a single line for the CSV file
+   if (csvFileHandle==NULL) {
+      csvFileHandle=FileOpen("df.csv",FILE_COMMON|FILE_READ|FILE_WRITE|FILE_ANSI|FILE_CSV,","); 
+   }
+   csvString=TimeToString(iTime(_Symbol,PERIOD_CURRENT,1))+",";
+   csvString=csvString+rowCnt+",";
    #endif
 
    // MQL_OPTIMIZATION _RUN_BUILD_DATAFRAME Grab the number of frame as specified in the nn.dfSize
@@ -184,35 +284,37 @@ void EANeuralNetwork::buildDataFrame(CArrayDouble &nnIn, CArrayDouble &nnOut) {
       // [row][in,in,in,in,etc]
       for (int i=0;i<nnIn.Total();i++) {
          dataFrame[rowCnt].Set(i,nnIn.At(i));
+         
          #ifdef _DEBUG_WRITE_CSV
-            if (nn.csvWriteDF) {
-               csvString=csvString+DoubleToString(nnIn.At(i))+",";
-            }
+            csvString=csvString+DoubleToString(nnIn.At(i))+",";
          #endif
+         
          #ifdef _DEBUG_NN_DATAFRAME
             ss=ss+" "+DoubleToString(dataFrame[rowCnt][i],2);
          #endif
+         setMinMaxValueRange(nnIn.At(i),i);
       }
       // tack on output values at the end of the array
       // [row][in,in,in,in,etc,out,out,out,etc]
-
       for (int j=0; j<nnOut.Total();j++) {
          dataFrame[rowCnt].Set(j+nnIn.Total(),nnOut.At(j));
+         
          #ifdef _DEBUG_WRITE_CSV
-            if (nn.csvWriteDF) {
-               csvString=csvString+DoubleToString(nnOut.At(j))+",";
-            }
+            csvString=csvString+DoubleToString(nnOut.At(j))+",";
          #endif
+         
          #ifdef _DEBUG_NN_DATAFRAME
             ss=ss+" "+DoubleToString(dataFrame[rowCnt][j+nnIn.Total()],2);
          #endif
       }
+
+      // Update the min/max indicator value
+      
       #ifdef _DEBUG_WRITE_CSV
-      if (nn.csvWriteDF) {
          FileWrite(csvFileHandle,csvString);
          FileFlush(csvFileHandle);
-      }
       #endif
+      
 
       #ifdef _DEBUG_NN_DATAFRAME
          writeLog
@@ -220,8 +322,16 @@ void EANeuralNetwork::buildDataFrame(CArrayDouble &nnIn, CArrayDouble &nnOut) {
       #endif 
 
       rowCnt++; barCnt--;
-      return; 
+      return;
    }  
+
+   // All frames have been added now normalise the dataframe
+   #ifdef _DEBUG_NN_DATAFRAME  
+      ss="EANeuralNetwork -> buildDataFrame -> normalize dataframe ......";
+      writeLog
+      pss
+   #endif
+   normalizeDataFrame(nnheadings);
 
    // All frames have been added now train the new network
    #ifdef _DEBUG_NN_DATAFRAME  
@@ -277,7 +387,7 @@ void EANeuralNetwork::updateValuesToDatabase() {
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-void EANeuralNetwork::selectValuesFromDatabase(int strategyNumber) {
+void EANeuralNetwork::copyValuesFromDatabase(int strategyNumber) {
 
    #ifdef _DEBUG_NN
       ss="EANeuralNetwork -> selectValuesFromDatabase -> ...";
@@ -327,6 +437,7 @@ void EANeuralNetwork::selectValuesFromDatabase(int strategyNumber) {
       DatabaseColumnInteger(request,18,nn.versionNumber);
 
       // Over write DB loaded values with values given to us from inputs
+      /*
       if (MQLInfoInteger(MQL_OPTIMIZATION) || MQLInfoInteger(MQL_TESTER)) {
          #ifdef _DEBUG_NN_LOADSAVE
             ss="EANeuralNetwork ->  copy input values MQL_OPTIMIZATION ....";
@@ -334,7 +445,8 @@ void EANeuralNetwork::selectValuesFromDatabase(int strategyNumber) {
             pss
          #endif
          copyValuesFromOptimizationInputs();     
-      }  
+      } 
+      */ 
 
 
       #ifdef _DEBUG_NN_LOADSAVE
@@ -362,6 +474,7 @@ void EANeuralNetwork::copyValuesFromOptimizationInputs() {
       pss
    #endif
 
+   nn.fileNumber=ifileNumber;
    nn.networkType=inetworkType;
    nn.dfSize=idataFrameSize;
    nn.triggerThreshold=itriggerThreshold;
@@ -372,6 +485,15 @@ void EANeuralNetwork::copyValuesFromOptimizationInputs() {
    nn.decay=idecay;
    nn.wStep=iwStep;
    nn.maxITS=imaxITS;
+   nn.trainWeightsThreshold=itrainWeightsThreshold;
+   nn.triggerThreshold=itriggerThreshold;
+
+   nn.csvWriteDF=1;
+   nn.year=2021;
+   nn.month=03;
+   nn.day=03;
+   nn.hour=03;
+   nn.minute=0;
    
 
    #ifdef _DEBUG_NN_LOADSAVE
@@ -499,7 +621,7 @@ void EANeuralNetwork::createNewNetwork()  {
             //ss="EANeuralNetwork -> createNewNetwork -> MLPCreate2";
             //writeLog
          break;
-         case _NN_R2:no.MLPCreateR2(nn.numInput,nn.numHiddenLayer1,nn.numHiddenLayer2,nn.numOutput,0,1,ps);
+         case _NN_R2:no.MLPCreateR2(nn.numInput,nn.numHiddenLayer1,nn.numHiddenLayer2,nn.numOutput,-1,1,ps);
             //ss="EANeuralNetwork -> createNewNetwork -> MLPCreateR2";
             //writeLog
          break;
@@ -820,6 +942,7 @@ EAEnum EANeuralNetwork::networkForcast(CArrayDouble &nnIn, CArrayDouble &nnOut, 
    static int csvFileHandle;
    string csvFileName, csvString, s1;
    
+   
 
    #ifdef _DEBUG_NN_FORCAST_WRITE_CSV
       // Create a single line for the CSV file
@@ -852,7 +975,7 @@ EAEnum EANeuralNetwork::networkForcast(CArrayDouble &nnIn, CArrayDouble &nnOut, 
 
          for (int m=0;m<nnOut.Total();m++) {
             if (nnOut[m]==0) {ss="Down";} else {ss="Up";}
-            csvString=csvString+ss+","+DoubleToString(prediction[0])+",";
+            csvString=csvString+ss+","+DoubleToString(prediction[0])+" "+prediction[1]+",";
          }
          for (int l=0;l<ArraySize(inputs);l++) {
             csvString=csvString+DoubleToString(inputs[l])+",";

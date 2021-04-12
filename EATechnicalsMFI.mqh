@@ -24,6 +24,7 @@ private:
    double   buffer2[];
    double   buffer3[];
 
+
 //=========
 protected:
 //=========
@@ -58,6 +59,7 @@ EATechnicalsMFI::EATechnicalsMFI(Technicals &t) {
    }
 
 }
+
 
 //+------------------------------------------------------------------+
 //|                                                                  |

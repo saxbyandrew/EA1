@@ -10,8 +10,6 @@
 
 #include "EATechnicalsBase.mqh"
 
-#include <Indicators\Oscilators.mqh>
-
 //=========
 class EATechnicalsOSMA : public EATechnicalsBase {
 //=========
@@ -20,7 +18,11 @@ class EATechnicalsOSMA : public EATechnicalsBase {
 private:
 
    string   ss;
-   CiOsMA   osma;  
+   int      handle;
+   double   buffer1[];
+   double   buffer2[];
+   double   buffer3[];
+
 
 
 //=========
@@ -34,8 +36,9 @@ public:
    EATechnicalsOSMA(Technicals &tech);
    ~EATechnicalsOSMA();
 
-   void  getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs);    
-   void  getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,datetime barDateTime);                    
+   void  setValues();   
+   bool  getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs, datetime barDateTime, CArrayString &nnHeadings);                    
+                  
 
 
 };
@@ -62,6 +65,26 @@ EATechnicalsOSMA::EATechnicalsOSMA(Technicals &tech) {
             ExpertRemove();
       #endif
    } 
+
+      handle=iOsMA(_Symbol,tech.period,tech.fastMovingAverage,tech.slowMovingAverage,tech.signalPeriod,tech.appliedPrice);
+   if (!handle) {
+      #ifdef _DEBUG_OSMA_MODULE
+         ss="EATechnicalsOSM -> handle ERROR";
+         pss
+         writeLog
+         ExpertRemove();
+      #endif
+   }
+
+   #ifdef _DEBUG_RVI_MODULE
+      ss=StringFormat("EATechnicalsRVI -> EATechnicalsRVI(Technicals &t)  -> bars in terminal history:%d for period:%s with MA:%d barDelay:%d",Bars(_Symbol,tech.period),EnumToString(tech.period),tech.movingAverage,tech.barDelay);
+      pss
+      writeLog
+   #endif
+
+   // This indicators min and max value which is used in normalising the number
+   minVal=-0.001;
+   maxVal=0.999;
 
 }
 

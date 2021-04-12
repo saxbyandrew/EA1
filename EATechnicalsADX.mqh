@@ -24,6 +24,7 @@ private:
    double   buffer1[];
    double   buffer2[];
    double   buffer3[];
+   
 
    double ADXMainLevelCross(double val);
 
@@ -68,6 +69,7 @@ EATechnicalsADX::EATechnicalsADX(Technicals &t) {
       pss
       writeLog
    #endif
+
 
 
 }
@@ -119,7 +121,7 @@ bool EATechnicalsADX::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,
 
    #ifdef _DEBUG_ADX_MODULE
       pline
-      ss=StringFormat("EATechnicalsADX  -> getValues -> %s barNumber:%d Time:%s barscalculated:%d ",tech.inputPrefix, iBarShift(_Symbol,tech.period,barDateTime,false),TimeToString(barDateTime,TIME_DATE|TIME_MINUTES),BarsCalculated(handle)); 
+      ss=StringFormat("EATechnicalsADX  -> getValues -> barNumber:%d Time:%s barscalculated:%d ", iBarShift(_Symbol,tech.period,barDateTime,false),TimeToString(barDateTime,TIME_DATE|TIME_MINUTES),BarsCalculated(handle)); 
       writeLog
       pss
    #endif
@@ -153,7 +155,7 @@ bool EATechnicalsADX::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,
       if (bool (tech.useBuffers&_BUFFER1)) nnInputs.Add(buffer1[tech.barDelay-1]);
       if (bool (tech.useBuffers&_BUFFER2)) nnInputs.Add(buffer2[tech.barDelay-1]);
       if (bool (tech.useBuffers&_BUFFER3)) nnInputs.Add(buffer3[tech.barDelay-1]);
-      if (bool (tech.useBuffers&_BUFFER4)) nnInputs.Add(ADXMainLevelCross(buffer1[tech.barDelay-1])); // Use Main
+      if (bool (tech.useBuffers&_BUFFER4)) nnInputs.Add(buffer1[tech.barDelay-1]); // Use Main
 
       // Descriptive heading for CSV file
       #ifdef _DEBUG_NN_FORCAST_WRITE_CSV

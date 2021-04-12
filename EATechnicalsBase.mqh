@@ -44,6 +44,7 @@ public:
    ~EATechnicalsBase();
 
    void     copyValues(Technicals &tt);
+
    
    virtual void setValues() {};
    virtual void getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs) {};
@@ -85,19 +86,21 @@ string EATechnicalsBase::VToString(string v) {
 //+------------------------------------------------------------------+
 void EATechnicalsBase::csvInformation() {
 
-   int csvFileHandle;
-
-      csvFileHandle=FileOpen(tech.inputPrefix+".csv",FILE_COMMON|FILE_READ|FILE_WRITE|FILE_ANSI|FILE_CSV,","); 
-      if (csvFileHandle==INVALID_HANDLE) {
+   if (!_csvHandle) {
+      _csvHandle=FileOpen("indicators.csv",FILE_COMMON|FILE_READ|FILE_WRITE|FILE_ANSI|FILE_CSV,","); 
+      if (_csvHandle==INVALID_HANDLE) {
          ss="EATechnicalsBase -> csvInformation error failed to open file";
          writeLog
          return;
       }
-
-      FileWrite(csvFileHandle,"strategyNumber,indicatorName,instanceNumber,period,enumTimeFrames,movingAverage,slowMovingAverage,fastMovingAverage,movingAverageMethod,enumMAMethod,"
+      // Write the heading
+      FileWrite(_csvHandle,"strategyNumber,indicatorName,instanceNumber,period,enumTimeFrames,movingAverage,slowMovingAverage,fastMovingAverage,movingAverageMethod,enumMAMethod,"
          "appliedPrice,enumAppliedPrice,stepValue,maxValue,signalPeriod,tenkanSen,kijunSen,spanB,kPeriod,dPeriod,"
          "stocPrice,enumStoPrice,appliedVolume,enumAppliedVolume,useBuffers,ttl,incDecFactor,inputPrefix,lowerLevel,upperLevel,barDelay,versionNumber");
+      FileFlush(_csvHandle);
+   }
 
+      
       ss=VToString(tech.strategyNumber);
       ss=ss+VToString(tech.indicatorName);
       ss=ss+VToString(tech.instanceNumber);
@@ -138,9 +141,9 @@ void EATechnicalsBase::csvInformation() {
          } 
       }
 
-      FileWrite(csvFileHandle,ss);
-      FileFlush(csvFileHandle);
-      FileClose(csvFileHandle);
+      FileWrite(_csvHandle,ss);
+      FileFlush(_csvHandle);
+      //FileClose(_csvHandle);
 
 }
 #endif
@@ -216,3 +219,6 @@ void EATechnicalsBase::updateValuesToDatabase(string sql) {
    }  
 
 }
+
+
+

@@ -3,6 +3,13 @@
 //|                        Copyright 2019, Andrew Saxby              |
 //|                                             https://www.mql5.com |
 //+------------------------------------------------------------------+
+
+// The Relative Vigor Index (RVI) is a technical analysis indicator that 
+// measures the strength of a trend by comparing a security's closing price 
+// to its trading range and smoothing the results. It's based on the tendency 
+// for prices to close higher than they open in uptrends and to close 
+// lower than they open in downtrends.
+
 #property copyright "Copyright 2019 Andrew Saxby"
 #property link      "https://www.mql5.com"
 #property version   "1.00"
@@ -10,7 +17,6 @@
 
 #include "EATechnicalsBase.mqh"
 
-#include <Indicators\Oscilators.mqh>
 
 //=========
 class EATechnicalsRVI : public EATechnicalsBase {
@@ -20,7 +26,10 @@ class EATechnicalsRVI : public EATechnicalsBase {
 private:
 
    string   ss;
-   CiRVI    rvi;  
+   int      handle;
+   double   buffer1[];
+   double   buffer2[];
+   double   buffer3[];
 
 
 //=========
@@ -34,8 +43,9 @@ public:
    EATechnicalsRVI(Technicals &t);
    ~EATechnicalsRVI();
 
-   void  getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs);    
-   void  getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,datetime barDateTime);                    
+   void  setValues();   
+   bool  getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs, datetime barDateTime, CArrayString &nnHeadings);                    
+                  
 
 
 };
@@ -47,14 +57,22 @@ EATechnicalsRVI::EATechnicalsRVI(Technicals &t) {
 
    EATechnicalsBase::copyValues(t);
 
-   if (!rvi.Create(_Symbol,t.period,t.movingAverage)) {
+   handle=iRVI(_Symbol,t.period,t.movingAverage);
+   if (!handle) {
       #ifdef _DEBUG_RVI_MODULE
-            ss="RVISetParameters -> ERROR";
-            pss
-            writeLog
-            ExpertRemove();
+         ss="EATechnicalsRVI -> handle ERROR";
+         pss
+         writeLog
+         ExpertRemove();
       #endif
-   } 
+   }
+
+   #ifdef _DEBUG_RVI_MODULE
+      ss=StringFormat("EATechnicalsRVI -> EATechnicalsRVI(Technicals &t)  -> bars in terminal history:%d for period:%s with MA:%d barDelay:%d",Bars(_Symbol,tech.period),EnumToString(tech.period),tech.movingAverage,tech.barDelay);
+      pss
+      writeLog
+   #endif
+
 
 }
 
@@ -65,27 +83,30 @@ EATechnicalsRVI::~EATechnicalsRVI() {
 
 }
 
+
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-void EATechnicalsRVI::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,datetime barDateTime) {
- 
-   int      barNumber=iBarShift(_Symbol,tech.period,barDateTime,false); // Adjust the bar number based on PERIOD and TIME
-   double   main[1], signal[1];
+void EATechnicalsRVI::setValues() {
 
-   // Refresh the indicator and get all the buffers
-   rvi.Refresh(-1);
+   string sql;
 
-   if (rvi.GetData(barDateTime,1,0,main)>0 && rvi.GetData(barDateTime,1,1,signal)>0) {
-      #ifdef _DEBUG_RVI_MODULE
-         ss=StringFormat("EATechnicalsRVI  -> getValues -> MAIN:%.2f",main[0]);        
-         writeLog
-         pss
-         ss=StringFormat("EATechnicalsRVI  -> getValues -> SIGNAL:%.2f",signal[0]);    
-         writeLog
-         pss
+   tech.versionNumber++;
 
-      #endif
+   sql=StringFormat("UPDATE TECHNICALS SET period=%d, ENUM_TIMEFRAMES='%s', movingAverage=%d, upperLevel=%.5f, lowerLevel=%.5f, barDelay=%d, versionNumber=%d  "
+      "WHERE strategyNumber=%d AND inputPrefix='%s'",
+      tech.period, EnumToString(tech.period), tech.movingAverage,tech.upperLevel,tech.lowerLevel, tech.versionNumber, tech.barDelay, tech.strategyNumber,tech.inputPrefix);
+   
+
+   EATechnicalsBase::updateValuesToDatabase(sql);
+
+}
+
+
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+bool EATechnicalsRVI::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs, datetime barDateTime, CArrayString &nnHeadings) {
 
       /*
       https://www.alglib.net/dataanalysis/neuralnetworks.php#header0
@@ -96,54 +117,38 @@ void EATechnicalsRVI::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,
       Preprocessing is done transparently to user, you don't have to worry about it - just feed data to training algorithm!
       */
 
-      if (bool (tech.useBuffers&_BUFFER1)) nnInputs.Add(main[0]);
-      if (bool (tech.useBuffers&_BUFFER2)) nnInputs.Add(signal[0]);
 
-
-   } else {
-      #ifdef _DEBUG_RVI_MODULE
-         ss="EATechnicalsRVI   -> getValues -> ERROR will return zeros"; 
-         writeLog
-         pss
-      #endif
-      if (bool (tech.useBuffers&_BUFFER1)) nnInputs.Add(0);
-      if (bool (tech.useBuffers&_BUFFER2)) nnInputs.Add(0);
+   if (CopyBuffer(handle,0,barDateTime,tech.barDelay,buffer1)==-1 ||   // MAIN
+       CopyBuffer(handle,1,barDateTime,tech.barDelay,buffer2)==-1) {  // SIGNAL
+         #ifdef _DEBUG_RVI_MODULE
+            ss=StringFormat("EATechnicalsRVI -> getValues(1) %s -> copybuffer error",tech.inputPrefix);
+            writeLog
+         #endif
+         return false;
    }
 
-}
-
-//+------------------------------------------------------------------+
-//|                                                                  |
-//+------------------------------------------------------------------+
-void EATechnicalsRVI::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs) {
-
-   double main[1], signal[1];
-
-   // Refresh the indicator and get all the buffers
-   rvi.Refresh(-1);
-
-   if (rvi.GetData(1,1,0,main)>0 && rvi.GetData(1,1,1,signal)>0) {
+   if (buffer1[tech.barDelay-1]==EMPTY_VALUE || buffer2[tech.barDelay-1]==EMPTY_VALUE)  {
       #ifdef _DEBUG_RVI_MODULE
-         ss=StringFormat("EATechnicalsRVI  -> getValues -> MAIN:%.2f",main[0]);        
+         ss=StringFormat("EATechnicalsRVI -> getValues(2) %s (EMPTY VALUE)",tech.inputPrefix);
          writeLog
-         pss
-         ss=StringFormat("EATechnicalsRVI  -> getValues -> SIGNAL:%.2f",signal[0]);    
-         writeLog
-         pss
       #endif
-
-      if (bool (tech.useBuffers&_BUFFER1)) nnInputs.Add(main[0]);
-      if (bool (tech.useBuffers&_BUFFER2)) nnInputs.Add(signal[0]);
-
-
+      return false;
    } else {
+
       #ifdef _DEBUG_RVI_MODULE
-         ss="EATechnicalsRVI -> getValues -> ERROR will return zeros"; 
+         ss=StringFormat("EATechnicalsRVI -> getValues(3) %s -> B1:%.2f",tech.inputPrefix,buffer1[tech.barDelay-1]);        
          writeLog
-         pss
       #endif
-      if (bool (tech.useBuffers&_BUFFER1)) nnInputs.Add(0);
-      if (bool (tech.useBuffers&_BUFFER2)) nnInputs.Add(0);
+      
+      if (bool (tech.useBuffers&_BUFFER1)) nnInputs.Add(buffer1[tech.barDelay-1]);
+      if (bool (tech.useBuffers&_BUFFER2)) nnInputs.Add(buffer2[tech.barDelay-1]);
+      // Descriptive heading for CSV file
+      #ifdef _DEBUG_NN_FORCAST_WRITE_CSV
+         if (bool (tech.useBuffers&_BUFFER1)) nnHeadings.Add("RVI Main "+tech.inputPrefix);
+         if (bool (tech.useBuffers&_BUFFER2)) nnHeadings.Add("RVI Signal "+tech.inputPrefix);
+      #endif
    }
+   return true;
 }
+
 

@@ -17,7 +17,7 @@
 // =============
 // DEBUG OPTIONS
 // =============
-//#define _DEBUG_WRITE_CSV
+#define _DEBUG_WRITE_CSV
 //#define _DEBUG_MYEA
 //#define _DEBUG_PANEL
 //#define _DEBUG_COMBOXBOX
@@ -27,18 +27,18 @@
 //#define _DEBUG_PARAMETERS
 //#define _DEBUG_MAIN_LOOP
 //#define _DEBUG_TIME
-//#define _DEBUG_TECHNICAL_PARAMETERS
-//#define _DEBUG_TECHNICAL_PARAMETERS_RUN_LOOP
-//#define _DEBUG_NN_INPUTS_OUTPUTS
-//#define _DEBUG_NN
-//#define _DEBUG_NN_PROPERTIES
-//#define _DEBUG_NN_LOADSAVE
-//#define _DEBUG_NN_LOADSAVE_DETAILED
-//#define _DEBUG_NN_FORCAST
-//#define _DEBUG_NN_FORCAST_WRITE_CSV
+#define _DEBUG_TECHNICAL_PARAMETERS
+#define _DEBUG_TECHNICAL_PARAMETERS_RUN_LOOP
+#define _DEBUG_NN_INPUTS_OUTPUTS
+#define _DEBUG_NN
+#define _DEBUG_NN_PROPERTIES
+#define _DEBUG_NN_LOADSAVE
+#define _DEBUG_NN_LOADSAVE_DETAILED
+#define _DEBUG_NN_FORCAST
+#define _DEBUG_NN_FORCAST_WRITE_CSV
 
-//#define _DEBUG_NN_TRAINING
-//#define _DEBUG_NN_DATAFRAME
+#define _DEBUG_NN_TRAINING
+#define _DEBUG_NN_DATAFRAME
 
 //#define _DEBUG_STRATEGY
 //#define _DEBUG_STRATEGY_UPDATE
@@ -55,13 +55,13 @@
 // ==============
 // MODULES IN USE
 // ===============
-//#define _USE_ADX                    //i1a
-//#define _DEBUG_ADX_MODULE 
+#define _USE_ADX                    //i1a
+#define _DEBUG_ADX_MODULE 
 //#define _USE_RSI                    //i2a
 //#define _DEBUG_RSI_MODULE
 //#define _USE_MFI                  //i4a               
 //#define _DEBUG_MFI_MODULE
-#define _USE_SAR                  //i4a               
+//#define _USE_SAR                  //i4a               
 //#define _DEBUG_SAR_MODULE
 //#define _USE_ICH                  //i5a
 //#define _DEBUG_ICH_MODULE
@@ -86,7 +86,7 @@
 //#define _USE_MACDBEAR
 
 #define _USE_ZIGZAG
-//#define _DEBUG_ZIGZAG
+#define _DEBUG_ZIGZAG
 
 
 //#define _DEBUG_OPTIMIZATION
@@ -112,8 +112,8 @@
 
 #include "EAEnum.mqh"
 #include "EAStructures.mqh"
-#include "EARunOptimization.mqh"
-#include "EAStrategyUpdate.mqh"
+//#include "EARunOptimization.mqh"
+//#include "EAStrategyUpdate.mqh"
 
 #ifdef _RUN_LONG_STRATEGY
     #include "EAStrategyLong.mqh"
@@ -149,12 +149,12 @@ CArrayObj               indicators, strategies;
 
 EAEnum                  _systemState;
 datetime                _historyStart;
-int                     _mainDBHandle, _txtHandle, _optimizeDBHandle, _strategyNumber, _versionNumber;
+int                     _mainDBHandle, _txtHandle, _csvHandle, _optimizeDBHandle, _strategyNumber, _versionNumber;
 string                  _mainDBName="strategies.sqlite";
-string                  _optimizeDBName="optimization.sqlite";
+//string                _optimizeDBName="optimization.sqlite";
 
 
-EARunOptimization       optimization;
+//EARunOptimization       optimization;
 //+------------------------------------------------------------------+
 
 
@@ -276,6 +276,7 @@ void OnDeinit(const int reason) {
     
 }
 
+/*
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
@@ -311,7 +312,7 @@ void updateStrategy() {
     }
     
 }
-
+*/
 //+------------------------------------------------------------------+
 //| Expert tick function                                             |
 //+------------------------------------------------------------------+
@@ -426,10 +427,12 @@ void OnChartEvent(const int id,         // event ID
 //+------------------------------------------------------------------+
 int OnTesterInit() {
 
-    _strategyNumber=1;
+    return(INIT_SUCCEEDED);
+
+    //_strategyNumber=1;
 
 
-    return(optimization.OnTesterInit());
+    //return(optimization.OnTesterInit());
 
 }
 //+------------------------------------------------------------------+
@@ -437,7 +440,7 @@ int OnTesterInit() {
 //+------------------------------------------------------------------+
 void OnTesterDeinit() {
 
-    optimization.OnTesterDeinit(); 
+    //optimization.OnTesterDeinit(); 
 
 }
 
@@ -446,7 +449,7 @@ void OnTesterDeinit() {
 //+------------------------------------------------------------------+
 double OnTester() {
 
-    optimization.OnTester();
+    //optimization.OnTester();
 /*()
     double val=TesterStatistics(STAT_PROFIT);
 

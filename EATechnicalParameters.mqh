@@ -12,12 +12,12 @@
 #include "EAOptimizationInputs.mqh"
 #include "EATechnicalsBase.mqh"
 
-#ifdef _USE_ADX    #include "EATechnicalsADX.mqh"   #endif //i1a
-#ifdef _USE_RSI    #include "EATechnicalsRSI.mqh"   #endif //12a
-#ifdef _USE_MFI    #include "EATechnicalsMFI.mqh"   #endif //13a
-#ifdef _USE_SAR    #include "EATechnicalsSAR.mqh"   #endif //14a
+#ifdef _USE_ADX    #include "EATechnicalsADX.mqh"   #endif //i1a Y
+#ifdef _USE_RSI    #include "EATechnicalsRSI.mqh"   #endif //12a Y
+#ifdef _USE_MFI    #include "EATechnicalsMFI.mqh"   #endif //13a Y
+#ifdef _USE_SAR    #include "EATechnicalsSAR.mqh"   #endif //14a 
 #ifdef _USE_ICH    #include "EATechnicalsICH.mqh"   #endif //i5a
-#ifdef _USE_RVI    #include "EATechnicalsRVI.mqh"   #endif //i6a
+#ifdef _USE_RVI    #include "EATechnicalsRVI.mqh"   #endif //i6a // to be tested
 #ifdef _USE_STOC   #include "EATechnicalsSTOC.mqh"  #endif //i7a
 #ifdef _USE_OSMA   #include "EATechnicalsOSMA.mqh"  #endif //i8a
 #ifdef _USE_MACD   #include "EATechnicalsMACD.mqh"  #endif //i9a
@@ -41,7 +41,7 @@ protected:
 //=========
 EANeuralNetwork   *nn;        // The network 
 void  createTechnicalObject();
-void  selectValuesFromDatabase(int strategyNumber);
+void  copyValuesFromDatabase(int strategyNumber);
 void  copyValuesFromOptimizationInputs();
 EAEnum getValues();
 
@@ -51,8 +51,8 @@ public:
 EATechnicalParameters(int strategyNumber);
 ~EATechnicalParameters();
 
-CArrayDouble   nnIn;    // Values from the indicators fed into the NN
-CArrayDouble   nnOut;
+// Values from the indicators fed into the NN
+CArrayDouble   nnIn, nnOut; 
 CArrayString   nnHeadings;
 
 virtual EAEnum execute(EAEnum action);  
@@ -87,13 +87,33 @@ EATechnicalParameters::EATechnicalParameters(int strategyNumber) {
       #endif 
    }
 
-   selectValuesFromDatabase(strategyNumber);     // Get Technicals from the DB
+   if (MQLInfoInteger(MQL_OPTIMIZATION) || MQLInfoInteger(MQL_TESTER)) {
+      copyValuesFromOptimizationInputs();  
+   } else {
+      copyValuesFromDatabase(strategyNumber);     // Get Technicals from the DB 
+   }
+
    #ifdef _DEBUG_TECHNICAL_PARAMETERS
       ss=StringFormat("EATechnicalParameters -> Number of loaded technical objects:%d",indicators.Total());
       writeLog
       pss
-   #endif 
+   #endif
 
+   // do an initial polling of each of the objects to get a count from of the buffers
+   // in use
+   for (int i=0;i<indicators.Total();i++) {
+      EATechnicalsBase *indicator=indicators.At(i);
+      indicator.getValues(nnIn, nnOut, TimeCurrent(), nnHeadings);
+      pline
+   }
+
+   #ifdef _DEBUG_TECHNICAL_PARAMETERS
+      ss=StringFormat("EATechnicalParameters -> Number of inputs %d outputs %d",nnIn.Total(),nnOut.Total());
+      writeLog
+      pss
+   #endif
+
+   nn.setDataFrameArraySizes(nnIn.Total(),nnOut.Total());
 
 }
 //+------------------------------------------------------------------+
@@ -154,8 +174,7 @@ void EATechnicalParameters::showTechnicalValues() {
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-void EATechnicalParameters::selectValuesFromDatabase(int strategyNumber) {
-
+void EATechnicalParameters::copyValuesFromDatabase(int strategyNumber) {
 
    #ifdef _DEBUG_TECHNICAL_PARAMETERS
       ss=StringFormat("EATechnicalParameters -> selectValuesFromDatabase -> .... %d",strategyNumber);
@@ -182,49 +201,39 @@ void EATechnicalParameters::selectValuesFromDatabase(int strategyNumber) {
          DatabaseColumnInteger      (request,2,tech.instanceNumber);
          DatabaseColumnInteger      (request,3,tech.period);
          DatabaseColumnText         (request,4,tech.enumTimeFrames);
+
          DatabaseColumnInteger      (request,5,tech.movingAverage);
          DatabaseColumnInteger      (request,6,tech.slowMovingAverage);
          DatabaseColumnInteger      (request,7,tech.fastMovingAverage);
          DatabaseColumnInteger      (request,8,tech.movingAverageMethod);
          DatabaseColumnText         (request,9,tech.enumMAMethod);
+
          DatabaseColumnInteger      (request,10,tech.appliedPrice);
          DatabaseColumnText         (request,11,tech.enumAppliedPrice);
          DatabaseColumnDouble       (request,12,tech.stepValue);
          DatabaseColumnDouble       (request,13,tech.maxValue);
          DatabaseColumnInteger      (request,14,tech.signalPeriod);
+
          DatabaseColumnInteger      (request,15,tech.tenkanSen);
          DatabaseColumnInteger      (request,16,tech.kijunSen);
          DatabaseColumnInteger      (request,17,tech.spanB);
          DatabaseColumnInteger      (request,18,tech.kPeriod);
          DatabaseColumnInteger      (request,19,tech.dPeriod);
+
          DatabaseColumnInteger      (request,20,tech.stocPrice);
          DatabaseColumnText         (request,21,tech.enumStoPrice);
          DatabaseColumnInteger      (request,22,tech.appliedVolume);
          DatabaseColumnText         (request,23,tech.enumAppliedVolume);
          DatabaseColumnInteger      (request,24,tech.useBuffers);
+
          DatabaseColumnInteger      (request,25,tech.ttl);
          DatabaseColumnDouble       (request,26,tech.incDecFactor);
          DatabaseColumnText         (request,27,tech.inputPrefix);
          DatabaseColumnDouble       (request,28,tech.lowerLevel);
          DatabaseColumnDouble       (request,29,tech.upperLevel);
+
          DatabaseColumnInteger      (request,30,tech.barDelay);
          DatabaseColumnInteger      (request,31,tech.versionNumber);
-
-         // Over write with values given to us during optimization
-         if (MQLInfoInteger(MQL_OPTIMIZATION) || MQLInfoInteger(MQL_TESTER)) {
-            #ifdef _DEBUG_TECHNICAL_PARAMETERS
-               ss=StringFormat("EATechnicalParameters -> selectValuesFromDatabase -> MQL_OPTIMIZATION OR MQL_TESTER MODE copy input values at time:%s",TimeToString(TimeCurrent(),TIME_DATE|TIME_MINUTES));
-               writeLog
-               pss
-            #endif
-            copyValuesFromOptimizationInputs();     
-         } else {
-            #ifdef _DEBUG_TECHNICAL_PARAMETERS
-               ss="EATechnicalParameters -> selectValuesFromDatabase -> Using values directly from the DB";
-               writeLog
-               pss
-            #endif
-         }
 
          createTechnicalObject();
          #ifdef _DEBUG_TECHNICAL_PARAMETERS
@@ -233,13 +242,6 @@ void EATechnicalParameters::selectValuesFromDatabase(int strategyNumber) {
       }
    }
 
-   // do an initial polling of each of the objects to get a count from of the buffers
-   // in use
-   for (int i=0;i<indicators.Total();i++) {
-      EATechnicalsBase *indicator=indicators.At(i);
-      indicator.getValues(nnIn, nnOut, TimeCurrent(), nnHeadings);
-   }
-   nn.setDataFrameArraySizes(nnIn.Total(),nnOut.Total());
 }
 
 //+------------------------------------------------------------------+
@@ -249,7 +251,7 @@ void EATechnicalParameters::copyValuesFromOptimizationInputs() {
 
    #ifdef _DEBUG_TECHNICAL_PARAMETERS
       pline
-      ss=StringFormat("EATechnicalParameters -> copyValuesFromOptimizationInputs -> for input prefix:%s",tech.inputPrefix);
+      ss="EATechnicalParameters -> copyValuesFromOptimizationInputs";
       writeLog
       pss
       pline
@@ -258,39 +260,41 @@ void EATechnicalParameters::copyValuesFromOptimizationInputs() {
    // ----------------------------------------------------------------
    #ifdef _USE_ADX //i1a
 
-   if (StringFind("i1a_",tech.inputPrefix,0)!=-1) {
-
+   //if (StringFind("i1a_",tech.inputPrefix,0)!=-1) {
+   if (iuseADX_A) {
       tech.indicatorName="ADX";
       tech.period=i1a_period;
       tech.movingAverage=i1a_movingAverage;
       tech.upperLevel=i1a_crossLevel;
       tech.barDelay=i1a_barDelay;
+      tech.useBuffers=15;
+      createTechnicalObject();
       #ifdef _DEBUG_TECHNICAL_PARAMETERS
-         ss=StringFormat("EATechnicalParameters -> copyValuesFromOptimizationInputs -> i1a_ Period:%d MA:%d CrossLevel:%.5f barDelay:%d",tech.period,tech.movingAverage,tech.upperLevel,tech.barDelay);
+         ss=StringFormat("EATechnicalParameters -> copyValuesFromOptimizationInputs -> Period:%d MA:%d CrossLevel:%.5f barDelay:%d",tech.period,tech.movingAverage,tech.upperLevel,tech.barDelay);
          writeLog
       #endif
-      return;
    }
 
-   if (StringFind("i1b_",tech.inputPrefix,0)!=-1) {
-
+   //if (StringFind("i1b_",tech.inputPrefix,0)!=-1) {
+   if (iuseADX_B) {
       tech.indicatorName="ADX";
       tech.period=i1b_period;
       tech.movingAverage=i1b_movingAverage;
       tech.upperLevel=i1b_crossLevel;
       tech.barDelay=i1b_barDelay;
+      tech.useBuffers=15;
+      createTechnicalObject();
       #ifdef _DEBUG_TECHNICAL_PARAMETERS
-         ss=StringFormat("EATechnicalParameters-> copyValuesFromOptimizationInputs -> i1b_ Period:%d MA:%d CrossLevel:%.5f",tech.period,tech.movingAverage,tech.upperLevel);
+         ss=StringFormat("EATechnicalParameters-> copyValuesFromOptimizationInputs -> Period:%d MA:%d CrossLevel:%.5f",tech.period,tech.movingAverage,tech.upperLevel);
          writeLog
       #endif
-
-      return;
    }
    #endif
 
    // ----------------------------------------------------------------
    #ifdef _USE_RSI //i2a
-   if (StringFind("i2a_",tech.inputPrefix,0)!=-1) {
+   //if (StringFind("i2a_",tech.inputPrefix,0)!=-1) {
+   if (iuseRSI_A) {
       tech.indicatorName="RSI";
       tech.period=i2a_period;
       tech.movingAverage=i2a_movingAverage;
@@ -298,9 +302,10 @@ void EATechnicalParameters::copyValuesFromOptimizationInputs() {
       tech.upperLevel=i2a_upperLevel;
       tech.lowerLevel=i2a_lowerLevel;
       tech.barDelay=i2a_barDelay;
-      return;
+      createTechnicalObject();
    }
-   if (StringFind("i2b_",tech.inputPrefix,0)!=-1) {
+   //if (StringFind("i2b_",tech.inputPrefix,0)!=-1) {
+   if (iuseRSI_B) {
       tech.indicatorName="RSI";
       tech.period=i2b_period;
       tech.movingAverage=i2b_movingAverage;
@@ -308,71 +313,77 @@ void EATechnicalParameters::copyValuesFromOptimizationInputs() {
       tech.upperLevel=i2b_upperLevel;
       tech.lowerLevel=i2b_lowerLevel;
       tech.barDelay=i2b_barDelay;
-      return;
+      createTechnicalObject();
    }
    #endif
 
    // ----------------------------------------------------------------
    #ifdef _USE_MFI //i3a
-   if (StringFind("i3a_",tech.inputPrefix,0)!=-1) {
+   //if (StringFind("i3a_",tech.inputPrefix,0)!=-1) {
+   if (iuseMFI_A) {
       tech.indicatorName="MFI";
       tech.period=i3a_period;
       tech.movingAverage=i3a_movingAverage;
       tech.appliedVolume=i3a_appliedVolume;
       tech.barDelay=i3a_barDelay;
-      return;
+      createTechnicalObject();
    }
-   if (StringFind("i3b_",tech.inputPrefix,0)!=-1) {
+   //if (StringFind("i3b_",tech.inputPrefix,0)!=-1) {
+   if (iuseMFI_B) {
       tech.indicatorName="MFI";
       tech.period=i3b_period;
       tech.movingAverage=i3b_movingAverage;
       tech.appliedVolume=i3b_appliedVolume;
       tech.barDelay=i3b_barDelay;
-      return;
+      createTechnicalObject();
    }
 
    #endif
 
       // ----------------------------------------------------------------
    #ifdef _USE_SAR //i4a
-   if (StringFind("i4a_",tech.inputPrefix,0)!=-1) {
+   //if (StringFind("i4a_",tech.inputPrefix,0)!=-1) {
+   if (iuseSAR_A) {
       tech.indicatorName="SAR";
       tech.period=i4a_period;
       tech.stepValue=i4a_stepValue;
       tech.maxValue=i4a_maxValue;
       tech.barDelay=i4a_barDelay;
-      return;
+      createTechnicalObject();
    }
-   if (StringFind("i4b_",tech.inputPrefix,0)!=-1) {
+   //if (StringFind("i4b_",tech.inputPrefix,0)!=-1) {
+   if (iuseSAR_B) {
       tech.indicatorName="SAR";
       tech.period=i4b_period;
       tech.stepValue=i4b_stepValue;
       tech.maxValue=i4b_maxValue;
       tech.barDelay=i4b_barDelay;
-      return;
+      createTechnicalObject();
    }
 
    #endif
 
       // ----------------------------------------------------------------
    #ifdef _USE_ICH //i5a
-   if (StringFind("i5a_",tech.inputPrefix,0)!=-1) {
+   //if (StringFind("i5a_",tech.inputPrefix,0)!=-1) {
+   if (iuseICH_A) {
       tech.indicatorName="ICH";
       tech.period=i5a_period;
       tech.tenkanSen=i5a_tenkanSen;
       tech.kijunSen=i5a_kijunSen;
       tech.spanB=i5a_spanB;
       tech.barDelay=i5a_barDelay;
-      return;
+      createTechnicalObject();
    }
-   if (StringFind("i5b_",tech.inputPrefix,0)!=-1) {
+   //if (StringFind("i5b_",tech.inputPrefix,0)!=-1) {
+   if (iuseICH_B) {
       tech.indicatorName="ICH";
       tech.period=i5b_period;
       tech.tenkanSen=i5b_tenkanSen;
       tech.kijunSen=i5b_kijunSen;
       tech.spanB=i5b_spanB;
       tech.barDelay=i5b_barDelay;
-      return;
+      createTechnicalObject();
    }
 
    #endif
@@ -380,28 +391,30 @@ void EATechnicalParameters::copyValuesFromOptimizationInputs() {
    // ----------------------------------------------------------------
    #ifdef _USE_RVI //i6a
 
-   if (StringFind("i6a_",tech.inputPrefix,0)!=-1) {
-
+   //if (StringFind("i6a_",tech.inputPrefix,0)!=-1) {
+   if (iuseRVI_A) {
       tech.indicatorName="RVI";
       tech.period=i6a_period;
       tech.movingAverage=i6a_movingAverage;
       tech.barDelay=i6a_barDelay;
-      return;
+      createTechnicalObject();
    }
 
-   if (StringFind("i6b_",tech.inputPrefix,0)!=-1) {
+   //if (StringFind("i6b_",tech.inputPrefix,0)!=-1) {
+   if (iuseRVI_B) {
       tech.indicatorName="RVI";
       tech.period=i6b_period;
       tech.movingAverage=i6b_movingAverage;
       tech.barDelay=i6b_barDelay;
-      return;
+      createTechnicalObject();
    }
    #endif
 
    // ----------------------------------------------------------------
    #ifdef _USE_STOC //i7a
       
-      if (StringFind("i7a_",tech.inputPrefix,0)!=-1) {
+      //if (StringFind("i7a_",tech.inputPrefix,0)!=-1) {
+      if (iuseSTOC_A) {
          tech.indicatorName="STOC";
          tech.period=i7a_period;
          tech.dPeriod=i7a_kPeriod;
@@ -410,9 +423,10 @@ void EATechnicalParameters::copyValuesFromOptimizationInputs() {
          tech.movingAverageMethod=i7a_maMethod;
          tech.stocPrice=i7a_stocPrice;
          tech.barDelay=i7a_barDelay;
-         return;
+         createTechnicalObject();
       }
-      if (StringFind("i7b_",tech.inputPrefix,0)!=-1) {
+      //if (StringFind("i7b_",tech.inputPrefix,0)!=-1) {
+      if (iuseSTOC_B) {
          tech.indicatorName="STOC";
          tech.period=i7b_period;
          tech.dPeriod=i7b_kPeriod;
@@ -421,14 +435,15 @@ void EATechnicalParameters::copyValuesFromOptimizationInputs() {
          tech.movingAverageMethod=i7b_maMethod;
          tech.stocPrice=i7b_stocPrice;
          tech.barDelay=i7b_barDelay;
-         return;
+         createTechnicalObject();
       }
 
    #endif
 
       // ----------------------------------------------------------------
    #ifdef _USE_OSMA //i8a
-      if (StringFind("i8a_",tech.inputPrefix,0)!=-1) {
+      //if (StringFind("i8a_",tech.inputPrefix,0)!=-1) {
+      if (iuseOSMA_A) {
          tech.indicatorName="OSMA";
          tech.period=i8a_period;
          tech.slowMovingAverage=i8a_slowMovingAverage;
@@ -436,9 +451,10 @@ void EATechnicalParameters::copyValuesFromOptimizationInputs() {
          tech.signalPeriod=i8a_signalPeriod;
          tech.appliedPrice=i8a_appliedPrice;
          tech.barDelay=i8a_barDelay;
-         return;
+         createTechnicalObject();
       }
-      if (StringFind("i8b_",tech.inputPrefix,0)!=-1) {
+      //if (StringFind("i8b_",tech.inputPrefix,0)!=-1) {
+      if (iuseOSMA_B) {
          tech.indicatorName="OSMA";
          tech.period=i8b_period;
          tech.slowMovingAverage=i8b_slowMovingAverage;
@@ -446,14 +462,15 @@ void EATechnicalParameters::copyValuesFromOptimizationInputs() {
          tech.signalPeriod=i8b_signalPeriod;
          tech.appliedPrice=i8b_appliedPrice;
          tech.barDelay=i8b_barDelay;
-         return;
+         createTechnicalObject();
       }
 
    #endif
 
    // ----------------------------------------------------------------
    #ifdef _USE_MACD //i9a
-   if (StringFind("i9a_",tech.inputPrefix,0)!=-1) {
+   //if (StringFind("i9a_",tech.inputPrefix,0)!=-1) {
+   if (iuseMACD_A) {
       tech.indicatorName="MACD";
       tech.period=i9a_period;
       tech.slowMovingAverage=i9a_slowMovingAverage;
@@ -461,9 +478,10 @@ void EATechnicalParameters::copyValuesFromOptimizationInputs() {
       tech.signalPeriod=i9a_signalPeriod;
       tech.appliedPrice=i9a_appliedPrice;
       tech.barDelay=i9a_barDelay;
-      return;
+      createTechnicalObject();
    }
-   if (StringFind("i9b_",tech.inputPrefix,0)!=-1) {
+   //if (StringFind("i9b_",tech.inputPrefix,0)!=-1) {
+   if (iuseMACD_B) {
       tech.indicatorName="MACD";
       tech.period=i9b_period;
       tech.slowMovingAverage=i9b_slowMovingAverage;
@@ -471,50 +489,49 @@ void EATechnicalParameters::copyValuesFromOptimizationInputs() {
       tech.signalPeriod=i9b_signalPeriod;
       tech.appliedPrice=i9b_appliedPrice;
       tech.barDelay=i9b_barDelay;
-
-      //tech.useBuffer1=i2b_useBuffer1;
-
-      return;
+      createTechnicalObject();
    }
    #endif
 
    // ----------------------------------------------------------------
    #ifdef _USE_MACDJB //i10a
-   if (StringFind("i10a_",tech.inputPrefix,0)!=-1) {
+   //if (StringFind("i10a_",tech.inputPrefix,0)!=-1) {
+   if (iuseMACDJB_A) {
       tech.indicatorName="MACDJB";
       tech.period=i10a_period;
       tech.slowMovingAverage=i10a_slowMovingAverage;
       tech.fastMovingAverage=i10a_fastMovingAverage;
       tech.signalPeriod=i10a_signalPeriod;
       tech.barDelay=i10a_barDelay;
-      return;
+      createTechnicalObject();
    }
-   if (StringFind("i10b_",tech.inputPrefix,0)!=-1) {
+   //if (StringFind("i10b_",tech.inputPrefix,0)!=-1) {
+   if (iuseMACDJB_B) {
       tech.indicatorName="MACDJB";
       tech.period=i10b_period;
       tech.slowMovingAverage=i10b_slowMovingAverage;
       tech.fastMovingAverage=i10b_fastMovingAverage;
       tech.signalPeriod=i10b_signalPeriod;
       tech.barDelay=i10b_barDelay;
-      return;
+      createTechnicalObject();
    }
    #endif
 
    // ----------------------------------------------------------------
    #ifdef _USE_ZIGZAG
 
-   if (StringFind("i100a_",tech.inputPrefix,0)!=-1) {
-
+   //if (StringFind("i100a_",tech.inputPrefix,0)!=-1) {
+   if (iuseZZ_A) {
       tech.indicatorName="ZIGZAG";
       tech.period=i100a_ZZperiod;
       tech.ttl=i100a_ZZttl;
       tech.lowerLevel=i100a_ZZReversal;
       tech.upperLevel=i100a_ZZLevels;
       #ifdef _DEBUG_TECHNICAL_PARAMETERS
-         ss=StringFormat("EATechnicalParameters -> copyValuesFromOptimizationInputs -> i100a_ Period:%d",tech.period);
+         ss=StringFormat("EATechnicalParameters -> copyValuesFromOptimizationInputs -> Period:%d",tech.period);
          writeLog
       #endif
-      return;
+      createTechnicalObject();
    }
 
    #endif
@@ -555,7 +572,7 @@ void EATechnicalParameters::createTechnicalObject() {
       pss
    } else {
       #ifdef _DEBUG_TECHNICAL_PARAMETERS
-         ss=StringFormat("EATechnicalParameters -> createTechnicalObject -> SUCCESS createTechnicalObject -> %s",tech.indicatorName);
+         ss=StringFormat("EATechnicalParameters -> createTechnicalObject -> SUCCESS createTechnicalObject -> %s ",tech.indicatorName);
          writeLog
          pss
       #endif 
@@ -577,7 +594,7 @@ void EATechnicalParameters::createTechnicalObject() {
 //+------------------------------------------------------------------+
 EAEnum EATechnicalParameters::getValues() {
 
-   // Start with a blank slate on every bar we clear the nn input/output arrays
+   // Start with a blank slate on every bar we clear the nn arrays
    nnIn.Clear(); nnOut.Clear(); nnHeadings.Clear();
 
    //================================
@@ -591,7 +608,7 @@ EAEnum EATechnicalParameters::getValues() {
          writeLog
       #endif
 
-      double prediction[1];
+      double prediction[2];
 
       for (int i=0;i<indicators.Total();i++) {
          EATechnicalsBase *indicator=indicators.At(i);
@@ -639,7 +656,7 @@ EAEnum EATechnicalParameters::getValues() {
             return _NO_ACTION;
          }
       }
-      nn.buildDataFrame(nnIn,nnOut);                  // Add to DF which will the be used in training
+      nn.buildDataFrame(nnIn,nnOut,nnHeadings);                  // Add to DF which will the be used in training
 
       #ifdef _DEBUG_NN_DATAFRAME
          ss=StringFormat("EATechnicalParameters -> getValues -> Total Inputs:%d ",nnIn.Total());

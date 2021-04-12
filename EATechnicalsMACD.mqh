@@ -36,7 +36,7 @@ public:
    EATechnicalsMACD(Technicals &t);
    ~EATechnicalsMACD();
 
-   bool  getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,datetime barDateTime);  
+   bool  getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,datetime barDateTime, CArrayString &nnHeadings);  
    void  setValues();                   
 
 
@@ -67,6 +67,7 @@ EATechnicalsMACD::EATechnicalsMACD(Technicals &t) {
       writeLog
    #endif
 
+
 }
 
 //+------------------------------------------------------------------+
@@ -95,7 +96,7 @@ void EATechnicalsMACD::setValues() {
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-bool EATechnicalsMACD::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs, datetime barDateTime) {
+bool EATechnicalsMACD::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs, datetime barDateTime, CArrayString &nnHeadings) {
 
 
    if (CopyBuffer(handle,0,barDateTime,tech.barDelay,buffer1)==-1 || 
@@ -122,7 +123,12 @@ bool EATechnicalsMACD::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs
       
       if (bool (tech.useBuffers&_BUFFER1)) nnInputs.Add(buffer1[tech.barDelay-1]);
       if (bool (tech.useBuffers&_BUFFER2)) nnInputs.Add(buffer2[tech.barDelay-1]);
-      
+
+            // Descriptive heading for CSV file
+      #ifdef _DEBUG_NN_FORCAST_WRITE_CSV
+         if (bool (tech.useBuffers&_BUFFER1)) nnHeadings.Add("MACD Main "+tech.inputPrefix);
+         if (bool (tech.useBuffers&_BUFFER2)) nnHeadings.Add("MACD Signal "+tech.inputPrefix);
+      #endif
    }
    return true;
 }

@@ -28,6 +28,7 @@ private:
     EATiming                *timing;
     EATechnicalParameters   *tech;
 
+    void        copyValuesFromDatabase(int strategyNumber);
     void        copyValuesFromOptimizationInputs();
     void        updateValuesToDatabase(string sql);
     void        closeSQLPosition(EAPosition &p);
@@ -77,16 +78,16 @@ EAStrategyLong::EAStrategyLong(int strategyNumber) {
         pss
     #endif
 
-      // Create the new Technincals object(s) which in this case is the actual strategy run based on 
-   // technical triggers
-   tech=new EATechnicalParameters(strategyNumber); // Using the base ref as this is the main strategy
+    // Create the new Technincals object(s) which in this case is the actual strategy run based on 
+    // technical triggers
+    tech=new EATechnicalParameters(strategyNumber); // Using the base ref as this is the main strategy
     if (CheckPointer(tech)==POINTER_INVALID) {
         #ifdef _DEBUG_LONG_STRATEGY
             ss="EAStrategyLong -> ERROR created technical object";
             writeLog
             pss
         #endif
-    ExpertRemove();
+        ExpertRemove();
     } else {
         #ifdef _DEBUG_LONG_STRATEGY
         ss="EAStrategyLong -> SUCCESS created technical object";
@@ -94,6 +95,63 @@ EAStrategyLong::EAStrategyLong(int strategyNumber) {
         pss
     #endif
     }
+
+    // Over write with values given to us during optimization
+    if (MQLInfoInteger(MQL_OPTIMIZATION) || MQLInfoInteger(MQL_TESTER) && !MQLInfoInteger(MQL_VISUAL_MODE)) {
+        copyValuesFromOptimizationInputs();  
+        #ifdef _DEBUG_LONG_POSITIONS
+            ss="EAStrategyLong -> in MQL_OPTIMIZATION OR MQL_TESTER MODE copy INPUT values";
+            writeLog
+            pss
+        #endif
+        
+    } else {
+        copyValuesFromDatabase(strategyNumber);
+        #ifdef _DEBUG_LONG_POSITIONS
+            ss="EAStrategyLong -> Using values directly from the DB";
+            writeLog
+            pss
+
+        #endif
+    }
+    
+    // santity check
+    #ifdef _DEBUG_LONG_POSITIONS
+        ss=StringFormat("EAStrategyLong -> StrategyNumber:%d magicNumber:%2.2f deviationInPoints:%2.2f maxLong:%d maxDaily:%d versionNumber:%d closeATEOD:%d",
+            strategy.strategyNumber,strategy.magicNumber,strategy.deviationInPoints,strategy.maxPositions,strategy.maxDaily,strategy.versionNumber, strategy.closeAtEOD);
+        writeLog
+        pss
+    #endif 
+
+    timing=new EATiming(strategy.strategyNumber);                                                                            
+    if (CheckPointer(timing)==POINTER_INVALID) {
+        #ifdef _DEBUG_LONG_POSITIONS
+            ss="EAStrategyLong -> Error instantiating TIMING object";
+            writeLog
+            pss
+        #endif 
+        ExpertRemove();
+    } 
+
+    Trade.SetAsyncMode(false);     
+    Trade.SetExpertMagicNumber(strategy.magicNumber);            
+    Trade.SetDeviationInPoints(strategy.deviationInPoints);  
+
+}
+
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+EAStrategyLong::~EAStrategyLong() {
+
+    delete tech;
+
+}
+
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+void EAStrategyLong::copyValuesFromDatabase(int strategyNumber) {
 
     string sql=StringFormat("SELECT * FROM STRATEGY WHERE strategyNumber=%d",strategyNumber);
     int request=DatabasePrepare(_mainDBHandle,sql);
@@ -136,59 +194,7 @@ EAStrategyLong::EAStrategyLong(int strategyNumber) {
     DatabaseColumnInteger   (request,23,strategy.runMode);
     DatabaseColumnInteger   (request,24,strategy.versionNumber);
 
-
-
-    // Over write with values given to us during optimization
-    if (MQLInfoInteger(MQL_OPTIMIZATION) || MQLInfoInteger(MQL_TESTER) && !MQLInfoInteger(MQL_VISUAL_MODE)) {
-        copyValuesFromOptimizationInputs();  
-        #ifdef _DEBUG_LONG_POSITIONS
-            ss="EAStrategyLong -> in MQL_OPTIMIZATION OR MQL_TESTER MODE copy INPUT values";
-            writeLog
-            pss
-        #endif
-        
-    } else {
-        #ifdef _DEBUG_LONG_POSITIONS
-
-            ss="EAStrategyLong -> Using values directly from the DB";
-            writeLog
-            pss
-
-        #endif
-    }
-    
-    #ifdef _DEBUG_LONG_POSITIONS
-        ss=StringFormat("EAStrategyLong -> StrategyNumber:%d magicNumber:%2.2f deviationInPoints:%2.2f maxLong:%d maxDaily:%d versionNumber:%d closeATEOD:%d",
-            strategy.strategyNumber,strategy.magicNumber,strategy.deviationInPoints,strategy.maxPositions,strategy.maxDaily,strategy.versionNumber, strategy.closeAtEOD);
-        writeLog
-        pss
-    #endif 
-
-    timing=new EATiming(strategy.strategyNumber);                                                                            
-    if (CheckPointer(timing)==POINTER_INVALID) {
-        #ifdef _DEBUG_LONG_POSITIONS
-            ss="EAStrategyLong -> Error instantiating TIMING object";
-            writeLog
-            pss
-        #endif 
-        ExpertRemove();
-    } 
-
-    Trade.SetAsyncMode(false);     
-    Trade.SetExpertMagicNumber(strategy.magicNumber);            
-    Trade.SetDeviationInPoints(strategy.deviationInPoints);  
-
 }
-
-//+------------------------------------------------------------------+
-//|                                                                  |
-//+------------------------------------------------------------------+
-EAStrategyLong::~EAStrategyLong() {
-
-    delete tech;
-
-}
-
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
@@ -202,15 +208,38 @@ void EAStrategyLong::copyValuesFromOptimizationInputs() {
         pline
     #endif
 
+    strategy.isActive=iisActive;
+    strategy.strategyNumber=istrategyNumber;
+    strategy.magicNumber-imagicNumber;
+    strategy.deviationInPoints=ideviationInPoints;
+    strategy.maxSpread=imaxSpread;
+
+    strategy.entryBars=ientryBars;
+    strategy.brokerAdminPercent=ibrokerAdminPercent;
+    strategy.interBankPercentage=iinterBankPercentage;
+    strategy.inProfitClosePosition=iinProfitClosePosition;
+    strategy.inLossClosePosition=iinLossClosePosition;
+
+    strategy.inLossOpenMartingale=iinLossOpenMartingale;
+    strategy.inLossOpenLongHedge=iinLossOpenLongHedge;
+    strategy.closeAtEOD=icloseAtEOD;
     strategy.lotSize=ilsize;
     strategy.fpt=ifpt;
+
     strategy.flt=iflt;
     strategy.maxPositions=imaxPositions;
+    strategy.maxDaily=imaxdaily;
     strategy.maxDailyHold=imaxdailyhold;
     strategy.maxMg=imaxmg;
-    strategy.maxDaily=imaxdaily;
 
-       // If we are running a single tester line then update the DB
+    strategy.mgMultiplier=imgmulti;
+    strategy.hedgeLossAmount=ihedgeLossAmount;
+    strategy.swapCosts=iswapCosts;
+    //strategy.runMode=irunMode;
+    strategy.versionNumber=iversionNumber;
+
+
+    // If we are running a single tester line then update the DB
     if (MQLInfoInteger(MQL_TESTER)) {
         strategy.versionNumber++;
         string sql=StringFormat("UPDATE STRATEGY SET lotSize=%.2f, fpt=%.2f, flt=%.2f, maxPositions=%d, maxDailyHold=%d, maxMg=%d, maxDaily=%d, versionNumber=%d "
@@ -240,8 +269,6 @@ void EAStrategyLong::updateValuesToDatabase(string sql) {
         #endif
     }  
 }
-
-
 
 //+------------------------------------------------------------------+
 //|                                                                  |

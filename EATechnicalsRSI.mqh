@@ -23,7 +23,7 @@ private:
    double   buffer1[];
    double   buffer2[];
    double   buffer3[];
-  
+
    double overSoldOverBought(double currentValue);
    
 
@@ -67,7 +67,9 @@ EATechnicalsRSI::EATechnicalsRSI(Technicals &t) {
       pss
       writeLog
    #endif
+
 }
+
 
 //+------------------------------------------------------------------+
 //|                                                                  |

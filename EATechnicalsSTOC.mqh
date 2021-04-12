@@ -10,7 +10,6 @@
 
 #include "EATechnicalsBase.mqh"
 
-#include <Indicators\Oscilators.mqh>
 
 //=========
 class EATechnicalsSTOC : public EATechnicalsBase {
@@ -19,8 +18,11 @@ class EATechnicalsSTOC : public EATechnicalsBase {
 //=========
 private:
 
-   string         ss;
-   CiStochastic   stoc;  
+   string   ss;
+   int      handle;
+   double   buffer1[];
+   double   buffer2[];
+   double   buffer3[];
 
 
 //=========
@@ -34,8 +36,9 @@ public:
    EATechnicalsSTOC(Technicals &t);
    ~EATechnicalsSTOC();
 
-   void  getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs);    
-   void  getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,datetime barDateTime);                    
+   void  setValues();   
+   bool  getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs, datetime barDateTime, CArrayString &nnHeadings);                    
+
 
 };
 //+------------------------------------------------------------------+
@@ -43,17 +46,24 @@ public:
 //+------------------------------------------------------------------+
 EATechnicalsSTOC::EATechnicalsSTOC(Technicals &t) {
 
-
    EATechnicalsBase::copyValues(t);
 
-   if (!stoc.Create(_Symbol,t.period,t.kPeriod,t.dPeriod,t.slowMovingAverage,t.movingAverageMethod,t.stocPrice)) {
+   handle=iStochastic(_Symbol,t.period,t.kPeriod,t.dPeriod,t.slowMovingAverage,t.movingAverageMethod,t.stocPrice);
+   if (!handle) {
       #ifdef _DEBUG_STOC_MODULE
-            ss="SARSetParameters -> ERROR";
-            pss
-            writeLog
-            ExpertRemove();
+         ss="EATechnicalsSTOC -> handle ERROR";
+         pss
+         writeLog
+         ExpertRemove();
       #endif
-   } 
+   }
+
+   #ifdef _DEBUG_STOC_MODULE
+      ss=StringFormat("EATechnicalsSTOC -> EATechnicalsSTOC(Technicals &t)  -> bars in terminal history:%d for period:%s with MA:%d barDelay:%d",Bars(_Symbol,tech.period),EnumToString(tech.period),tech.movingAverage,tech.barDelay);
+      pss
+      writeLog
+   #endif
+
 }
 
 //+------------------------------------------------------------------+
@@ -66,25 +76,25 @@ EATechnicalsSTOC::~EATechnicalsSTOC() {
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-void EATechnicalsSTOC::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,datetime barDateTime) {
+void EATechnicalsSTOC::setValues() {
 
- 
-   int      barNumber=iBarShift(_Symbol,tech.period,barDateTime,false); // Adjust the bar number based on PERIOD and TIME
-   double   main[1], signal[1];
+   string sql;
 
-   // Refresh the indicator and get all the buffers
-   stoc.Refresh(-1);
+   tech.versionNumber++;
 
-   if (stoc.GetData(barDateTime,1,0,main)>0 && stoc.GetData(barDateTime,1,1,signal)>0) {
-      #ifdef _DEBUG_STOC_MODULE
-         ss=StringFormat("EATechnicalsSTOC  -> getValues -> MAIN:%.2f",main[0]);        
-         writeLog
-         pss
-         ss=StringFormat("EATechnicalsSTOC  -> getValues -> SIGNAL:%.2f",signal[0]);    
-         writeLog
-         pss
+   sql=StringFormat("UPDATE TECHNICALS SET period=%d, ENUM_TIMEFRAMES='%s', kPeriod=%d, dPeriod=%d, slowMovingAverage=%d, movingAverageMethod=%d, ENUM_MA_METHOD='%s', barDelay=%d, versionNumber=%d  "
+      "WHERE strategyNumber=%d AND inputPrefix='%s'",
+      tech.period, EnumToString(tech.period), tech.kPeriod, tech.dPeriod, tech.slowMovingAverage, tech.movingAverageMethod, EnumToString(tech.movingAverageMethod), tech.barDelay, tech.versionNumber, tech.strategyNumber,tech.inputPrefix);
 
-      #endif
+   EATechnicalsBase::updateValuesToDatabase(sql);
+
+}
+
+
+//+------------------------------------------------------------------+
+//|                                                                  |
+//+------------------------------------------------------------------+
+bool EATechnicalsSTOC::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs, datetime barDateTime, CArrayString &nnHeadings) {
 
       /*
       https://www.alglib.net/dataanalysis/neuralnetworks.php#header0
@@ -95,56 +105,36 @@ void EATechnicalsSTOC::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs
       Preprocessing is done transparently to user, you don't have to worry about it - just feed data to training algorithm!
       */
 
-      if (bool (bool (tech.useBuffers&_BUFFER1))) nnInputs.Add(main[0]);
-      if (bool (tech.useBuffers&_BUFFER2)) nnInputs.Add(signal[0]);
 
-   } else {
-      #ifdef _DEBUG_STOC_MODULE
-         ss="EATechnicalsSTOC   -> getValues -> ERROR will return zeros"; 
-         writeLog
-         pss
-      #endif
-      if (bool (tech.useBuffers&_BUFFER1)) nnInputs.Add(0);
-      if (bool (tech.useBuffers&_BUFFER2)) nnInputs.Add(0);
+   if (CopyBuffer(handle,0,barDateTime,tech.barDelay,buffer1)==-1 ||
+       CopyBuffer(handle,1,barDateTime,tech.barDelay,buffer2)==-1) {   //MAIN
+         #ifdef _DEBUG_RVI_MODULE
+            ss=StringFormat("EATechnicalsSTOC -> getValues(1) %s -> copybuffer error",tech.inputPrefix);
+            writeLog
+         #endif
+         return false;
    }
 
-}
-
-//+------------------------------------------------------------------+
-//|                                                                  |
-//+------------------------------------------------------------------+
-void EATechnicalsSTOC::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs) {
-
-
-   // Refresh the indicator and get all the buffers
-   stoc.Refresh(-1);
-
-   double main[1], signal[1];
-
-   // Refresh the indicator and get all the buffers
-   stoc.Refresh(-1);
-
-   if (stoc.GetData(1,1,0,main)>0 && stoc.GetData(1,1,1,signal)>0) {
-      #ifdef _DEBUG_STOC_MODULE
-         ss=StringFormat("EATechnicalsSTOC  -> getValues -> MAIN:%.2f",main[0]);        
+   if (buffer1[tech.barDelay-1]==EMPTY_VALUE || buffer2[tech.barDelay-1]==EMPTY_VALUE)  {
+      #ifdef _DEBUG_RVI_MODULE
+         ss=StringFormat("EATechnicalsSTOC -> getValues(2) %s (EMPTY VALUE)",tech.inputPrefix);
          writeLog
-         pss
-         ss=StringFormat("EATechnicalsSTOC  -> getValues -> SIGNAL:%.2f",signal[0]);    
-         writeLog
-         pss
       #endif
-
-      if (bool (tech.useBuffers&_BUFFER1)) nnInputs.Add(main[0]);
-      if (bool (tech.useBuffers&_BUFFER2)) nnInputs.Add(signal[0]);
-
-
+      return false;
    } else {
-      #ifdef _DEBUG_STOC_MODULE
-         ss="EATechnicalsSTOC -> getValues -> ERROR will return zeros"; 
+
+      #ifdef _DEBUG_RVI_MODULE
+         ss=StringFormat("EATechnicalsSTOC -> getValues(3) %s -> B1:%.2f",tech.inputPrefix,buffer1[tech.barDelay-1]);        
          writeLog
-         pss
       #endif
-      if (bool (tech.useBuffers&_BUFFER1)) nnInputs.Add(0);
-      if (bool (tech.useBuffers&_BUFFER2)) nnInputs.Add(0);
+      
+      if (bool (tech.useBuffers&_BUFFER1)) nnInputs.Add(buffer1[tech.barDelay-1]);
+      if (bool (tech.useBuffers&_BUFFER2)) nnInputs.Add(buffer2[tech.barDelay-1]);
+      // Descriptive heading for CSV file
+      #ifdef _DEBUG_NN_FORCAST_WRITE_CSV
+         if (bool (tech.useBuffers&_BUFFER1)) nnHeadings.Add("STOC Main "+tech.inputPrefix);
+         if (bool (tech.useBuffers&_BUFFER2)) nnHeadings.Add("STOC Signal "+tech.inputPrefix);
+      #endif
    }
+   return true;
 }

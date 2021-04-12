@@ -106,7 +106,7 @@ bool  EATechnicalsZZ::getValues(CArrayDouble &nnInputs, CArrayDouble &nnOutputs,
 
       // Descriptive heading for CSV file
       #ifdef _DEBUG_NN_FORCAST_WRITE_CSV
-         nnHeadings.Add("ZZ Direction,Prediction");
+         nnHeadings.Add("ZZ Direction");
       #endif
 
 
